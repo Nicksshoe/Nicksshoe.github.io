@@ -474,8 +474,51 @@
     }).length;
   }
 
-  const api = { DDRAGON, DUMMY, FIGHT_SECONDS, TIERS, PASSIVES, loadPatchData, buildChampionPool, buildItemPool,
-    parseStats, computeStats, simulate, tierFor, abstractness, itemFlavor };
+  // ---------- Draft (shared by the game and the leaderboard server) ----------
+  // Every offer comes from a seeded RNG, so a draft can be replayed exactly from its seed and
+  // its action log ('r' = reroll, a number = pick that offer). The server uses this to verify
+  // leaderboard submissions.
+  const DRAFT = { CHAMP_CHOICES: 5, ITEM_CHOICES: 4, ITEM_SLOTS: 6, REROLLS: 3 };
+  function hashStr(str) { let h = 1779033703 ^ str.length; for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; } return h >>> 0; }
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function sample(rng, arr, n, exclude = new Set()) {
+    const pool = arr.filter(x => !exclude.has(x.id)); const out = [];
+    while (out.length < n && pool.length) out.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
+    return out;
+  }
+
+  function createDraft(data, seed) {
+    const rng = mulberry32(hashStr(seed));
+    const d = { seed, rerolls: DRAFT.REROLLS, champ: null, items: [], offers: [], log: [] };
+    const itemOffers = (extra = []) => sample(rng, data.items, DRAFT.ITEM_CHOICES, new Set([...extra, ...d.items.map(i => i.id)]));
+    d.offers = sample(rng, data.champions, DRAFT.CHAMP_CHOICES);
+    d.done = () => d.items.length >= DRAFT.ITEM_SLOTS;
+    d.reroll = () => {
+      if (d.rerolls <= 0 || d.done()) throw new Error('No rerolls left');
+      d.rerolls--; d.log.push('r');
+      const shown = d.offers.map(o => o.id);
+      d.offers = d.champ ? itemOffers(shown) : sample(rng, data.champions, DRAFT.CHAMP_CHOICES, new Set(shown));
+    };
+    d.pick = (i) => {
+      const choice = d.offers[i];
+      if (!choice || d.done()) throw new Error('Invalid pick');
+      d.log.push(i);
+      if (!d.champ) d.champ = choice; else d.items.push(choice);
+      d.offers = d.done() ? [] : itemOffers();
+    };
+    return d;
+  }
+
+  function replayDraft(data, seed, log) {
+    if (!Array.isArray(log) || log.length > 20) throw new Error('Bad draft log');
+    const d = createDraft(data, seed);
+    for (const a of log) { if (a === 'r') d.reroll(); else if (Number.isInteger(a)) d.pick(a); else throw new Error('Bad draft action'); }
+    if (!d.champ || !d.done()) throw new Error('Draft not finished');
+    return d;
+  }
+
+  const api = { DDRAGON, DUMMY, FIGHT_SECONDS, TIERS, PASSIVES, DRAFT, loadPatchData, buildChampionPool, buildItemPool,
+    parseStats, computeStats, simulate, tierFor, abstractness, itemFlavor, createDraft, replayDraft };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.Potenshall = api;
 })(typeof window !== 'undefined' ? window : globalThis);
