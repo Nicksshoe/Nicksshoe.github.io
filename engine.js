@@ -21,10 +21,28 @@
   }
 
   function buildChampionPool(json) {
-    return Object.values(json.data).map(c => ({
-      id: c.id, name: c.name, title: c.title, tags: c.tags, info: c.info,
+    const champs = Object.values(json.data).map(c => ({
+      id: c.id, name: c.name, title: c.title, tags: c.tags, info: { ...c.info },
       partype: c.partype, stats: c.stats, ranged: c.stats.attackrange > 300,
-    })).sort((a, b) => a.name.localeCompare(b.name));
+    }));
+    fillMissingRatings(champs);
+    return champs.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  // Riot leaves attack/magic/defense at 0 for a few newer champions (e.g. Akshan, Rell,
+  // Seraphine, Vex). Fill them with the average of champions that share the same roles.
+  function fillMissingRatings(champs) {
+    const rated = champs.filter(c => c.info.attack + c.info.magic + c.info.defense > 0);
+    for (const c of champs) {
+      if (c.info.attack + c.info.magic + c.info.defense > 0) continue;
+      let peers = rated.filter(p => p.tags[0] === c.tags[0] && p.tags[1] === c.tags[1]);
+      if (peers.length < 3) peers = rated.filter(p => p.tags[0] === c.tags[0]);
+      if (!peers.length) peers = rated;
+      for (const k of ['attack', 'magic', 'defense']) {
+        c.info[k] = Math.round(peers.reduce((s, p) => s + p.info[k], 0) / peers.length);
+      }
+      c.ratingsEstimated = true;
+    }
   }
 
   // Legendary = completed (builds into nothing), Summoner's Rift, purchasable,
