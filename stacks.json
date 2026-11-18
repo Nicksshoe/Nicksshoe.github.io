@@ -1,0 +1,84 @@
+{
+  "patch": "16.22",
+  "generated": "2026-11-18T18:50:45Z",
+  "snapshotMinute": 30,
+  "matchesChecked": 650,
+  "note": "Median stat gains no item or rune explains, from high-elo ranked games on the previous patch. Estimated entries are hand-set.",
+  "champions": {
+    "Chogath": {
+      "source": "riot-api",
+      "games": 13,
+      "stats": {
+        "hp": 2559.0
+      },
+      "counter": 32.0
+    },
+    "Senna": {
+      "source": "riot-api",
+      "games": 10,
+      "stats": {
+        "ad": 115.0
+      },
+      "counter": 153.0
+    },
+    "Sion": {
+      "source": "riot-api",
+      "games": 11,
+      "stats": {
+        "hp": 1792.0
+      }
+    },
+    "Swain": {
+      "source": "riot-api",
+      "games": 3,
+      "stats": {
+        "hp": 915.0
+      }
+    },
+    "Thresh": {
+      "source": "riot-api",
+      "games": 11,
+      "stats": {
+        "armor": 63.0,
+        "ap": 64.0
+      },
+      "counter": 63.0
+    },
+    "Veigar": {
+      "source": "riot-api",
+      "games": 4,
+      "stats": {
+        "ap": 276.0
+      },
+      "counter": 276.0
+    },
+    "AurelionSol": {
+      "source": "estimate",
+      "counter": 250
+    },
+    "Draven": {
+      "source": "estimate",
+      "counter": 1
+    },
+    "Kindred": {
+      "source": "estimate",
+      "counter": 8
+    },
+    "KSante": {
+      "source": "estimate",
+      "counter": 1
+    },
+    "Locke": {
+      "source": "estimate",
+      "counter": 5
+    },
+    "Nasus": {
+      "source": "estimate",
+      "counter": 350
+    },
+    "Smolder": {
+      "source": "estimate",
+      "counter": 225
+    }
+  }
+}
