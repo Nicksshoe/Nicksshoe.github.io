@@ -17,7 +17,9 @@
       const id = champId.toLowerCase();
       const res = await fetch(`${CDRAGON}/${id}/${id}.bin.json`);
       if (!res.ok) throw new Error(`CommunityDragon ${res.status} for ${champId}`);
-      return parseKit(await res.json());
+      const kit = parseKit(await res.json());
+      if (kit) kit.id = champId;
+      return kit;
     })();
     cache.set(champId, p);
     p.catch(() => cache.delete(champId));
@@ -201,20 +203,48 @@
     return Math.max(cd, sp.slot === 'R' ? 20 : 1.5);
   }
 
+  // ---------- Mechanic overrides ----------
+  // Some abilities aren't "cast for damage": passive on-hit procs, empowered next attacks, or
+  // stat buffs. The generic reader can't tell, so these entries describe the mechanic while every
+  // number is still read from the game data by name, so values stay current each patch.
+  //   everyN:      every Nth basic attack deals bonus damage (pctTargetMaxHp / flat / floor)
+  //   empowerAuto: casting arms the next attack with bonus damage (adRatio = x total AD, bonusAdRatio, apRatio)
+  //   buff:        cast at the start of the fight for bonus stats lasting the whole 10s
+  // passiveCovered: the champion's damage passive is modeled here, so skip the generic marksman stand-in.
+  const MECHANICS = {
+    Vayne: {
+      passiveCovered: true, // Night Hunter is movement speed only
+      Q: { kind: 'empowerAuto', type: 'physical', adRatio: 'TotalADRatio', apRatio: 'APRatio', resetsAttack: true },
+      W: { kind: 'everyN', n: 3, type: 'true', pctTargetMaxHp: 'MaxHealthRatio', floor: 'DamageFloor' },
+      R: { kind: 'buff', stats: { ad: 'BonusAttackDamage' } },
+    },
+  };
+
+  function resolveMechanic(spec, sp, rank) {
+    const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
+    const m = { ...spec };
+    for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+    if (spec.stats) m.stats = Object.fromEntries(Object.entries(spec.stats).map(([k, name]) => [k, dv(name)]));
+    return m;
+  }
+
   // Build a compact, ready-to-simulate view of the kit.
   function describeKit(kit, kitHint) {
     if (!kit) return null;
+    const mech = MECHANICS[kit.id] || {};
     const spells = kit.spells.map(sp => {
       const rank = sp.slot === 'R' ? 3 : 5;
       const calc = damageCalcFor(sp);
       const probe = calc ? evalCalc(calc, sp, { self: PROBE_SELF, target: PROBE_TARGET, stacks: 5, rank }) : 0;
+      const m = mech[sp.slot] ? resolveMechanic(mech[sp.slot], sp, rank) : null;
       return {
-        slot: sp.slot, name: sp.name, rank, calc, sp,
-        damaging: Number.isFinite(probe) && probe > 1, type: damageTypeFor(sp, calc, rank, kitHint),
+        slot: sp.slot, name: sp.name, rank, calc, sp, mech: m,
+        damaging: !m && Number.isFinite(probe) && probe > 1, type: (m && m.type) || damageTypeFor(sp, calc, rank, kitHint),
         cooldown: cooldownFor(sp, rank), castTime: Math.min(0.75, sp.castTime || 0.25),
       };
     });
-    spells.usable = spells.filter(s => s.damaging).length >= 2;
+    spells.passiveCovered = !!mech.passiveCovered;
+    spells.usable = spells.filter(s => s.damaging || s.mech).length >= 2;
     return spells;
   }
 

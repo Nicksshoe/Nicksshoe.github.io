@@ -234,9 +234,19 @@
     const kit = opts.kit || null;                 // raw kit (attack speed data) from abilities.js
     const spells = opts.spells && opts.spells.usable ? opts.spells : null; // described Q/W/E/R
     const stackInfo = (opts.stacks && opts.stacks[ch.id]) || {};
-    const st = computeStats(ch, items, kit, stackInfo.stats);
+    // Stat-buff abilities (e.g. Vayne R) are cast at the start and last the whole fight.
+    const extraStats = { ...(stackInfo.stats || {}) };
+    const mechOf = kind => spells ? spells.filter(s => s.mech && s.mech.kind === kind) : [];
+    for (const s of mechOf('buff')) for (const [k, v] of Object.entries(s.mech.stats)) extraStats[k] = (extraStats[k] || 0) + v;
+    const st = computeStats(ch, items, kit, extraStats);
     const pr = profile(ch);
-    if (spells) { pr.uptime = 1; pr.autoAmp = AUTO_AMP_REAL[pr.arch] || 1; }
+    if (spells) {
+      pr.uptime = 1;
+      pr.autoAmp = spells.passiveCovered ? 1 : (AUTO_AMP_REAL[pr.arch] || 1);
+      if (spells.passiveCovered) pr.onHitAp = 0; // real passive modeled instead of the generic on-hit stand-in
+    }
+    const everyN = mechOf('everyN');
+    let empowered = null; // armed by an empowerAuto ability, spent on the next attack
     const { has, sum } = st;
     const hasAny = k => has(k).length > 0;
 
@@ -337,6 +347,16 @@
       }
       deal(t, st.totalAD * mult * pr.autoAmp, 'physical', 'Basic Attacks', 'attack');
       if (trueBonus) deal(t, trueBonus, 'true', 'Fiendhunter Bolts', 'attack');
+      if (empowered) {
+        const e = empowered; empowered = null;
+        deal(t, (e.adRatio || 0) * st.totalAD + (e.bonusAdRatio || 0) * st.bonusAD + (e.apRatio || 0) * st.ap + (e.flat || 0), e.type, e.label, 'ability');
+      }
+      for (const sp of everyN) {
+        const m = sp.mech;
+        if (autoCount % m.n !== 0) continue;
+        const raw = Math.max(m.floor || 0, (m.pctTargetMaxHp || 0) * DUMMY.hp + (m.flat || 0));
+        deal(t, raw, m.type, `${sp.slot} · ${labels[sp.slot] || sp.name}`, 'onhit');
+      }
 
       let onHitTimes = 1;
       if (hasAny('guinsoo') && autoCount % 3 === 0) onHitTimes = 2;
@@ -377,7 +397,17 @@
     const tryCastRealSpell = (t) => {
       if (t < castLock) return;
       for (const sp of spells) {
-        if (!sp.damaging || (ready[sp.slot] || 0) > t + 1e-9) continue;
+        if ((ready[sp.slot] || 0) > t + 1e-9) continue;
+        if (sp.mech && sp.mech.kind === 'empowerAuto') {
+          if (empowered) continue; // don't waste it before the armed attack lands
+          empowered = { ...sp.mech, label: `${sp.slot} · ${labels[sp.slot] || sp.name}` };
+          onAbilityHit(t, false);
+          ready[sp.slot] = t + sp.cooldown * 100 / (100 + st.ah);
+          castLock = t + sp.castTime;
+          if (sp.mech.resetsAttack) nextAuto = Math.min(nextAuto, castLock);
+          return;
+        }
+        if (!sp.damaging) continue;
         const dmg = root.Potenshall.Abilities.evalSpellDamage(sp, spellCtx());
         const label = `${sp.slot} · ${labels[sp.slot] || sp.name}`;
         deal(t, dmg, sp.type, label, 'ability');

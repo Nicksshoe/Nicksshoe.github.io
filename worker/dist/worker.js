@@ -235,9 +235,19 @@
     const kit = opts.kit || null;                 // raw kit (attack speed data) from abilities.js
     const spells = opts.spells && opts.spells.usable ? opts.spells : null; // described Q/W/E/R
     const stackInfo = (opts.stacks && opts.stacks[ch.id]) || {};
-    const st = computeStats(ch, items, kit, stackInfo.stats);
+    // Stat-buff abilities (e.g. Vayne R) are cast at the start and last the whole fight.
+    const extraStats = { ...(stackInfo.stats || {}) };
+    const mechOf = kind => spells ? spells.filter(s => s.mech && s.mech.kind === kind) : [];
+    for (const s of mechOf('buff')) for (const [k, v] of Object.entries(s.mech.stats)) extraStats[k] = (extraStats[k] || 0) + v;
+    const st = computeStats(ch, items, kit, extraStats);
     const pr = profile(ch);
-    if (spells) { pr.uptime = 1; pr.autoAmp = AUTO_AMP_REAL[pr.arch] || 1; }
+    if (spells) {
+      pr.uptime = 1;
+      pr.autoAmp = spells.passiveCovered ? 1 : (AUTO_AMP_REAL[pr.arch] || 1);
+      if (spells.passiveCovered) pr.onHitAp = 0; // real passive modeled instead of the generic on-hit stand-in
+    }
+    const everyN = mechOf('everyN');
+    let empowered = null; // armed by an empowerAuto ability, spent on the next attack
     const { has, sum } = st;
     const hasAny = k => has(k).length > 0;
 
@@ -338,6 +348,16 @@
       }
       deal(t, st.totalAD * mult * pr.autoAmp, 'physical', 'Basic Attacks', 'attack');
       if (trueBonus) deal(t, trueBonus, 'true', 'Fiendhunter Bolts', 'attack');
+      if (empowered) {
+        const e = empowered; empowered = null;
+        deal(t, (e.adRatio || 0) * st.totalAD + (e.bonusAdRatio || 0) * st.bonusAD + (e.apRatio || 0) * st.ap + (e.flat || 0), e.type, e.label, 'ability');
+      }
+      for (const sp of everyN) {
+        const m = sp.mech;
+        if (autoCount % m.n !== 0) continue;
+        const raw = Math.max(m.floor || 0, (m.pctTargetMaxHp || 0) * DUMMY.hp + (m.flat || 0));
+        deal(t, raw, m.type, `${sp.slot} · ${labels[sp.slot] || sp.name}`, 'onhit');
+      }
 
       let onHitTimes = 1;
       if (hasAny('guinsoo') && autoCount % 3 === 0) onHitTimes = 2;
@@ -378,7 +398,17 @@
     const tryCastRealSpell = (t) => {
       if (t < castLock) return;
       for (const sp of spells) {
-        if (!sp.damaging || (ready[sp.slot] || 0) > t + 1e-9) continue;
+        if ((ready[sp.slot] || 0) > t + 1e-9) continue;
+        if (sp.mech && sp.mech.kind === 'empowerAuto') {
+          if (empowered) continue; // don't waste it before the armed attack lands
+          empowered = { ...sp.mech, label: `${sp.slot} · ${labels[sp.slot] || sp.name}` };
+          onAbilityHit(t, false);
+          ready[sp.slot] = t + sp.cooldown * 100 / (100 + st.ah);
+          castLock = t + sp.castTime;
+          if (sp.mech.resetsAttack) nextAuto = Math.min(nextAuto, castLock);
+          return;
+        }
+        if (!sp.damaging) continue;
         const dmg = root.Potenshall.Abilities.evalSpellDamage(sp, spellCtx());
         const label = `${sp.slot} · ${labels[sp.slot] || sp.name}`;
         deal(t, dmg, sp.type, label, 'ability');
@@ -544,7 +574,9 @@
       const id = champId.toLowerCase();
       const res = await fetch(`${CDRAGON}/${id}/${id}.bin.json`);
       if (!res.ok) throw new Error(`CommunityDragon ${res.status} for ${champId}`);
-      return parseKit(await res.json());
+      const kit = parseKit(await res.json());
+      if (kit) kit.id = champId;
+      return kit;
     })();
     cache.set(champId, p);
     p.catch(() => cache.delete(champId));
@@ -728,20 +760,48 @@
     return Math.max(cd, sp.slot === 'R' ? 20 : 1.5);
   }
 
+  // ---------- Mechanic overrides ----------
+  // Some abilities aren't "cast for damage": passive on-hit procs, empowered next attacks, or
+  // stat buffs. The generic reader can't tell, so these entries describe the mechanic while every
+  // number is still read from the game data by name, so values stay current each patch.
+  //   everyN:      every Nth basic attack deals bonus damage (pctTargetMaxHp / flat / floor)
+  //   empowerAuto: casting arms the next attack with bonus damage (adRatio = x total AD, bonusAdRatio, apRatio)
+  //   buff:        cast at the start of the fight for bonus stats lasting the whole 10s
+  // passiveCovered: the champion's damage passive is modeled here, so skip the generic marksman stand-in.
+  const MECHANICS = {
+    Vayne: {
+      passiveCovered: true, // Night Hunter is movement speed only
+      Q: { kind: 'empowerAuto', type: 'physical', adRatio: 'TotalADRatio', apRatio: 'APRatio', resetsAttack: true },
+      W: { kind: 'everyN', n: 3, type: 'true', pctTargetMaxHp: 'MaxHealthRatio', floor: 'DamageFloor' },
+      R: { kind: 'buff', stats: { ad: 'BonusAttackDamage' } },
+    },
+  };
+
+  function resolveMechanic(spec, sp, rank) {
+    const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
+    const m = { ...spec };
+    for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+    if (spec.stats) m.stats = Object.fromEntries(Object.entries(spec.stats).map(([k, name]) => [k, dv(name)]));
+    return m;
+  }
+
   // Build a compact, ready-to-simulate view of the kit.
   function describeKit(kit, kitHint) {
     if (!kit) return null;
+    const mech = MECHANICS[kit.id] || {};
     const spells = kit.spells.map(sp => {
       const rank = sp.slot === 'R' ? 3 : 5;
       const calc = damageCalcFor(sp);
       const probe = calc ? evalCalc(calc, sp, { self: PROBE_SELF, target: PROBE_TARGET, stacks: 5, rank }) : 0;
+      const m = mech[sp.slot] ? resolveMechanic(mech[sp.slot], sp, rank) : null;
       return {
-        slot: sp.slot, name: sp.name, rank, calc, sp,
-        damaging: Number.isFinite(probe) && probe > 1, type: damageTypeFor(sp, calc, rank, kitHint),
+        slot: sp.slot, name: sp.name, rank, calc, sp, mech: m,
+        damaging: !m && Number.isFinite(probe) && probe > 1, type: (m && m.type) || damageTypeFor(sp, calc, rank, kitHint),
         cooldown: cooldownFor(sp, rank), castTime: Math.min(0.75, sp.castTime || 0.25),
       };
     });
-    spells.usable = spells.filter(s => s.damaging).length >= 2;
+    spells.passiveCovered = !!mech.passiveCovered;
+    spells.usable = spells.filter(s => s.damaging || s.mech).length >= 2;
     return spells;
   }
 
