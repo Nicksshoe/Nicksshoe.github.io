@@ -12,3 +12,4 @@ CREATE TABLE IF NOT EXISTS scores (
 CREATE UNIQUE INDEX IF NOT EXISTS one_daily_per_client ON scores (mode, period, client) WHERE mode = 'daily';
 CREATE INDEX IF NOT EXISTS board_lookup ON scores (mode, period, score DESC);
 CREATE TABLE IF NOT EXISTS tickets (seed TEXT PRIMARY KEY, used TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT NOT NULL);

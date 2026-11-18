@@ -3,7 +3,7 @@
    same draft + damage engine the game runs. Scores are never trusted from the browser:
    the Worker replays the draft from its seed and re-runs the fight itself.
 
-   Bindings: DB (D1 database), SEED_SECRET (secret text). */
+   Binding: DB (D1 database). The seed-signing secret is generated on first use and kept in D1. */
 
 const SITE = 'https://nicksshoe.github.io';
 const ALLOWED_ORIGINS = new Set([SITE, 'https://potenshalldamage.io', 'http://localhost:5173', 'http://localhost:5174']);
@@ -25,6 +25,16 @@ async function getStacks() {
     stacksCache = { value: r && r.ok ? await r.json() : null, at: Date.now() };
   }
   return stacksCache.value;
+}
+let secretCache = null;
+async function getSecret(env) {
+  if (secretCache) return secretCache;
+  const row = await env.DB.prepare("SELECT value FROM config WHERE key = 'seed_secret'").first();
+  if (row) return (secretCache = row.value);
+  const fresh = [...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2, '0')).join('');
+  await env.DB.prepare("INSERT OR IGNORE INTO config (key, value) VALUES ('seed_secret', ?)").bind(fresh).run();
+  const again = await env.DB.prepare("SELECT value FROM config WHERE key = 'seed_secret'").first();
+  return (secretCache = again.value);
 }
 const shortPatch = p => p.split('.').slice(0, 2).join('.');
 
@@ -50,7 +60,7 @@ async function start(req, env, origin) {
   const data = await getData();
   if (patch !== data.patch) return fail('A new patch is out. Reload the page.', 409, origin);
   const seed = [...crypto.getRandomValues(new Uint8Array(12))].map(b => b.toString(16).padStart(2, '0')).join('');
-  return json({ seed, patch, sig: await hmac(env.SEED_SECRET, `${seed}|${patch}`) }, 200, origin);
+  return json({ seed, patch, sig: await hmac(await getSecret(env), `${seed}|${patch}`) }, 200, origin);
 }
 
 async function submit(req, env, origin) {
@@ -71,7 +81,7 @@ async function submit(req, env, origin) {
     seed = `${patch}|${date}`; period = date;
   } else if (mode === 'free') {
     if (!ticket || typeof ticket.seed !== 'string' || ticket.patch !== patch) return fail('This run can\'t be verified.', 400, origin);
-    if ((await hmac(env.SEED_SECRET, `${ticket.seed}|${ticket.patch}`)) !== ticket.sig) return fail('This run can\'t be verified.', 400, origin);
+    if ((await hmac(await getSecret(env), `${ticket.seed}|${ticket.patch}`)) !== ticket.sig) return fail('This run can\'t be verified.', 400, origin);
     seed = `free|${ticket.seed}`; period = shortPatch(patch);
   } else return fail('Bad mode', 400, origin);
 

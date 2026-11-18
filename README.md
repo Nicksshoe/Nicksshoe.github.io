@@ -28,3 +28,15 @@ Any static file server works, e.g. `npx serve .` — opening `index.html` direct
 ---
 
 Potenshall Damage isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+
+## Leaderboard
+
+A Cloudflare Worker (`potenshall-leaderboard`) with a D1 database stores scores. It never trusts the browser's score: it replays the draft from its seed and re-runs the fight with the same engine. Daily seeds come from the date; Free Play seeds are issued and signed by the Worker.
+
+After changing `engine.js` or `abilities.js`, rebuild and redeploy so server scores keep matching the game:
+
+```powershell
+pwsh -File tools/build-worker.ps1
+```
+
+Then paste `worker/dist/worker.js` into the Worker's code editor in the Cloudflare dashboard and deploy. Table setup is in `worker/schema.sql`.
