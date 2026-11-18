@@ -1,0 +1,6 @@
+# Never commit API keys
+*.key
+api-key.txt
+.env
+# Local tooling
+.claude/

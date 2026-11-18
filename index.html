@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Potenshall Damage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070b14; --bg2:#0d1424; --panel:#111a2e; --panel2:#16213a; --line:#2a3550;
+  --gold:#c8aa6e; --gold2:#f0e6d2; --gold-dim:#785a28; --text:#e8e2d4; --muted:#8c93a8;
+  --phys:#ff8a3d; --magic:#4fa8ff; --true:#f5f5f5; --good:#3ddc97; --bad:#ff5a5a;
+  --radius:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(1200px 600px at 50% -200px,#1a2747 0%,var(--bg) 60%) fixed,var(--bg);color:var(--text);
+  font:15px/1.45 Inter,system-ui,sans-serif;min-height:100vh}
+button{font:inherit;color:inherit;cursor:pointer}
+img{display:block}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+
+/* Header */
+header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16px;border-bottom:1px solid var(--line)}
+.logo{font-family:Cinzel,serif;font-weight:800;font-size:28px;letter-spacing:.06em;line-height:1;
+  background:linear-gradient(180deg,var(--gold2),var(--gold) 55%,var(--gold-dim));-webkit-background-clip:text;background-clip:text;color:transparent}
+.logo small{display:block;font:500 11px Inter,sans-serif;letter-spacing:.18em;color:var(--muted);-webkit-text-fill-color:var(--muted);margin-top:6px;text-transform:uppercase}
+.spacer{flex:1}
+.pill{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
+.pill b{color:var(--gold2);font-weight:600}
+.modes{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.modes button{background:transparent;border:0;padding:6px 14px;font-size:13px;color:var(--muted)}
+.modes button.on{background:var(--gold);color:#1a1405;font-weight:600}
+
+/* Layout */
+.game{display:grid;grid-template-columns:300px 1fr;gap:20px;margin-top:20px}
+@media (max-width:860px){.game{grid-template-columns:1fr}#stage{order:-1}.logo{font-size:22px}.rules{display:none}}
+.panel{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.panel h3{margin:0 0 12px;font:600 12px Inter;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+
+/* Build sidebar */
+.champ-slot{display:flex;gap:12px;align-items:center;min-height:72px}
+.champ-slot .ph,.item-slot .ph{border:1px dashed var(--line);border-radius:8px;display:grid;place-items:center;color:var(--line);font-size:22px}
+.champ-slot .ph{width:64px;height:64px}
+.champ-slot img{width:64px;height:64px;border-radius:8px;border:2px solid var(--gold)}
+.champ-slot .nm{font-weight:700;font-size:17px}
+.champ-slot .tt{font-size:12px;color:var(--muted);text-transform:capitalize}
+.items-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:14px}
+.item-slot{aspect-ratio:1;position:relative}
+.item-slot .ph{width:100%;height:100%;font-size:12px}
+.item-slot.cur .ph{border-color:var(--gold);color:var(--gold);box-shadow:0 0 0 2px #c8aa6e33}
+.item-slot img{width:100%;height:100%;border-radius:6px;border:1px solid var(--gold-dim)}
+.rerolls{display:flex;align-items:center;gap:8px;margin-top:16px}
+.pip{width:14px;height:14px;transform:rotate(45deg);border:1px solid var(--gold);background:var(--gold)}
+.pip.used{background:transparent;border-color:var(--line)}
+.dummy-card{margin-top:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center}
+.dummy-card div{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 4px}
+.dummy-card b{display:block;font-size:16px}
+.dummy-card span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.rules{font-size:13px;color:var(--muted);margin:14px 0 0;padding-left:18px}
+.rules li{margin:3px 0}
+
+/* Stepper */
+.steps{display:flex;gap:4px;margin-bottom:16px}
+.steps div{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.steps div.done{background:var(--gold-dim)}
+.steps div.cur{background:var(--gold)}
+.stage-head{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.stage-head h2{margin:0;font:800 24px Cinzel,serif;color:var(--gold2);letter-spacing:.03em}
+.stage-head p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.btn{border:1px solid var(--gold);background:linear-gradient(180deg,#1e2a44,#121a2e);color:var(--gold2);padding:10px 18px;border-radius:8px;font-weight:600;
+  transition:transform .08s,box-shadow .15s}
+.btn:hover:not(:disabled){box-shadow:0 0 16px #c8aa6e55}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:linear-gradient(180deg,#d8bb7c,#a3824a);color:#1a1405;border-color:#f0e6d2}
+.btn.sm{padding:7px 12px;font-size:13px}
+
+/* Cards */
+.cards{display:grid;gap:12px}
+.cards.champs{grid-template-columns:repeat(auto-fill,minmax(135px,1fr))}
+.cards.items{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius);padding:12px;text-align:left;position:relative;
+  transition:border-color .15s,transform .15s,box-shadow .15s;animation:pop .35s both}
+.card:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:0 10px 24px #0008,0 0 0 1px var(--gold-dim)}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
+.card .portrait{width:100%;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#000;margin-bottom:10px}
+.card .portrait img{width:100%;height:100%;object-fit:cover}
+.card .nm{font-weight:700;font-size:16px}
+.card .sub{font-size:12px;color:var(--muted);text-transform:capitalize;margin-bottom:8px}
+.tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+.tag{font-size:11px;padding:2px 7px;border-radius:999px;border:1px solid var(--line);color:var(--gold2)}
+.bars{display:grid;gap:4px;font-size:11px;color:var(--muted)}
+.bar{display:grid;grid-template-columns:52px 1fr;align-items:center;gap:6px}
+.bar i{height:5px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}
+.bar i::after{content:"";position:absolute;inset:0;width:var(--w);background:var(--c)}
+.item-top{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.item-top img{width:48px;height:48px;border-radius:6px;border:1px solid var(--gold-dim)}
+.item-top .gold{font-size:12px;color:var(--gold)}
+.statlist{margin:0;padding:0;list-style:none;font-size:13px}
+.statlist li{padding:1px 0}
+.statlist li b{color:var(--gold2)}
+.passive{margin-top:8px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:6px}
+.passive em{color:var(--magic);font-style:normal}
+
+/* Fight */
+.arena{position:relative;height:340px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);
+  background:radial-gradient(400px 200px at 50% 95%,#2c3a22 0%,transparent 70%),linear-gradient(180deg,#0b1222,#121c30 70%,#1a2414)}
+.arena .dummy{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);width:150px}
+.arena .dummy.hit{animation:shake .12s}
+@keyframes shake{25%{transform:translateX(calc(-50% - 4px)) rotate(-2deg)}75%{transform:translateX(calc(-50% + 4px)) rotate(2deg)}}
+.arena .attacker{position:absolute;left:24px;bottom:24px;width:72px;height:72px;border-radius:50%;border:3px solid var(--gold);overflow:hidden}
+.arena .attacker img{width:100%;height:100%}
+.hpwrap{position:absolute;left:50%;top:18px;transform:translateX(-50%);width:min(420px,80%)}
+.hpbar{height:18px;border:1px solid #000;background:#1a0e0e;border-radius:3px;overflow:hidden;position:relative;box-shadow:0 0 0 1px var(--gold-dim)}
+.hpbar .fill{height:100%;background:linear-gradient(180deg,#e94a4a,#a51f1f);width:100%;transition:width .08s linear}
+.hpbar .ticks{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 1px),#0007 calc(10% - 1px) 10%)}
+.hpmeta{display:flex;justify-content:space-between;font-size:12px;margin-top:4px;color:var(--muted)}
+.hpmeta b{color:var(--text)}
+.clock{position:absolute;right:16px;top:16px;font:700 22px Inter;font-variant-numeric:tabular-nums;color:var(--gold2)}
+.kills{position:absolute;left:16px;top:16px;font-size:13px;color:var(--muted)}
+.kills b{color:var(--gold2);font-size:20px}
+.dmgnum{position:absolute;font-weight:800;pointer-events:none;text-shadow:0 2px 0 #000,0 0 6px #000;animation:float 1s ease-out forwards;white-space:nowrap}
+@keyframes float{from{opacity:1;transform:translate(-50%,0) scale(1.2)}to{opacity:0;transform:translate(-50%,-70px) scale(.9)}}
+.dmgnum.physical{color:var(--phys)} .dmgnum.magic{color:var(--magic)} .dmgnum.true{color:var(--true)}
+.dmgnum.big{font-size:22px}
+.killflash{position:absolute;inset:0;display:grid;place-items:center;font:800 40px Cinzel,serif;color:var(--gold2);text-shadow:0 0 20px var(--gold);animation:kf .9s forwards;pointer-events:none}
+@keyframes kf{from{opacity:1;transform:scale(.7)}60%{opacity:1;transform:scale(1.05)}to{opacity:0;transform:scale(1.1)}}
+.fight-controls{display:flex;gap:10px;margin-top:12px;align-items:center}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-left:auto}
+.legend span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;background:var(--c)}
+
+/* Results */
+.result-hero{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center;margin-bottom:18px}
+@media (max-width:560px){.result-hero{grid-template-columns:1fr}}
+.badge{width:130px;height:130px;border-radius:50%;display:grid;place-items:center;text-align:center;border:3px solid var(--c);
+  background:radial-gradient(circle,var(--c) -60%,transparent 70%);font:800 15px Cinzel,serif;color:var(--gold2);box-shadow:0 0 30px -6px var(--c)}
+.bignum{font:800 54px Inter;line-height:1;font-variant-numeric:tabular-nums;color:var(--gold2)}
+.bignum small{font-size:16px;font-weight:600;color:var(--muted);margin-left:6px}
+.facts{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:14px;color:var(--muted)}
+.facts b{color:var(--text)}
+.split{display:flex;height:12px;border-radius:6px;overflow:hidden;margin:6px 0 4px}
+.split div{height:100%}
+.breakdown{display:grid;gap:7px;margin-top:8px}
+.brow{display:grid;grid-template-columns:150px 1fr 70px;gap:10px;align-items:center;font-size:13px}
+.brow .track{height:10px;background:var(--bg);border-radius:5px;overflow:hidden}
+.brow .track div{height:100%;border-radius:5px}
+.brow .v{text-align:right;font-variant-numeric:tabular-nums}
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:700px){.res-grid{grid-template-columns:1fr}}
+.statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 14px;font-size:13px}
+.statgrid div{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:3px 0}
+.statgrid span{color:var(--muted)}
+.meter{display:flex;gap:4px;margin:8px 0}
+.meter i{flex:1;height:10px;border-radius:2px;background:var(--line)}
+.meter i.on{background:linear-gradient(90deg,#b05ce6,#ff5ab4)}
+.quote{font-style:italic;color:var(--gold2);font-size:14px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--gold);color:#1a1405;padding:10px 18px;border-radius:8px;font-weight:600;
+  animation:pop .25s both;z-index:10}
+.loading{display:grid;place-items:center;min-height:300px;color:var(--muted);text-align:center}
+.spinner{width:42px;height:42px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size:11px;color:var(--muted);line-height:1.6}
+.muted{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">POTENSHALL DAMAGE<small>Abstract builds · one dummy · ten seconds</small></div>
+    <div class="spacer"></div>
+    <div class="modes" id="modes">
+      <button data-mode="daily" class="on">Daily</button>
+      <button data-mode="free">Free Play</button>
+    </div>
+    <div class="pill">Patch <b id="patch">…</b></div>
+    <div class="pill">Best <b id="best">—</b></div>
+  </header>
+
+  <div class="game">
+    <aside class="panel">
+      <h3>Your Build</h3>
+      <div class="champ-slot" id="champSlot"></div>
+      <div class="items-grid" id="itemSlots"></div>
+      <div class="rerolls"><span class="muted" style="font-size:13px">Rerolls</span><div id="pips" style="display:flex;gap:8px;margin-left:6px"></div></div>
+      <h3 style="margin-top:20px">Training Dummy</h3>
+      <div class="dummy-card">
+        <div><b>10,000</b><span>Health</span></div>
+        <div><b>200</b><span>Armor</span></div>
+        <div><b>100</b><span>Magic Res</span></div>
+      </div>
+      <ul class="rules">
+        <li>Pick 1 champion, then 6 legendary items.</li>
+        <li>3 rerolls total, spend them anywhere.</li>
+        <li>Level 18, 10 seconds, all-in. Dummy respawns on death.</li>
+        <li>Score = total damage dealt.</li>
+      </ul>
+    </aside>
+
+    <main class="panel" id="stage">
+      <div class="loading"><div><div class="spinner"></div>Loading the latest patch from Data Dragon…</div></div>
+    </main>
+  </div>
+
+  <footer>
+    Potenshall Damage is a fan-made mini game inspired by Bausffs-style abstract builds. Ability damage uses formulas from the game files (via CommunityDragon); item passives, stacks and champion passives are approximations.
+    Potenshall Damage isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties.
+    Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+  </footer>
+</div>
+
+<script src="engine.js"></script>
+<script src="abilities.js"></script>
+<script>
+(() => {
+'use strict';
+const P = window.Potenshall;
+const $ = s => document.querySelector(s);
+const ITEM_SLOTS = 6, CHAMP_CHOICES = 5, ITEM_CHOICES = 4, REROLLS = 3;
+const fmt = n => Math.round(n).toLocaleString();
+
+let DATA = null;
+let S = null; // game state
+let STACKS = null; // average stacks from live games (stacks.json), optional
+
+// Real ability kits from CommunityDragon + display names from Data Dragon, cached per champion.
+const kitCache = new Map();
+function getKit(id){
+  if (!kitCache.has(id)) {
+    const champ = DATA.champions.find(c => c.id === id);
+    const hint = champ && champ.info.magic > champ.info.attack ? 'magic' : 'physical';
+    const p = Promise.all([
+      P.Abilities.loadKit(id),
+      fetch(`${P.DDRAGON}/cdn/${DATA.patch}/data/en_US/champion/${id}.json`).then(r => r.json()).catch(() => null),
+    ]).then(([kit, dd]) => {
+      const spellNames = {};
+      if (dd) (dd.data[id].spells || []).forEach((s, i) => spellNames['QWER'[i]] = s.name);
+      return { kit, spells: P.Abilities.describeKit(kit, hint), spellNames };
+    }).catch(err => { console.warn('Kit unavailable, using estimate for', id, err); return {}; });
+    kitCache.set(id, p);
+  }
+  return kitCache.get(id);
+}
+
+// ---------- Seeded RNG ----------
+function hashStr(str){let h=1779033703^str.length;for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19}return h>>>0}
+function mulberry32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function sample(rng, arr, n, exclude=new Set()){
+  const pool = arr.filter(x => !exclude.has(x.id));
+  const out = [];
+  while (out.length < n && pool.length) out.push(pool.splice(Math.floor(rng()*pool.length),1)[0]);
+  return out;
+}
+const today = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+
+// ---------- Storage (best effort) ----------
+const store = {
+  get(k){try{return JSON.parse(localStorage.getItem('potenshall:'+k))}catch{return null}},
+  set(k,v){try{localStorage.setItem('potenshall:'+k,JSON.stringify(v))}catch{}}
+};
+
+const img = {
+  champ: id => `${P.DDRAGON}/cdn/${DATA.patch}/img/champion/${id}.png`,
+  tile: id => `${P.DDRAGON}/cdn/img/champion/tiles/${id}_0.jpg`,
+  item: id => `${P.DDRAGON}/cdn/${DATA.patch}/img/item/${id}.png`,
+};
+
+// ---------- Game flow ----------
+function newGame(mode){
+  const seed = mode === 'daily' ? `${DATA.patch}|${today()}` : `${Date.now()}|${Math.random()}`;
+  S = { mode, rng: mulberry32(hashStr(seed)), rerolls: REROLLS, champ: null, items: [], offers: [], result: null };
+  S.offers = sample(S.rng, DATA.champions, CHAMP_CHOICES);
+  prefetchKits(S.offers);
+  document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+  if (mode === 'daily') {
+    const prev = store.get('daily:'+today());
+    if (prev) { showDailyDone(prev); renderSidebar(prev); return; }
+  }
+  render();
+}
+
+function reroll(){
+  if (S.rerolls <= 0) return;
+  S.rerolls--;
+  const shown = new Set(S.offers.map(o => o.id));
+  if (!S.champ) { S.offers = sample(S.rng, DATA.champions, CHAMP_CHOICES, shown); prefetchKits(S.offers); }
+  else S.offers = sample(S.rng, DATA.items, ITEM_CHOICES, new Set([...shown, ...S.items.map(i => i.id)]));
+  render();
+}
+
+function prefetchKits(list){ list.forEach(c => getKit(c.id)); }
+function pickChamp(i){ S.champ = S.offers[i]; nextItemOffers(); render(); }
+function pickItem(i){
+  S.items.push(S.offers[i]);
+  if (S.items.length < ITEM_SLOTS) nextItemOffers();
+  else S.offers = [];
+  render();
+}
+function nextItemOffers(){ S.offers = sample(S.rng, DATA.items, ITEM_CHOICES, new Set(S.items.map(i => i.id))); }
+
+// ---------- Rendering ----------
+function renderSidebar(snapshot){
+  const champ = snapshot ? DATA.champions.find(c => c.id === snapshot.champ) : S.champ;
+  const items = snapshot ? snapshot.items.map(id => DATA.items.find(i => i.id === id)).filter(Boolean) : S.items;
+  const rerolls = snapshot ? snapshot.rerolls : S.rerolls;
+  $('#champSlot').innerHTML = champ
+    ? `<img src="${img.champ(champ.id)}" alt=""><div><div class="nm">${champ.name}</div><div class="tt">${champ.title}</div></div>`
+    : `<div class="ph">?</div><div class="muted">Choose a champion</div>`;
+  $('#itemSlots').innerHTML = Array.from({length: ITEM_SLOTS}, (_, i) => {
+    const it = items[i];
+    const cur = !snapshot && champ && i === items.length;
+    return `<div class="item-slot ${cur?'cur':''}" title="${it ? it.name : ''}">${it ? `<img src="${img.item(it.id)}" alt="${it.name}">` : `<div class="ph">${i+1}</div>`}</div>`;
+  }).join('');
+  $('#pips').innerHTML = Array.from({length: REROLLS}, (_, i) => `<div class="pip ${i >= rerolls ? 'used' : ''}"></div>`).join('');
+  const best = store.get('best');
+  $('#best').textContent = best ? fmt(best) : '—';
+}
+
+function steps(){
+  const cur = !S.champ ? 0 : S.items.length + 1;
+  return `<div class="steps">${Array.from({length: 8}, (_, i) => `<div class="${i < cur ? 'done' : i === cur ? 'cur' : ''}"></div>`).join('')}</div>`;
+}
+
+function render(){
+  renderSidebar();
+  const st = $('#stage');
+  if (!S.champ) {
+    st.innerHTML = steps() + `
+      <div class="stage-head"><div><h2>Pick your champion</h2><p>${CHAMP_CHOICES} random champions from patch ${DATA.patch}. Choose wisely, or abstractly.</p></div>
+      <div class="spacer"></div>${rerollBtn()}</div>
+      <div class="cards champs">${S.offers.map((c, i) => champCard(c, i)).join('')}</div>`;
+    st.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => pickChamp(+b.dataset.pick));
+  } else if (S.items.length < ITEM_SLOTS) {
+    st.innerHTML = steps() + `
+      <div class="stage-head"><div><h2>Item ${S.items.length + 1} of ${ITEM_SLOTS}</h2><p>Pick one legendary item for <b>${S.champ.name}</b>.</p></div>
+      <div class="spacer"></div>${rerollBtn()}</div>
+      <div class="cards items">${S.offers.map((it, i) => itemCard(it, i)).join('')}</div>`;
+    st.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => pickItem(+b.dataset.pick));
+  } else {
+    runFight();
+    return;
+  }
+  const rb = st.querySelector('#rerollBtn'); if (rb) rb.onclick = reroll;
+}
+
+const rerollBtn = () => `<button class="btn sm" id="rerollBtn" ${S.rerolls ? '' : 'disabled'}>⟳ Reroll (${S.rerolls} left)</button>`;
+
+function champCard(c, i){
+  const bar = (label, v, color) => `<div class="bar"><span>${label}</span><i style="--w:${v*10}%;--c:${color}"></i></div>`;
+  return `<button class="card" data-pick="${i}" style="animation-delay:${i*50}ms">
+    <div class="portrait"><img src="${img.tile(c.id)}" alt="" onerror="this.src='${img.champ(c.id)}'"></div>
+    <div class="nm">${c.name}</div><div class="sub">${c.title}</div>
+    <div class="tags">${c.tags.map(t => `<span class="tag">${t}</span>`).join('')}<span class="tag">${c.ranged ? 'Ranged' : 'Melee'}</span></div>
+    <div class="bars">${bar('Attack', c.info.attack, 'var(--phys)')}${bar('Magic', c.info.magic, 'var(--magic)')}${bar('Defense', c.info.defense, 'var(--good)')}</div>
+  </button>`;
+}
+
+function itemCard(it, i){
+  const passive = P.PASSIVES[it.name.toLowerCase()];
+  const lines = it.statLines.map(l => l.replace(/^([\d.]+%?)/, '<b>$1</b>'));
+  return `<button class="card" data-pick="${i}" style="animation-delay:${i*50}ms">
+    <div class="item-top"><img src="${img.item(it.id)}" alt=""><div><div class="nm">${it.name}</div><div class="gold">${fmt(it.gold)}g</div></div></div>
+    <ul class="statlist">${lines.map(l => `<li>${l}</li>`).join('')}</ul>
+    ${it.passives.length || passive ? `<div class="passive">${it.passives.slice(0,2).join(' · ')}${passive && passive.tip ? `<br><em>${passive.tip}</em>` : ''}</div>` : ''}
+  </button>`;
+}
+
+// ---------- Fight ----------
+const DUMMY_SVG = `<svg viewBox="0 0 150 220" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="75" cy="212" rx="55" ry="8" fill="#0006"/>
+  <rect x="68" y="120" width="14" height="92" rx="3" fill="#6b4a2b"/>
+  <rect x="20" y="78" width="110" height="14" rx="5" fill="#7a5532"/>
+  <ellipse cx="75" cy="105" rx="38" ry="48" fill="#c9a571" stroke="#6b4a2b" stroke-width="3"/>
+  <circle cx="75" cy="105" r="24" fill="none" stroke="#a52a2a" stroke-width="5"/>
+  <circle cx="75" cy="105" r="11" fill="#a52a2a"/>
+  <circle cx="75" cy="38" r="24" fill="#d8b57e" stroke="#6b4a2b" stroke-width="3"/>
+  <path d="M63 34 l6 6 M69 34 l-6 6 M81 34 l6 6 M87 34 l-6 6" stroke="#4a3220" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M65 50 q10 -6 20 0" stroke="#4a3220" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M50 70 l50 60 M100 70 l-50 60" stroke="#8a6a3a" stroke-width="3" opacity=".6"/>
+</svg>`;
+
+let animHandle = null;
+async function runFight(){
+  $("#stage").innerHTML = `<div class="loading"><div><div class="spinner"></div>Loading ${S.champ.name}'s abilities from the game files…</div></div>`;
+  const kitInfo = await getKit(S.champ.id);
+  const res = P.simulate(S.champ, S.items, { ...kitInfo, stacks: STACKS && STACKS.champions });
+  S.result = res;
+  const st = $('#stage');
+  st.innerHTML = steps().replace(/class=""/g, 'class="done"') + `
+    <div class="stage-head"><div><h2>Fight!</h2><p>${S.champ.name} unloads on the dummy for 10 seconds.</p></div></div>
+    <div class="arena" id="arena">
+      <div class="kills">Dummy kills <b id="kc">0</b></div>
+      <div class="clock" id="clock">0.00s</div>
+      <div class="hpwrap"><div class="hpbar"><div class="fill" id="hpfill"></div><div class="ticks"></div></div>
+        <div class="hpmeta"><span><b id="hptext">10,000</b> / 10,000</span><span>Total <b id="tot">0</b></span></div></div>
+      <div class="attacker"><img src="${img.champ(S.champ.id)}" alt=""></div>
+      <div class="dummy" id="dummy">${DUMMY_SVG}</div>
+    </div>
+    <div class="fight-controls"><button class="btn sm" id="skip">Skip ▸▸</button>
+      <div class="legend"><span style="--c:var(--phys)">Physical</span><span style="--c:var(--magic)">Magic</span><span style="--c:var(--true)">True</span></div></div>`;
+  $('#skip').onclick = () => finish();
+
+  const arena = $('#arena'), dummy = $('#dummy');
+  const SPEED = 1.6; // 10s fight in ~6.25s
+  const hits = res.hits;
+  let idx = 0, total = 0, kills = 0, last = 0;
+  const t0 = performance.now();
+  const bucket = {physical:0, magic:0, true:0};
+
+  function frame(now){
+    const t = Math.min(res.seconds, (now - t0) / 1000 * SPEED);
+    while (idx < hits.length && hits[idx].t <= t) {
+      const h = hits[idx++];
+      total += h.amt; bucket[h.type] += h.amt;
+      $('#hpfill').style.width = (h.hp / P.DUMMY.hp * 100) + '%';
+      $('#hptext').textContent = fmt(h.hp);
+      if (h.killed) {
+        kills++; $('#kc').textContent = kills;
+        const k = document.createElement('div'); k.className = 'killflash'; k.textContent = kills === 1 ? 'DUMMY SLAIN' : `${kills}× SLAIN`;
+        arena.appendChild(k); setTimeout(() => k.remove(), 900);
+      }
+    }
+    // emit grouped floating numbers ~every 120ms of game time
+    if (t - last >= 0.12) {
+      last = t;
+      for (const type of ['physical','magic','true']) {
+        if (bucket[type] < 1) continue;
+        const n = document.createElement('div');
+        n.className = `dmgnum ${type} ${bucket[type] > 400 ? 'big' : ''}`;
+        n.textContent = fmt(bucket[type]);
+        n.style.left = (50 + (Math.random()*30 - 15)) + '%';
+        n.style.top = (95 + Math.random()*90) + 'px';
+        n.style.fontSize = Math.min(30, 13 + Math.sqrt(bucket[type]) / 2.2) + 'px';
+        arena.appendChild(n); setTimeout(() => n.remove(), 1000);
+        bucket[type] = 0;
+      }
+      dummy.classList.remove('hit'); void dummy.offsetWidth; dummy.classList.add('hit');
+    }
+    $('#tot').textContent = fmt(total);
+    $('#clock').textContent = t.toFixed(2) + 's';
+    if (t < res.seconds) animHandle = requestAnimationFrame(frame);
+    else setTimeout(finish, 500);
+  }
+  animHandle = requestAnimationFrame(frame);
+}
+
+function finish(){
+  if (animHandle) cancelAnimationFrame(animHandle);
+  animHandle = null;
+  if (S.finished) return;
+  S.finished = true;
+  const res = S.result;
+  const best = store.get('best') || 0;
+  const isBest = res.total > best;
+  if (isBest) store.set('best', Math.round(res.total));
+  const snapshot = { champ: S.champ.id, items: S.items.map(i => i.id), rerolls: S.rerolls, total: Math.round(res.total) };
+  if (S.mode === 'daily') store.set('daily:'+today(), snapshot);
+  renderSidebar();
+  showResults(res, isBest);
+}
+
+const QUOTES = [
+  [0, "This build is too meta. Where's the vision?"],
+  [2, "Hmm, interesting. Slightly abstract. I respect it."],
+  [4, "Now THIS is a build. Nobody's ever tried this."],
+  [6, "Full abstract. The potential damage is insane."],
+];
+
+function showResults(res, isBest){
+  const tier = P.tierFor(res.total);
+  const abs = P.abstractness(S.champ, S.items);
+  const quote = QUOTES.filter(q => abs >= q[0]).pop()[1];
+  const typeColor = {physical:'var(--phys)', magic:'var(--magic)', true:'var(--true)'};
+  const srcType = {};
+  for (const h of res.hits) srcType[h.src] = srcType[h.src] || {physical:0, magic:0, true:0}, srcType[h.src][h.type] += h.amt;
+  const dominant = s => Object.entries(srcType[s]).sort((a,b)=>b[1]-a[1])[0][0];
+  const sources = Object.entries(res.bySource).sort((a,b)=>b[1]-a[1]);
+  const max = sources[0] ? sources[0][1] : 1;
+  const pct = k => (res.byType[k] / res.total * 100) || 0;
+  const s = res.stats;
+
+  $('#stage').innerHTML = `
+    <div class="result-hero">
+      <div class="badge" style="--c:${tier.color}">${tier.name.toUpperCase()}</div>
+      <div>
+        <div class="muted" style="font-size:13px;letter-spacing:.12em;text-transform:uppercase">${S.mode === 'daily' ? 'Daily ' + today() : 'Free Play'} · ${S.champ.name}</div>
+        <div class="bignum">${fmt(res.total)}<small>damage in 10s</small></div>
+        <div class="facts">
+          <span><b>${fmt(res.total / res.seconds)}</b> DPS</span>
+          <span><b>${(res.total / P.DUMMY.hp).toFixed(2)}×</b> dummies</span>
+          <span>First kill <b>${res.firstKill !== null ? res.firstKill.toFixed(2) + 's' : 'never'}</b></span>
+          <span title="Real = ability formulas read from Riot's game files. Estimated = class-based approximation.">Abilities <b>${res.realKit ? 'real game data' : 'estimated'}</b></span>
+          ${isBest ? '<span style="color:var(--good)"><b style="color:var(--good)">★ New personal best</b></span>' : ''}
+        </div>
+      </div>
+    </div>
+    <div class="res-grid">
+      <div class="panel">
+        <h3>Damage Breakdown</h3>
+        <div class="split">${['physical','magic','true'].map(k => `<div style="width:${pct(k)}%;background:${typeColor[k]}"></div>`).join('')}</div>
+        <div class="legend" style="margin:0 0 10px">${['physical','magic','true'].map(k => `<span style="--c:${typeColor[k]}">${pct(k).toFixed(0)}% ${k}</span>`).join('')}</div>
+        <div class="breakdown">${sources.map(([name, v]) => `
+          <div class="brow"><span>${name}</span><div class="track"><div style="width:${v/max*100}%;background:${typeColor[dominant(name)]}"></div></div><span class="v">${fmt(v)}</span></div>`).join('')}
+        </div>
+      </div>
+      <div style="display:grid;gap:16px;align-content:start">
+        <div class="panel">
+          <h3>Bausffs Meter</h3>
+          <div class="meter">${Array.from({length:6}, (_, i) => `<i class="${i < abs ? 'on' : ''}"></i>`).join('')}</div>
+          <div class="muted" style="font-size:13px">${abs}/6 off-script items</div>
+          <p class="quote">“${quote}”</p>
+        </div>
+        <div class="panel">
+          <h3>Level 18 Stats</h3>
+          <div class="statgrid">
+            <div><span>Attack Damage</span>${fmt(s.ad)}</div><div><span>Ability Power</span>${fmt(s.ap)}</div>
+            <div><span>Attack Speed</span>${s.as.toFixed(2)}</div><div><span>Crit Chance</span>${fmt(s.crit*100)}%</div>
+            <div><span>Health</span>${fmt(s.hp)}</div><div><span>Ability Haste</span>${fmt(s.ah)}</div>
+            <div><span>Armor Pen</span>${fmt(s.armorPen*100)}% + ${fmt(s.leth)}</div><div><span>Magic Pen</span>${fmt(s.magicPen*100)}% + ${fmt(s.mpenFlat)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="again">${S.mode === 'daily' ? 'Free Play' : 'Play Again'}</button>
+      <button class="btn" id="share">Copy result</button>
+    </div>`;
+  $('#again').onclick = () => newGame('free');
+  $('#share').onclick = () => share(res, tier, abs);
+}
+
+function showDailyDone(prev){
+  const champ = DATA.champions.find(c => c.id === prev.champ);
+  const tier = P.tierFor(prev.total);
+  $('#stage').innerHTML = `
+    <div class="stage-head"><div><h2>Daily complete</h2><p>You already played today's daily. A new one unlocks tomorrow.</p></div></div>
+    <div class="result-hero">
+      <div class="badge" style="--c:${tier.color}">${tier.name.toUpperCase()}</div>
+      <div><div class="muted">${champ ? champ.name : prev.champ}</div><div class="bignum">${fmt(prev.total)}<small>damage</small></div></div>
+    </div>
+    <div class="actions"><button class="btn primary" id="again">Free Play</button></div>`;
+  $('#again').onclick = () => newGame('free');
+}
+
+function share(res, tier, abs){
+  const lines = [
+    `Potenshall Damage ${S.mode === 'daily' ? today() : '(free play)'} · Patch ${DATA.patch}`,
+    `${S.champ.name}: ${S.items.map(i => i.name).join(', ')}`,
+    `${fmt(res.total)} damage in 10s · ${tier.name} · Bausffs Meter ${'🟪'.repeat(abs)}${'⬛'.repeat(6-abs)}`,
+  ].join('\n');
+  const done = () => toast('Copied to clipboard');
+  if (navigator.clipboard) navigator.clipboard.writeText(lines).then(done, () => prompt('Copy your result:', lines));
+  else prompt('Copy your result:', lines);
+}
+
+function toast(msg){ const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 1800); }
+
+// ---------- Boot ----------
+document.querySelectorAll('#modes button').forEach(b => b.onclick = () => { if (animHandle) cancelAnimationFrame(animHandle); newGame(b.dataset.mode); });
+Promise.all([P.loadPatchData(), fetch("stacks.json").then(r => r.ok ? r.json() : null).catch(() => null)]).then(([d, stacks]) => {
+  DATA = d; STACKS = stacks;
+  $('#patch').textContent = d.patch;
+  window.__POTENSHALL_DATA = d;
+  newGame('daily');
+}).catch(err => {
+  console.error(err);
+  $('#stage').innerHTML = `<div class="loading"><div><h2 style="font-family:Cinzel">Couldn't reach Data Dragon</h2><p class="muted">Check your connection and reload. (${err.message})</p></div></div>`;
+});
+})();
+</script>
+</body>
+</html>
