@@ -114,10 +114,10 @@
   const PASSIVES = {
     "rabadon's deathcap": { apMult: 1.30, tip: 'Magical Opus: +30% total AP' },
     "overlord's bloodmail": { adPerBonusHp: 0.025, tip: 'Tyranny: AD from bonus HP' },
-    "riftmaker": { apPerBonusHp: 0.02, ramp: { per: 2, cap: 8 }, tip: 'Void Corruption: ramps up to +8% damage' },
+    "riftmaker": { apPerBonusHp: 0.02, ramp: { per: 2, cap: 8 }, tip: 'Void Corruption: +8% damage (assumed fully stacked)' },
     "archangel's staff": { apPerBonusMana: 0.01, tip: 'Awe: AP from bonus mana' },
     "manamune": { muramana: true, tip: 'Assumed stacked into Muramana' },
-    "liandry's torment": { burn: 'liandry', ramp: { per: 2, cap: 6 }, tip: 'Torment: 2% max HP burn' },
+    "liandry's torment": { burn: 'liandry', ramp: { per: 2, cap: 6 }, tip: 'Torment: 2% max HP burn; Suffering +6% damage (fully stacked)' },
     "blackfire torch": { burn: 'blackfire', apMultAdd: 0.04, tip: 'Baleful Blaze burn' },
     "sunfire aegis": { immolate: { base: 20, bhp: 0.015 }, tip: 'Immolate: 20 + 1.5% bonus HP per second' },
     "hollow radiance": { immolate: { base: 10, bhp: 0.0175 }, tip: 'Immolate: 10 + 1.75% bonus HP per second' },
@@ -125,8 +125,8 @@
     "heartsteel": { heartsteel: true, tip: 'Colossal Consumption: 6% max HP hit' },
     "nashor's tooth": { onHit: { magic: 15, ap: 0.15 }, tip: 'On-hit 15 + 15% AP' },
     "wit's end": { onHit: { magic: 45 }, tip: 'On-hit magic' },
-    "guinsoo's rageblade": { onHit: { magic: 30 }, asBonus: 32, guinsoo: true, tip: 'Phantom hits double on-hit' },
-    "terminus": { onHit: { magic: 30 }, pen: 0.25, tip: 'On-hit + pen building to 30%' },
+    "guinsoo's rageblade": { onHit: { magic: 30 }, asBonus: 32, guinsoo: true, tip: 'Fully stacked (+32% AS): every 3rd attack applies on-hit twice' },
+    "terminus": { onHit: { magic: 30 }, pen: 0.30, tip: 'On-hit + 30% pen (fully stacked)' },
     "blade of the ruined king": { onHit: { curHpMelee: 0.09, curHpRanged: 0.06 }, tip: '% current HP on-hit' },
     "titanic hydra": { onHit: { ownHpMelee: 0.01, ownHpRanged: 0.005 }, titanic: true, tip: '1% max HP on-hit; active 4% max HP' },
     "kraken slayer": { everyN: { n: 3, phys: 150, missingAmp: 0.75, rangedMult: 0.8 }, tip: 'Every 3rd attack (80% ranged)' },
@@ -151,13 +151,14 @@
     "hextech rocketbelt": { rocketbelt: true, tip: 'Opening missile volley' },
     "malignance": { malignance: true, ultHaste: 20, tip: 'Hatefog burn on ult; +20 ultimate haste' },
     "bastionbreaker": { bastion: true, tip: 'Shaped Charge: 40 + 150% lethality true damage on an ability hit, 20s cooldown (half for ranged)' },
-    "spear of shojin": { ahBonus: 25, abilityRamp: 0.03, tip: 'Ability dmg ramps to +12%' },
+    "spear of shojin": { ahBonus: 25, abilityRamp: 0.03, tip: 'Focused Will: +12% ability and passive damage (fully stacked)' },
     "actualizer": { ahBonus: 20, abilityAmp: 0.15, tip: 'Empowered ability damage' },
     "navori flickerblade": { ahBonus: 20, tip: 'Attacks shorten cooldowns' },
     "endless hunger": { ahPerBonusAd: 0.12, tip: 'Haste from bonus AD' },
-    "yun tal wildarrows": { critBonus: 20, asBonus: 18, tip: 'Builds crit + Flurry' },
-    "experimental hexplate": { asBonus: 24, ultHaste: 30, tip: 'Overdrive attack speed; +30 ultimate haste' },
-    "fiendhunter bolts": { fiendhunter: true, ultHaste: 30, tip: 'After your ultimate: 3 attacks +50% AS, crit at 75% (real crits +10% true); +30 ultimate haste' },
+    "yun tal wildarrows": { critBonus: 25, asBonus: 18, tip: '+25% crit (fully stacked) + Flurry' },
+    "experimental hexplate": { hexplate: true, ultHaste: 30, tip: 'Overdrive: +50% AS (25% ranged) for 8s after your ultimate, 30s cooldown; +30 ultimate haste' },
+    "fiendhunter bolts": { fiendhunter: true, ultHaste: 30, tip: 'After your ultimate (45s cooldown): 3 attacks +50% AS that crit for 80% (real crits +15% true); +30 ultimate haste' },
+    "rod of ages": { maxStacks: { hp: 100, mana: 300, ap: 30 }, tip: 'Timeless: fully stacked (+100 HP, +300 mana, +30 AP)' },
     "hexoptics c44": { attackAmpRanged: 0.10, attackAmpMelee: 0.04, tip: 'Long-range attack amp' },
     "swiftmarch": { adaptive: 21, tip: 'Noxian Fervor: 5% of move speed as adaptive force' },
     "sundered sky": { sundered: true, tip: 'Guaranteed crit every 10s' },
@@ -224,6 +225,7 @@
       }
       const p = PASSIVES[it.name.toLowerCase()];
       if (p) fx.push({ ...p, item: it.name });
+      if (p && p.maxStacks) for (const [k, v] of Object.entries(p.maxStacks)) b[k] += v; // stacking items start fully stacked
     }
     const has = key => fx.filter(f => f[key] !== undefined && f[key] !== false);
     const sum = key => has(key).reduce((acc, f) => acc + f[key], 0);
@@ -310,7 +312,7 @@
 
     const hits = []; const bySource = {}; const byType = { physical: 0, magic: 0, true: 0 };
     let dummyHp = DUMMY.hp, kills = 0, firstKill = null, total = 0;
-    let cleaverStacks = 0, bloodStacks = 0, shojinStacks = 0, malignanceShred = 0;
+    let cleaverStacks = 0, bloodStacks = 0, malignanceShred = 0;
 
     const comboCD = pr.cd * 100 / (100 + st.ah);
     const comboDamage = () => {
@@ -326,9 +328,10 @@
       let amt = raw;
       if (P && P.amp) amt *= P.amp(kind, type, pctx(t));
       if (P && P.magicEcho && type === 'magic') record(t, P.magicEcho * raw, 'true', PSRC);
-      const ramp = has('ramp').reduce((acc, f) => acc + Math.min(f.ramp.cap, f.ramp.per * Math.floor(t + 1)), 0);
+      const ramp = has('ramp').reduce((acc, f) => acc + f.ramp.cap, 0); // in-combat ramps assumed fully stacked
       amt *= 1 + ramp / 100;
-      if (kind === 'ability') amt *= (1 + sum('abilityAmp') * (t < 8 ? 1 : 0)) * (1 + 0.03 * shojinStacks * (hasAny('abilityRamp') ? 1 : 0));
+      if (kind === 'ability') amt *= 1 + sum('abilityAmp') * (t < 8 ? 1 : 0);
+      if (kind === 'ability' || kind === 'passive') amt *= 1 + sum('abilityRamp') * 4; // Spear of Shojin, fully stacked: ability and passive damage
       if (kind === 'attack' || kind === 'split') amt *= 1 + (ch.ranged ? sum('attackAmpRanged') : sum('attackAmpMelee'));
       if (type === 'magic') amt *= 1 + sum('magicAmp');
       if ((type === 'magic' || type === 'true') && hasAny('shadowflame') && dummyHp < 0.4 * DUMMY.hp) amt *= 1.2;
@@ -375,10 +378,15 @@
     let pHits = 0, pAbilities = 0, pArmed = 0, pTimedArmed = false, pTimedReady = P && P.timedAuto ? (P.timedAuto.start || 0) : Infinity;
     let pAbilityReady = 0, pAfterReady = 0, pHitsReady = 0, pNReady = 0, pAutoNReady = 0, pStack = { n: 0, until: -1 };
     let pAuras = P && P.aura ? -1 : null;
+    let pOnHits = 0;
+    const phantomHit = t => { // a repeated on-hit (Guinsoo) adds on-hit stacks but isn't a new action
+      pOnHits++;
+      if (P.everyNHits && pOnHits % P.everyNHits.n === 0 && t >= pHitsReady) { fireP(t, P.everyNHits); pHitsReady = t + (P.everyNHits.cd || 0); }
+    };
     const countHit = t => {
-      pHits++;
+      pHits++; pOnHits++;
       if (P && P.aura && pHits >= (P.aura.hits || 1)) pAuras = t + (P.aura.linger || 4);
-      if (P && P.everyNHits && pHits % P.everyNHits.n === 0 && t >= pHitsReady) {
+      if (P && P.everyNHits && pOnHits % P.everyNHits.n === 0 && t >= pHitsReady) {
         fireP(t, P.everyNHits); pHitsReady = t + (P.everyNHits.cd || 0);
       }
       if (P && P.stackDot) { pStack.n = Math.min(P.stackDot.max, pStack.n + 1); pStack.until = t + P.stackDot.dur; }
@@ -431,7 +439,6 @@
       }
       if (spellblade && t >= sbReadyAt) { sbArmed = true; sbReadyAt = t + 1.5; }
       for (const f of has('burn')) burnUntil[f.burn] = t + 3;
-      if (hasAny('abilityRamp')) shojinStacks = Math.min(4, shojinStacks + 1);
       if (hasAny('luden') && t >= ludenReady) { ludenReady = t + 12; deal(t, (75 + 0.05 * st.ap) * 2, 'magic', "Luden's Echo", 'item'); } // 1 bolt + 5 repeats at 20%
       eclipseHit(t);
       // Shaped Charge (game data): a damaging ability adds 40 + 150% lethality true damage (ranged 50%), 20s cooldown.
@@ -461,19 +468,21 @@
       }
     };
 
+    let onHitCount = 0;
     const basicAttack = (t) => {
       autoCount++;
       const pN = P && P.everyN && autoCount % P.everyN.n === 0 && t >= pAutoNReady ? P.everyN : null;
       let mult = P && P.noCrit ? 1 : 1 + st.crit * (st.critMult - 1);
-      let trueBonus = 0;
+      let trueBonus = 0, fiendShare = 0;
       if (pN && pN.crit) mult = Math.max(st.critMult, pN.minCrit || 0); // e.g. Jhin's 4th shot always crits
       else if (hasAny('sundered') && t >= sunderedReady) { sunderedReady = t + 10; sunderedShare = 1 - mult / st.critMult; mult = st.critMult; }
       else if (empoweredAutos > 0) {
         // Fiendhunter Bolts Opening Barrage (game data): attacks that wouldn't crit crit for 75% of crit damage; ones that
         // would crit deal full crit damage plus 10% bonus true damage. Expected value over your crit chance:
         empoweredAutos--;
-        mult = (1 - st.crit) * (1 + 0.75 * (st.critMult - 1)) + st.crit * st.critMult;
-        trueBonus = st.crit * 0.1 * st.totalAD * st.critMult;
+        const emp = (1 - st.crit) * (1 + 0.8 * (st.critMult - 1)) + st.crit * st.critMult;
+        fiendShare = 1 - mult / emp; mult = emp; // the part above an average attack is shown as Fiendhunter Bolts
+        trueBonus = st.crit * 0.15 * st.totalAD * st.critMult;
       }
       let autoDmg = st.totalAD * mult * pr.autoAmp;
       if (P && P.autoMult != null) autoDmg *= typeof P.autoMult === 'function' ? P.autoMult(pctx(t)) : P.autoMult;
@@ -483,6 +492,7 @@
       }
       // Show Sundered Sky's guaranteed crit as its own line: the part above an average attack.
       if (sunderedShare > 0) { deal(t, autoDmg * sunderedShare, 'physical', 'Sundered Sky', 'split'); autoDmg *= 1 - sunderedShare; sunderedShare = 0; }
+      if (fiendShare > 0) { deal(t, autoDmg * fiendShare, 'physical', 'Fiendhunter Bolts', 'split'); autoDmg *= 1 - fiendShare; }
       deal(t, autoDmg, 'physical', 'Basic Attacks', 'attack');
       if (!openerDone) {
         openerDone = true;
@@ -507,15 +517,11 @@
         const e = empowered; empowered = null;
         deal(t, (e.adRatio || 0) * st.totalAD + (e.bonusAdRatio || 0) * st.bonusAD + (e.apRatio || 0) * st.ap + (e.flat || 0), e.type, e.label, 'ability');
       }
-      for (const sp of everyN) {
-        const m = sp.mech;
-        if (autoCount % m.n !== 0) continue;
-        const raw = Math.max(m.floor || 0, (m.pctTargetMaxHp || 0) * DUMMY.hp + (m.flat || 0));
-        deal(t, raw, m.type, `${sp.slot} · ${labels[sp.slot] || sp.name}`, 'onhit');
-      }
-
       let onHitTimes = 1 + pExtraOnHit;
-      if (hasAny('guinsoo') && autoCount % 3 === 0) onHitTimes++;
+      // Guinsoo's Rageblade (fully stacked): every 3rd attack applies on-hit effects twice, including on-hit
+      // stacks like Vayne's Silver Bolts and Kai'Sa's plasma.
+      const phantom = hasAny('guinsoo') && autoCount % 3 === 0 ? 1 : 0;
+      onHitTimes += phantom;
       if (sbArmed) {
         sbArmed = false;
         const v = spellbladeValue(spellblade);
@@ -523,6 +529,16 @@
         if (spellblade.doubleOnHit) onHitTimes++;
       }
       onHitEffects(t, onHitTimes);
+      for (let k = 0; k <= phantom; k++) {
+        onHitCount++;
+        if (k > 0 && P) phantomHit(t);
+        for (const sp of everyN) {
+          const m = sp.mech;
+          if (onHitCount % m.n !== 0) continue;
+          const raw = Math.max(m.floor || 0, (m.pctTargetMaxHp || 0) * DUMMY.hp + (m.flat || 0));
+          deal(t, raw, m.type, `${sp.slot} · ${labels[sp.slot] || sp.name}`, 'onhit');
+        }
+      }
 
       for (const f of has('everyN')) {
         const e = f.everyN;
@@ -559,12 +575,13 @@
     const mitigation = type => type === 'true' ? 1
       : type === 'magic' ? 100 / (100 + Math.max(0, DUMMY.mr * (1 - 0.075 * bloodStacks) * st.mpenKeep - st.mpenFlat - malignanceShred))
       : 100 / (100 + Math.max(0, DUMMY.armor * (1 - 0.06 * cleaverStacks) * st.arpenKeep - st.leth));
-    let lastUltAt = null; const summons = []; let empLastHits = 0;
+    let lastUltAt = null; const summons = []; let empLastHits = 0, fiendReady = 0, hexReady = 0, hexUntil = -1;
     const onUltimate = t => {
       lastUltAt = t;
       if (hasAny('malignance')) { malignanceUntil = t + 3; malignanceShred = 10; }
       if (hasAny('zeke')) zekeUntil = t + 5;
-      if (hasAny('fiendhunter')) empoweredAutos = 3;
+      if (hasAny('fiendhunter') && t >= fiendReady) { empoweredAutos = 3; fiendReady = t + 45; }
+      if (hasAny('hexplate') && t >= hexReady) { hexUntil = t + 8; hexReady = t + 30; }
     };
     // Abilities flagged 'first' (e.g. Zed R) are cast before anything else.
     const castOrder = castable ? [...castable].sort((a, b) => (b.mech && b.mech.first ? 1 : 0) - (a.mech && a.mech.first ? 1 : 0)) : [];
@@ -640,6 +657,12 @@
         // Summons (Zyra plants): some abilities grow plants that attack for a while.
         if (P && P.summon && P.summon.from[sp.slot]) for (let i = 0; i < P.summon.from[sp.slot]; i++) summons.push(t + P.summon.dur);
         onAbilityHit(t, t >= bastionReady, { raw: dmg, type: sp.type, label });
+        // Abilities that apply on-hit effects (Ezreal Q, Gangplank Q, Irelia Q...); some also trigger Spellblade right away.
+        const ohA = P && P.onHitAbility && P.onHitAbility[sp.slot];
+        if (ohA) {
+          if (ohA.spellblade && sbArmed) { sbArmed = false; deal(t, spellbladeValue(spellblade), spellblade.type, spellblade.item, 'onhit'); }
+          onHitEffects(t, 1);
+        }
         if (t >= bastionReady) bastionReady = t + 3;
         if (sp.slot === 'R') onUltimate(t);
         ready[sp.slot] = t + sp.cooldown * 100 / (100 + st.ah + (sp.slot === 'R' ? sum('ultHaste') : 0));
@@ -649,10 +672,18 @@
     };
 
     // Event schedule
-    const attackInterval = 1 / (st.as * pr.uptime);
-    // Bonus attack speed against low-health targets (Warwick W: +110% below 50% HP), using the champion's AS ratio.
+    // Temporary bonus attack speed, scaled by the champion's AS ratio: Warwick W below 50% HP, Experimental Hexplate's
+    // Overdrive, Fiendhunter Bolts' empowered attacks.
     const lowHp = P && P.lowHpAS;
-    const lowHpInterval = lowHp ? 1 / (Math.min(2.5, st.as + ((kit && kit.asRatio) ?? ch.stats.attackspeed) * lowHp.as / 100) * pr.uptime) : null;
+    const asRatioNow = (kit && kit.asRatio) ?? ch.stats.attackspeed;
+    const gapAt = t => {
+      let bonus = 0;
+      if (lowHp && dummyHp < lowHp.below * DUMMY.hp) bonus += lowHp.as;
+      if (t <= hexUntil) bonus += ch.ranged ? 25 : 50;
+      if (empoweredAutos > 0) bonus += 50;
+      const as = P && P.fixedAS ? st.as : Math.min(2.5, st.as + asRatioNow * bonus / 100);
+      return 1 / (as * pr.uptime);
+    };
     let nextAuto = 0.1, nextCombo = 0, comboQueue = [], ultDone = false, nextDespair = 0;
     // periodic may be one timer or a list (e.g. a passive plus an ability modeled as a timer). No 'every' = fires once.
     const pPeriodics = P ? [].concat(P.periodic || []).map(pe => ({ pe, at: pe.start || 0 })) : [];
@@ -663,11 +694,16 @@
     // Ultimates that are pure buffs or utility are never 'cast' for damage; they're used at the start of the fight,
     // so post-ultimate item effects (Fiendhunter Bolts, Malignance, Zeke's) still trigger.
     const ultCast = castOrder.some(s => s.slot === 'R' && (s.damaging || (s.mech && SPELL_MECHS.has(s.mech.kind))));
-    let ultFromStart = !!spells && !(P && P.ownKit) && !ultCast;
+    // Recast whenever the ultimate comes off cooldown (ultimate haste from items included).
+    const rSpell = spells ? spells.find(s => s.slot === 'R') : null;
+    let ultBuffAt = !!spells && !(P && P.ownKit) && !ultCast ? 0.1 : Infinity;
 
     for (let t = 0; t < T - 1e-9; t = +(t + DT).toFixed(4)) {
       if (markState && t >= markState.until) { const mk = markState; markState = null; deal(t, mk.base + mk.pct * mk.sum, mk.type, mk.label, 'ability'); }
-      if (ultFromStart && t >= 0.1) { ultFromStart = false; onUltimate(t); }
+      if (t >= ultBuffAt) {
+        onUltimate(t);
+        ultBuffAt = rSpell && rSpell.cooldown > 0 ? t + rSpell.cooldown * 100 / (100 + st.ah + sum('ultHaste')) : Infinity;
+      }
       if (spells) tryCastRealSpell(t);
       // Channels and multi-hit abilities: each tick is real ability damage (item amps apply, burns stay lit).
       for (let i = spellQueue.length - 1; i >= 0; i--) {
@@ -710,8 +746,7 @@
       }
       if (t >= nextAuto) {
         basicAttack(t);
-        const baseGap = lowHp && dummyHp < lowHp.below * DUMMY.hp ? lowHpInterval : attackInterval;
-        let gap = empoweredAutos > 0 ? baseGap / 1.5 : baseGap;
+        let gap = gapAt(t);
         if (P && P.magazine && autoCount % P.magazine.size === 0) {
           const rl = typeof P.magazine.reload === 'function' ? P.magazine.reload(pctx(t)) : P.magazine.reload;
           gap = Math.max(gap, rl);
@@ -1301,12 +1336,12 @@
         { every: 1, start: 1.2, label: 'Spiderlings', kind: 'ability', type: 'magic', dmg: c => 3 * (40 + 0.15 * c.ap) },
       ] },
     Evelynn: { name: 'Demon Shade', note: 'E deals % max HP', periodic: { every: 7, start: 0.3, label: 'E · Whiplash', kind: 'ability', type: 'magic', dmg: c => 130 + (0.03 + 0.015 * c.ap / 100) * c.tmax } },
-    Ezreal: { name: 'Rising Spell Force', note: 'Attack speed from ability hits', stats: () => ({ as: 45 }) },
+    Ezreal: { name: 'Rising Spell Force', note: 'Attack speed from ability hits; Q applies on-hit and Spellblade', stats: () => ({ as: 45 }), onHitAbility: { Q: { spellblade: true } } },
     Fiddlesticks: { name: 'A Harmless Scarecrow', note: 'Q deals % current HP', periodic: { every: 10, start: 0.5, label: 'Q · Terrify', kind: 'ability', type: 'magic', dmg: c => (0.10 + 0.02 * c.ap / 100) * c.thp } },
     Fiora: { name: "Duelist's Dance", note: 'Vitals: % max HP true damage', periodic: { every: 4, start: 0.5, type: 'true', dmg: c => (0.03 + 0.045 * c.bad / 100) * c.tmax } },
     Fizz: none('Nimble Fighter'),
     Galio: { name: 'Colossal Smash', note: 'Empowered attack every few seconds', timedAuto: { every: 5, type: 'magic', dmg: c => 200 + c.ad + 0.5 * c.ap + 0.6 * c.bmr } },
-    Gangplank: { name: 'Trial by Fire', note: 'Burning true-damage attack', timedAuto: { every: 12, type: 'true', dot: 2.5, dmg: c => 310 + c.bad } },
+    Gangplank: { name: 'Trial by Fire', note: 'Burning true-damage attack; Q applies on-hit and Spellblade', onHitAbility: { Q: { spellblade: true } }, timedAuto: { every: 12, type: 'true', dot: 2.5, dmg: c => 310 + c.bad } },
     Garen: none('Perseverance', 'Regeneration only'),
     Gnar: none('Rage Gene'),
     Gragas: none('Happy Hour', 'Healing only'),
@@ -1318,7 +1353,7 @@
     Hwei: { name: 'Signature of the Visionary', note: 'Second spell detonates his mark', everyNAbility: { n: 2, type: 'magic', dmg: c => 285 + 0.35 * c.ap } }, // game files: 285 + 35% AP at 18
     Illaoi: { name: 'Prophet of an Elder God', note: 'Tentacle slams', onAbility: { cd: 4, type: 'physical', dmg: c => 162 + 1.2 * c.ad },
       periodic: { every: 6, start: 2, type: 'physical', dmg: c => 162 + 1.2 * c.ad } },
-    Irelia: { name: 'Ionian Fervor', note: 'Max stacks: attack speed + on-hit', stats: () => ({ as: 40 }), onHit: { type: 'magic', dmg: c => 61 + 0.2 * c.bad } },
+    Irelia: { name: 'Ionian Fervor', note: 'Max stacks: attack speed + on-hit; Q applies on-hit', onHitAbility: { Q: {} }, stats: () => ({ as: 40 }), onHit: { type: 'magic', dmg: c => 61 + 0.2 * c.bad } },
     Ivern: none('Friend of the Forest'),
     Janna: { name: 'Tailwind', note: 'Bonus damage from move speed', onHit: { type: 'magic', dmg: () => 25 } },
     JarvanIV: { name: 'Martial Cadence', note: '8% current HP on the first attack', timedAuto: { every: 6, type: 'physical', dmg: c => 0.08 * c.thp } },
@@ -1482,8 +1517,8 @@
     Xayah: none('Clean Cuts', 'Feathers are counted in her E'),
     Xerath: none('Mana Surge'),
     XinZhao: { name: 'Determination', note: 'Every 3rd attack', everyN: { n: 3, type: 'physical', dmg: c => 0.45 * c.ad } },
-    Yasuo: { name: 'Way of the Wanderer', note: 'Double crit chance, crits deal 10% less', critChanceMult: 2, critScale: 0.9 },
-    Yone: { name: 'Way of the Hunter', note: 'Double crit chance, crits deal 10% less', critChanceMult: 2, critScale: 0.9 },
+    Yasuo: { name: 'Way of the Wanderer', note: 'Double crit chance, crits deal 10% less; Q applies on-hit', onHitAbility: { Q: {} }, critChanceMult: 2, critScale: 0.9 },
+    Yone: { name: 'Way of the Hunter', note: 'Double crit chance, crits deal 10% less; Q applies on-hit', onHitAbility: { Q: {} }, critChanceMult: 2, critScale: 0.9 },
     Yorick: { name: 'Shepherd of Souls', note: 'Mist Walkers attack', periodic: { every: 1, start: 3, type: 'physical', dmg: c => 2 * (25 + 0.15 * c.ad) } },
     Yunara: { name: 'Vow of the First Lands', note: 'Crits deal bonus magic damage', onHit: { type: 'magic', dmg: c => c.crit * 0.3 * c.ad } },
     Yuumi: { name: "Bop 'n' Block", note: 'Empowered attack', timedAuto: { every: 8, type: 'magic', dmg: c => 100 + 0.15 * c.ap } },
