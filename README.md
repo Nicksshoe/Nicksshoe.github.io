@@ -56,4 +56,4 @@ Daily (per date), Free Play (per patch; past patches stay browsable from the pat
 
 ## Languages
 
-The ⚙ menu switches the interface between the 20 most spoken languages (English by default; the choice is remembered per browser). UI text lives in `i18n.js`; champion, item and ability names come from Data Dragon in the chosen language where Riot publishes it (11 of the 20), otherwise English. Game logic always uses the English data, so drafts and leaderboard verification are the same in every language.
+The ⚙ menu switches the interface between English, German, Russian, Spanish, Portuguese, Dutch and French (English by default; the choice is remembered per browser, and a saved language that is no longer offered falls back to English). UI text lives in `i18n.js`; champion, item and ability names come from Data Dragon in the chosen language where Riot publishes it (all but Dutch), otherwise English. Game logic always uses the English data, so drafts and leaderboard verification are the same in every language.
