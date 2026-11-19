@@ -384,6 +384,7 @@
     };
 
     function record(t, amt, type, src) {
+      if (markState && t <= markState.until && src !== markState.label) markState.sum += amt;
       total += amt; byType[type] += amt; bySource[src] = (bySource[src] || 0) + amt;
       dummyHp -= amt;
       const killed = dummyHp <= 0;
@@ -548,7 +549,8 @@
         baseHp: DUMMY.baseHp, bonusHp: DUMMY.hp - DUMMY.baseHp },
       stacks: stackInfo.counter ?? 0,
     });
-    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute']);
+    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute', 'mark']);
+    let markState = null; // Zed-style mark: stores damage dealt until it pops
     const spellQueue = []; // scheduled ability hits/ticks: { at, raw(), type, label }
     // Expected share of a hit that gets through the dummy's resists right now (used to time executes).
     const mitigation = type => type === 'true' ? 1
@@ -559,9 +561,11 @@
       if (hasAny('zeke')) zekeUntil = t + 5;
       if (hasAny('fiendhunter')) empoweredAutos = 3;
     };
+    // Abilities flagged 'first' (e.g. Zed R) are cast before anything else.
+    const castOrder = castable ? [...castable].sort((a, b) => (b.mech && b.mech.first ? 1 : 0) - (a.mech && a.mech.first ? 1 : 0)) : [];
     const tryCastRealSpell = (t) => {
       if (t < castLock) return;
-      for (const sp of castable) {
+      for (const sp of castOrder) {
         if ((ready[sp.slot] || 0) > t + 1e-9) continue;
         if (sp.mech && sp.mech.kind === 'empowerAuto') {
           if (empowered) continue; // don't waste it before the armed attack lands
@@ -577,7 +581,10 @@
           const ev = name => { const v = root.Potenshall.Abilities.evalCalc(name, sp.sp, { ...spellCtx(), rank: sp.rank }); return Number.isFinite(v) && v > 0 ? Math.min(v, 6000) : 0; };
           let first = 0;
           let resetNow = false;
-          if (m.kind === 'execute') {
+          if (m.kind === 'mark') {
+            const base = root.Potenshall.Abilities.evalCalc(sp.calc, sp.sp, { ...spellCtx(), rank: sp.rank });
+            markState = { until: t + (m.duration || 3), sum: 0, base: Number.isFinite(base) ? base : 0, pct: m.pct || 0, type: m.type, label };
+          } else if (m.kind === 'execute') {
             // Held until it executes or kills (a real player waits for the moment), fired anyway at 'latest'.
             const evx = c => root.Potenshall.Abilities.evalCalc(c, sp.sp, { ...spellCtx(), rank: sp.rank });
             const miss = DUMMY.hp - dummyHp;
@@ -635,6 +642,7 @@
     if (spells || (P && P.ownKit)) nextCombo = Infinity;
 
     for (let t = 0; t < T - 1e-9; t = +(t + DT).toFixed(4)) {
+      if (markState && t >= markState.until) { const mk = markState; markState = null; deal(t, mk.base + mk.pct * mk.sum, mk.type, mk.label, 'ability'); }
       if (spells) tryCastRealSpell(t);
       // Channels and multi-hit abilities: each tick is real ability damage (item amps apply, burns stay lit).
       for (let i = spellQueue.length - 1; i >= 0; i--) {
@@ -768,7 +776,14 @@
   function createDraft(data, seed) {
     const rng = mulberry32(hashStr(seed));
     const d = { seed, rerolls: DRAFT.REROLLS, champ: null, items: [], offers: [], log: [] };
-    const itemOffers = (extra = []) => sample(rng, data.items, DRAFT.ITEM_CHOICES, new Set([...extra, ...d.items.map(i => i.id)]));
+    // Unique item groups (itemgroups.js, from the game files): once a group is full, e.g. one Last Whisper item or one
+    // pair of boots, the other items in it are no longer offered.
+    const itemOffers = (extra = []) => {
+      const groups = root.Potenshall.ItemGroups || {}, owned = {};
+      for (const it of d.items) for (const [g] of groups[it.id] || []) owned[g] = (owned[g] || 0) + 1;
+      const allowed = data.items.filter(it => !(groups[it.id] || []).some(([g, max]) => (owned[g] || 0) >= max));
+      return sample(rng, allowed, DRAFT.ITEM_CHOICES, new Set([...extra, ...d.items.map(i => i.id)]));
+    };
     d.offers = sample(rng, data.champions, DRAFT.CHAMP_CHOICES);
     d.done = () => d.items.length >= DRAFT.ITEM_SLOTS;
     d.reroll = () => {

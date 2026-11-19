@@ -40,3 +40,8 @@ pwsh -File tools/build-worker.ps1
 ```
 
 Then paste `worker/dist/worker.js` into the Worker's code editor in the Cloudflare dashboard and deploy. Table setup is in `worker/schema.sql`.
+
+
+## Each patch: item limits
+
+Run `tools/update-itemgroups.ps1` to regenerate `itemgroups.js` (which items can't be owned together, e.g. one Last Whisper item, one Spellblade item, one pair of boots), then rebuild and redeploy the Worker.

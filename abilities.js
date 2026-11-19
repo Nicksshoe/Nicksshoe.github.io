@@ -263,6 +263,8 @@
     //   formula (default: the cast's own); missAmp {max, at}: up to +max x damage as missing HP reaches 'at';
     //   missPct: + share of missing HP; aboveMult: damage when above the threshold; holdKill: wait until it kills;
     //   resetOnKill: recast right away after a kill; noHold: cast on cooldown but still execute; latest: fire anyway.
+    // Death Mark: opened with first so the 3s mark stores the whole burst, then pops for 100% AD + 55% of it.
+    Zed: { R: { kind: 'mark', type: 'physical', first: true, pct: 'RDamageAmp', duration: 'RDeathMarkDuration' } },
     Urgot: { R: { kind: 'execute', type: 'physical', threshold: 'RHealthThreshold', latest: 9.5 } },
     Syndra: { R: { kind: 'execute', type: 'magic', calc: 'MaxDamageCalc', threshold: 'UpgradeExecuteThreshold', latest: 9.5 } }, // all 7 spheres
     Pyke: { R: { kind: 'execute', type: 'physical', thresholdCalc: 'RDamage', calc: 'RDamage', aboveMult: 0.5, resetOnKill: true, latest: 9.5 } },
@@ -281,7 +283,7 @@
   function resolveMechanic(spec, sp, rank) {
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
-    for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+    for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.stats) m.stats = Object.fromEntries(Object.entries(spec.stats).map(([k, name]) => [k, dv(name)]));
     return m;
   }
