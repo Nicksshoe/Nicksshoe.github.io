@@ -312,6 +312,24 @@
     const hits = []; const bySource = {}; const byType = { physical: 0, magic: 0, true: 0 };
     let dummyHp = DUMMY.hp, kills = 0, firstKill = null, total = 0;
     let cleaverStacks = 0, bloodStacks = 0, malignanceShred = 0;
+    // Armor / magic resist taken from the dummy by abilities (Jarvan Q, Kog'Maw Q, Trundle R steal, Mordekaiser R...).
+    // Each source refreshes itself; % reductions multiply, flat ones subtract first (game order: flat reduction,
+    // % reduction, % penetration, flat penetration).
+    const resDebuffs = [];
+    const addDebuff = (t, d, key) => {
+      if (!d) return;
+      const from = t + (d.delay || 0);
+      const o = { key, from, until: from + (d.dur || 4), armor: d.armor || 0, mr: d.mr || 0, armorFlat: d.armorFlat || 0, mrFlat: d.mrFlat || 0 };
+      const i = resDebuffs.findIndex(x => x.key === key);
+      if (i >= 0) resDebuffs[i] = o; else resDebuffs.push(o);
+    };
+    const debuffMult = (t, k) => resDebuffs.reduce((m, d) => t >= d.from && t < d.until ? m * (1 - d[k]) : m, 1);
+    const debuffFlat = (t, k) => resDebuffs.reduce((s, d) => t >= d.from && t < d.until ? s + d[k] : s, 0);
+    const armorAt = t => Math.max(0, Math.max(0, DUMMY.armor - debuffFlat(t, 'armorFlat')) * (1 - 0.06 * cleaverStacks)
+      * (t < shredUntil ? 1 - shredPct : 1) * debuffMult(t, 'armor') * st.arpenKeep - st.leth);
+    const mrAt = t => Math.max(0, Math.max(0, DUMMY.mr - debuffFlat(t, 'mrFlat')) * (1 - 0.075 * bloodStacks) * debuffMult(t, 'mr')
+      * st.mpenKeep - st.mpenFlat - malignanceShred);
+    const castDebuff = (t, slot) => { if (P && P.castDebuff && P.castDebuff[slot]) addDebuff(t, P.castDebuff[slot], slot); };
 
     const comboCD = pr.cd * 100 / (100 + st.ah);
     const comboDamage = () => {
@@ -336,11 +354,11 @@
       if ((type === 'magic' || type === 'true') && hasAny('shadowflame') && dummyHp < 0.4 * DUMMY.hp) amt *= 1.2;
 
       if (type === 'physical') {
-        const armor = Math.max(0, DUMMY.armor * (1 - 0.06 * cleaverStacks) * (t < shredUntil ? 1 - shredPct : 1) * st.arpenKeep - st.leth);
+        const armor = armorAt(t);
         amt *= 100 / (100 + armor);
         if (hasAny('cleaver') && kind !== 'split') cleaverStacks = Math.min(5, cleaverStacks + 1);
       } else if (type === 'magic') {
-        const mr = Math.max(0, DUMMY.mr * (1 - 0.075 * bloodStacks) * st.mpenKeep - st.mpenFlat - malignanceShred);
+        const mr = mrAt(t);
         amt *= 100 / (100 + mr);
         if (hasAny('bloodletter') && kind !== 'attack') bloodStacks = Math.min(4, bloodStacks + 1);
       }
@@ -373,7 +391,12 @@
         if (i >= 0) dots[i] = d; else dots.push(d);
       }
     };
-    const fireP = (t, spec, kind) => spec.dot ? addDot(t, spec, spec.dmg) : dealP(t, spec, spec.dmg, kind || spec.kind);
+    const fireP = (t, spec, kind) => {
+      // Debuffs ride on the effect: its own (spec.debuff) or its ability slot's (castDebuff, from a 'Q · ...' label).
+      if (spec.debuff) addDebuff(t, spec.debuff, spec.label || 'passive');
+      const sl = /^([QWER]) · /.exec(spec.label || ''); if (sl) castDebuff(t, sl[1]);
+      return spec.dot ? addDot(t, spec, spec.dmg) : dealP(t, spec, spec.dmg, kind || spec.kind);
+    };
     let pHits = 0, pAbilities = 0, pArmed = 0, pTimedArmed = false, pTimedReady = P && P.timedAuto ? (P.timedAuto.start || 0) : Infinity;
     let pAbilityReady = 0, pAfterReady = 0, pHitsReady = 0, pNReady = 0, pAutoNReady = 0, pStack = { n: 0, until: -1 };
     let pAuras = P && P.aura ? -1 : null;
@@ -594,8 +617,8 @@
     const spellQueue = []; // scheduled ability hits/ticks: { at, raw(), type, label }
     // Expected share of a hit that gets through the dummy's resists right now (used to time executes).
     const mitigation = (type, t) => type === 'true' ? 1
-      : type === 'magic' ? 100 / (100 + Math.max(0, DUMMY.mr * (1 - 0.075 * bloodStacks) * st.mpenKeep - st.mpenFlat - malignanceShred))
-      : 100 / (100 + Math.max(0, DUMMY.armor * (1 - 0.06 * cleaverStacks) * (t < shredUntil ? 1 - shredPct : 1) * st.arpenKeep - st.leth));
+      : type === 'magic' ? 100 / (100 + mrAt(t))
+      : 100 / (100 + armorAt(t));
     let lastUltAt = null; const summons = []; let empLastHits = 0, fiendReady = 0, hexReady = 0, hexUntil = -1;
     const onUltimate = t => {
       lastUltAt = t;
@@ -615,7 +638,7 @@
         if (sp.mech && sp.mech.kind === 'empowerAuto') {
           if (empowered) continue; // don't waste it before the armed attack lands
           empowered = { ...sp.mech, label: `${sp.slot} · ${labels[sp.slot] || sp.name}` };
-          onAbilityHit(t, false);
+          onAbilityHit(t, false); castDebuff(t, sp.slot);
           ready[sp.slot] = t + sp.cooldown * 100 / (100 + st.ah);
           castLock = t + sp.castTime;
           if (sp.mech.resetsAttack) nextAuto = Math.min(nextAuto, castLock);
@@ -672,6 +695,7 @@
           const opening = !m.recasts || !(recastLeft[sp.slot] > 0);
           if (m.recasts) recastLeft[sp.slot] = (opening ? m.recasts : recastLeft[sp.slot]) - 1;
           if (sp.slot === 'R' && opening) onUltimate(t);
+          if (opening) castDebuff(t, sp.slot);
           ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : m.recasts && recastLeft[sp.slot] > 0 ? t + (m.recastGap || 1)
             : t + sp.cooldown * 100 / (100 + st.ah + (sp.slot === 'R' ? sum('ultHaste') : 0));
           castLock = t + sp.castTime;
@@ -702,6 +726,7 @@
         }
         if (t >= bastionReady) bastionReady = t + 3;
         if (sp.slot === 'R') onUltimate(t);
+        castDebuff(t, sp.slot);
         ready[sp.slot] = t + sp.cooldown * 100 / (100 + st.ah + (sp.slot === 'R' ? sum('ultHaste') : 0));
         castLock = t + sp.castTime;
         return;
@@ -736,7 +761,14 @@
     const rSpell = spells ? spells.find(s => s.slot === 'R') : null;
     let ultBuffAt = !!spells && !(P && P.ownKit) && !ultCast ? 0.1 : Infinity;
 
+    // Utility abilities whose only damage effect is a debuff (Karthus W wall, Mordekaiser R): used on cooldown.
+    const autoDebuffs = P && P.castDebuff ? Object.entries(P.castDebuff).filter(([, d]) => d.auto)
+      .map(([slot, d]) => ({ slot, d, at: d.start ?? 0.1, cd: ((spells || []).find(s => s.slot === slot) || {}).cooldown || Infinity })) : [];
     for (let t = 0; t < T - 1e-9; t = +(t + DT).toFixed(4)) {
+      for (const a of autoDebuffs) if (t >= a.at) {
+        addDebuff(t, a.d, a.slot);
+        a.at = t + a.cd * 100 / (100 + st.ah + (a.slot === 'R' ? sum('ultHaste') : 0));
+      }
       if (markState && t >= markState.until) { const mk = markState; markState = null; deal(t, mk.base + mk.pct * mk.sum, mk.type, mk.label, 'ability'); }
       if (t >= ultBuffAt) {
         onUltimate(t);

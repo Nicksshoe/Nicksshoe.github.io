@@ -313,6 +313,24 @@
     const hits = []; const bySource = {}; const byType = { physical: 0, magic: 0, true: 0 };
     let dummyHp = DUMMY.hp, kills = 0, firstKill = null, total = 0;
     let cleaverStacks = 0, bloodStacks = 0, malignanceShred = 0;
+    // Armor / magic resist taken from the dummy by abilities (Jarvan Q, Kog'Maw Q, Trundle R steal, Mordekaiser R...).
+    // Each source refreshes itself; % reductions multiply, flat ones subtract first (game order: flat reduction,
+    // % reduction, % penetration, flat penetration).
+    const resDebuffs = [];
+    const addDebuff = (t, d, key) => {
+      if (!d) return;
+      const from = t + (d.delay || 0);
+      const o = { key, from, until: from + (d.dur || 4), armor: d.armor || 0, mr: d.mr || 0, armorFlat: d.armorFlat || 0, mrFlat: d.mrFlat || 0 };
+      const i = resDebuffs.findIndex(x => x.key === key);
+      if (i >= 0) resDebuffs[i] = o; else resDebuffs.push(o);
+    };
+    const debuffMult = (t, k) => resDebuffs.reduce((m, d) => t >= d.from && t < d.until ? m * (1 - d[k]) : m, 1);
+    const debuffFlat = (t, k) => resDebuffs.reduce((s, d) => t >= d.from && t < d.until ? s + d[k] : s, 0);
+    const armorAt = t => Math.max(0, Math.max(0, DUMMY.armor - debuffFlat(t, 'armorFlat')) * (1 - 0.06 * cleaverStacks)
+      * (t < shredUntil ? 1 - shredPct : 1) * debuffMult(t, 'armor') * st.arpenKeep - st.leth);
+    const mrAt = t => Math.max(0, Math.max(0, DUMMY.mr - debuffFlat(t, 'mrFlat')) * (1 - 0.075 * bloodStacks) * debuffMult(t, 'mr')
+      * st.mpenKeep - st.mpenFlat - malignanceShred);
+    const castDebuff = (t, slot) => { if (P && P.castDebuff && P.castDebuff[slot]) addDebuff(t, P.castDebuff[slot], slot); };
 
     const comboCD = pr.cd * 100 / (100 + st.ah);
     const comboDamage = () => {
@@ -337,11 +355,11 @@
       if ((type === 'magic' || type === 'true') && hasAny('shadowflame') && dummyHp < 0.4 * DUMMY.hp) amt *= 1.2;
 
       if (type === 'physical') {
-        const armor = Math.max(0, DUMMY.armor * (1 - 0.06 * cleaverStacks) * (t < shredUntil ? 1 - shredPct : 1) * st.arpenKeep - st.leth);
+        const armor = armorAt(t);
         amt *= 100 / (100 + armor);
         if (hasAny('cleaver') && kind !== 'split') cleaverStacks = Math.min(5, cleaverStacks + 1);
       } else if (type === 'magic') {
-        const mr = Math.max(0, DUMMY.mr * (1 - 0.075 * bloodStacks) * st.mpenKeep - st.mpenFlat - malignanceShred);
+        const mr = mrAt(t);
         amt *= 100 / (100 + mr);
         if (hasAny('bloodletter') && kind !== 'attack') bloodStacks = Math.min(4, bloodStacks + 1);
       }
@@ -374,7 +392,12 @@
         if (i >= 0) dots[i] = d; else dots.push(d);
       }
     };
-    const fireP = (t, spec, kind) => spec.dot ? addDot(t, spec, spec.dmg) : dealP(t, spec, spec.dmg, kind || spec.kind);
+    const fireP = (t, spec, kind) => {
+      // Debuffs ride on the effect: its own (spec.debuff) or its ability slot's (castDebuff, from a 'Q · ...' label).
+      if (spec.debuff) addDebuff(t, spec.debuff, spec.label || 'passive');
+      const sl = /^([QWER]) · /.exec(spec.label || ''); if (sl) castDebuff(t, sl[1]);
+      return spec.dot ? addDot(t, spec, spec.dmg) : dealP(t, spec, spec.dmg, kind || spec.kind);
+    };
     let pHits = 0, pAbilities = 0, pArmed = 0, pTimedArmed = false, pTimedReady = P && P.timedAuto ? (P.timedAuto.start || 0) : Infinity;
     let pAbilityReady = 0, pAfterReady = 0, pHitsReady = 0, pNReady = 0, pAutoNReady = 0, pStack = { n: 0, until: -1 };
     let pAuras = P && P.aura ? -1 : null;
@@ -595,8 +618,8 @@
     const spellQueue = []; // scheduled ability hits/ticks: { at, raw(), type, label }
     // Expected share of a hit that gets through the dummy's resists right now (used to time executes).
     const mitigation = (type, t) => type === 'true' ? 1
-      : type === 'magic' ? 100 / (100 + Math.max(0, DUMMY.mr * (1 - 0.075 * bloodStacks) * st.mpenKeep - st.mpenFlat - malignanceShred))
-      : 100 / (100 + Math.max(0, DUMMY.armor * (1 - 0.06 * cleaverStacks) * (t < shredUntil ? 1 - shredPct : 1) * st.arpenKeep - st.leth));
+      : type === 'magic' ? 100 / (100 + mrAt(t))
+      : 100 / (100 + armorAt(t));
     let lastUltAt = null; const summons = []; let empLastHits = 0, fiendReady = 0, hexReady = 0, hexUntil = -1;
     const onUltimate = t => {
       lastUltAt = t;
@@ -616,7 +639,7 @@
         if (sp.mech && sp.mech.kind === 'empowerAuto') {
           if (empowered) continue; // don't waste it before the armed attack lands
           empowered = { ...sp.mech, label: `${sp.slot} · ${labels[sp.slot] || sp.name}` };
-          onAbilityHit(t, false);
+          onAbilityHit(t, false); castDebuff(t, sp.slot);
           ready[sp.slot] = t + sp.cooldown * 100 / (100 + st.ah);
           castLock = t + sp.castTime;
           if (sp.mech.resetsAttack) nextAuto = Math.min(nextAuto, castLock);
@@ -673,6 +696,7 @@
           const opening = !m.recasts || !(recastLeft[sp.slot] > 0);
           if (m.recasts) recastLeft[sp.slot] = (opening ? m.recasts : recastLeft[sp.slot]) - 1;
           if (sp.slot === 'R' && opening) onUltimate(t);
+          if (opening) castDebuff(t, sp.slot);
           ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : m.recasts && recastLeft[sp.slot] > 0 ? t + (m.recastGap || 1)
             : t + sp.cooldown * 100 / (100 + st.ah + (sp.slot === 'R' ? sum('ultHaste') : 0));
           castLock = t + sp.castTime;
@@ -703,6 +727,7 @@
         }
         if (t >= bastionReady) bastionReady = t + 3;
         if (sp.slot === 'R') onUltimate(t);
+        castDebuff(t, sp.slot);
         ready[sp.slot] = t + sp.cooldown * 100 / (100 + st.ah + (sp.slot === 'R' ? sum('ultHaste') : 0));
         castLock = t + sp.castTime;
         return;
@@ -737,7 +762,14 @@
     const rSpell = spells ? spells.find(s => s.slot === 'R') : null;
     let ultBuffAt = !!spells && !(P && P.ownKit) && !ultCast ? 0.1 : Infinity;
 
+    // Utility abilities whose only damage effect is a debuff (Karthus W wall, Mordekaiser R): used on cooldown.
+    const autoDebuffs = P && P.castDebuff ? Object.entries(P.castDebuff).filter(([, d]) => d.auto)
+      .map(([slot, d]) => ({ slot, d, at: d.start ?? 0.1, cd: ((spells || []).find(s => s.slot === slot) || {}).cooldown || Infinity })) : [];
     for (let t = 0; t < T - 1e-9; t = +(t + DT).toFixed(4)) {
+      for (const a of autoDebuffs) if (t >= a.at) {
+        addDebuff(t, a.d, a.slot);
+        a.at = t + a.cd * 100 / (100 + st.ah + (a.slot === 'R' ? sum('ultHaste') : 0));
+      }
       if (markState && t >= markState.until) { const mk = markState; markState = null; deal(t, mk.base + mk.pct * mk.sum, mk.type, mk.label, 'ability'); }
       if (t >= ultBuffAt) {
         onUltimate(t);
@@ -1391,7 +1423,7 @@
     Brand: { name: 'Blaze', note: 'Burns, then detonates at 3 stacks', onAbility: { type: 'magic', dot: 4, dmg: c => 0.03 * c.tmax },
       everyNAbility: { n: 3, cd: 4, type: 'magic', dmg: c => (0.12 + 0.02 * c.ap / 100) * c.tmax } },
     Braum: { name: 'Concussive Blows', note: '4th hit stuns and deals damage', everyN: { n: 4, cd: 8, type: 'magic', dmg: () => 196 } },
-    Briar: { name: 'Crimson Curse', note: 'Stacking bleed from attacks and abilities', stackDot: { max: 5, dur: 5, type: 'physical', perStack: c => (25 + 0.05 * c.bad) / 5 } },
+    Briar: { castDebuff: { Q: { armor: 0.2, mr: 0.2, dur: 5 } }, name: 'Crimson Curse', note: 'Stacking bleed from attacks and abilities', stackDot: { max: 5, dur: 5, type: 'physical', perStack: c => (25 + 0.05 * c.bad) / 5 } },
     Caitlyn: { name: 'Headshot', note: 'Every 6th attack, and after a net/trap hit', everyN: { n: 6, type: 'physical', dmg: c => c.ad * (1.2 + c.crit * 1.3125 * (c.cm / 1.75)) },
       afterAbility: { cd: 10, type: 'physical', dmg: c => c.ad * (1.2 + c.crit * 1.3125 * (c.cm / 1.75)) } },
     Camille: { name: 'Adaptive Defenses', note: 'Q empowered attacks, the second part true damage', timedAuto: { every: 4, label: 'Q · Precision Protocol', kind: 'ability', dmg: c => ({ physical: 0.3 * c.ad, true: 0.5 * c.ad }) },
@@ -1399,7 +1431,7 @@
       onHit: { cond: c => c.t >= 0.5 && c.t <= 4.5, label: 'R · Hextech Ultimatum', kind: 'ability', type: 'magic', dmg: c => 15 + 0.08 * c.thp } },
     Cassiopeia: none('Serpentine Grace'),
     Chogath: none('Carnivore', 'Healing only'),
-    Corki: { name: 'Hextech Munitions', note: 'Attacks deal 80% magic damage', autoSplit: { magic: 0.8 } },
+    Corki: { castDebuff: { E: { armorFlat: 20, mrFlat: 20, dur: 4 } }, name: 'Hextech Munitions', note: 'Attacks deal 80% magic damage', autoSplit: { magic: 0.8 } },
     Darius: { name: 'Hemorrhage', note: 'Stacking bleed; Noxian Might at 5 stacks', stackDot: { max: 5, dur: 5, type: 'physical', perStack: c => (30 + 0.3 * c.bad) / 5 },
       stats: () => ({ ad: 160 }) },
     Diana: { name: 'Moonsilver Blade', note: 'Every 3rd attack + attack speed', stats: () => ({ as: 20 }), everyN: { n: 3, type: 'magic', dmg: c => 250 + 0.5 * c.ap } },
@@ -1417,7 +1449,7 @@
         { every: 6, start: 1.0, ability: true, label: 'Spider Q · Venomous Bite', kind: 'ability', type: 'magic', dmg: c => 170 + (0.08 + 0.03 * c.ap / 100) * c.tmiss },
         { every: 1, start: 1.2, label: 'Spiderlings', kind: 'ability', type: 'magic', dmg: c => 3 * (40 + 0.15 * c.ap) },
       ] },
-    Evelynn: { name: 'Demon Shade', note: 'E deals % max HP', periodic: { every: 8, start: 0.3, ability: true, label: 'E · Whiplash', kind: 'ability', type: 'magic', dmg: c => 180 + (0.03 + 0.015 * c.ap / 100) * c.tmax } },
+    Evelynn: { castDebuff: { W: { mr: 0.45, dur: 4 } }, name: 'Demon Shade', note: 'E deals % max HP', periodic: { every: 8, start: 0.3, ability: true, label: 'E · Whiplash', kind: 'ability', type: 'magic', dmg: c => 180 + (0.03 + 0.015 * c.ap / 100) * c.tmax } },
     Ezreal: { name: 'Rising Spell Force', note: 'Attack speed from ability hits; Q applies on-hit and Spellblade', stats: () => ({ as: 45 }), onHitAbility: { Q: { spellblade: true } } },
     Fiddlesticks: { name: 'A Harmless Scarecrow', note: 'Q deals % current HP (min 120)', periodic: { every: 13, start: 0.5, ability: true, label: 'Q · Terrify', kind: 'ability', type: 'magic', dmg: c => Math.max(120, (0.06 + 0.03 * c.ap / 100) * c.thp) } },
     // R (Grand Challenge) marks all four vitals at once: four extra vital hits, used right away.
@@ -1426,7 +1458,7 @@
     Fizz: none('Nimble Fighter'),
     Galio: { name: 'Colossal Smash', note: 'Empowered attack every few seconds', timedAuto: { every: 5, type: 'magic', dmg: c => 200 + c.ad + 0.5 * c.ap + 0.6 * c.bmr } },
     Gangplank: { name: 'Trial by Fire', note: 'Burning true-damage attack; Q applies on-hit and Spellblade', onHitAbility: { Q: { spellblade: true } }, timedAuto: { every: 12, type: 'true', dot: 2.5, dmg: c => 310 + c.bad } },
-    Garen: none('Perseverance', 'Regeneration only'),
+    Garen: { ...none('Perseverance', 'Regeneration only'), castDebuff: { E: { armor: 0.25, dur: 6, delay: 1.5 } } },
     Gnar: none('Rage Gene'),
     Gragas: none('Happy Hour', 'Healing only'),
     Graves: { name: 'New Destiny', note: 'Shotgun pellets all hit; 2 shells then reload', autoMult: 1.99, magazine: { size: 2, reload: c => 1.6 / c.as } },
@@ -1440,7 +1472,7 @@
     Irelia: { name: 'Ionian Fervor', note: 'Max stacks: attack speed + on-hit; Q applies on-hit', onHitAbility: { Q: {} }, stats: () => ({ as: 40 }), onHit: { type: 'magic', dmg: c => 61 + 0.2 * c.bad } },
     Ivern: none('Friend of the Forest'),
     Janna: { name: 'Tailwind', note: 'Bonus damage from move speed', onHit: { type: 'magic', dmg: () => 25 } },
-    JarvanIV: { name: 'Martial Cadence', note: '8% current HP on the first attack', timedAuto: { every: 6, type: 'physical', dmg: c => 0.08 * c.thp } },
+    JarvanIV: { castDebuff: { Q: { armor: 0.26, dur: 3 } }, name: 'Martial Cadence', note: '8% current HP on the first attack', timedAuto: { every: 6, type: 'physical', dmg: c => 0.08 * c.thp } },
     Jax: { name: 'Relentless Assault', note: 'Attack speed stacks', stats: () => ({ as: 70 }) },
     Jayce: { name: 'Hextech Capacitor', note: 'Cannon: Shock Blast through the gate + Hyper Charge; Hammer: To the Skies!, Lightning Field, Thundering Blow', ownKit: true,
       periodic: [
@@ -1464,16 +1496,16 @@
     Kalista: { name: 'Martial Poise + Rend (E)', note: 'Attacks deal 90% AD; Rend pulls every spear out; E is modeled here', autoMult: 0.9, disable: ['E'],
       periodic: { every: 5, start: 4, type: 'physical', dmg: c => { const spears = Math.max(1, Math.round(c.as * 4)); return 60 + 0.7 * c.ad + (spears - 1) * (24 + 0.406 * c.ad); } } },
     Karma: none('Gathering Fire'),
-    Karthus: none('Death Defied'),
+    Karthus: { ...none('Death Defied'), castDebuff: { W: { mr: 0.25, dur: 5, auto: true } } },
     Kassadin: none('Void Stone'),
     Katarina: { name: 'Voracity', note: 'Dagger pickups', everyNAbility: { n: 2, type: 'magic', dmg: c => 308 + 0.6 * c.bad + c.ap } },
-    Kayle: { name: 'Divine Ascent', note: 'Exalted at 16: attack waves + attack speed', stats: () => ({ as: 30 }), onHit: { type: 'magic', dmg: c => 50 + 0.25 * c.ap + 0.1 * c.bad } },
+    Kayle: { castDebuff: { Q: { armor: 0.15, mr: 0.15, dur: 4 } }, name: 'Divine Ascent', note: 'Exalted at 16: attack waves + attack speed', stats: () => ({ as: 30 }), onHit: { type: 'magic', dmg: c => 50 + 0.25 * c.ap + 0.1 * c.bad } },
     Kayn: none('The Darkin Scythe'),
     Kennen: none('Mark of the Storm'),
     Khazix: { name: 'Unseen Threat', note: 'Attack out of stealth', timedAuto: { every: 10, type: 'magic', dmg: c => 150 + 0.5 * c.bad } }, // game data: 50% bonus AD
     Kindred: none('Mark of the Kindred', 'Marks are counted in her abilities'),
     Kled: none('Skaarl the Cowardly Lizard'),
-    KogMaw: { name: 'Bio-Arcane Barrage (W)', note: 'W on-hit % max HP (8s of the fight) + Q attack speed; W is modeled here', disable: ['W'],
+    KogMaw: { castDebuff: { Q: { armor: 0.32, mr: 0.32, dur: 4 } }, name: 'Bio-Arcane Barrage (W)', note: 'W on-hit % max HP (8s of the fight) + Q attack speed; W is modeled here', disable: ['W'],
       stats: () => ({ as: 26 }), onHit: { type: 'magic', dmg: c => 0.8 * (0.06 + 0.01 * c.ap / 100) * c.tmax } },
     KSante: { name: 'Dauntless Instinct', note: 'Abilities mark: next attack % max HP; W deals % max HP', afterAbility: { type: 'physical', dmg: c => (0.01 + 0.01 * (c.barm + c.bmr) / 100) * c.tmax },
       periodic: { every: 10, start: 0.5, ability: true, label: 'W · Path Maker', kind: 'ability', type: 'physical', dmg: c => 205 + 0.08 * c.tmax } },
@@ -1494,11 +1526,11 @@
     Milio: none('Fired Up!', 'Buffs allies'),
     MissFortune: { name: 'Love Tap', note: 'First attack on a new target', timedAuto: { once: true, type: 'physical', dmg: c => c.ad } },
     MonkeyKing: none('Stone Skin'),
-    Mordekaiser: { name: 'Darkness Rise', note: 'Damage aura after 3 hits', aura: { hits: 3, linger: 4, type: 'magic', dmg: c => 5 + 0.3 * c.ap + 0.05 * c.tmax } },
+    Mordekaiser: { castDebuff: { R: { armor: 0.1, mr: 0.1, dur: 7, auto: true } }, name: 'Darkness Rise', note: 'Damage aura after 3 hits', aura: { hits: 3, linger: 4, type: 'magic', dmg: c => 5 + 0.3 * c.ap + 0.05 * c.tmax } },
     Morgana: none('Soul Siphon', 'Healing only'),
     Naafiri: { name: 'We Are More', note: 'Packmates attack with her', periodic: { every: 1, start: 0.5, type: 'physical', dmg: c => 2 * (15 + 0.06 * c.bad) } }, // 2 packmates, about 29 per hit at 230 bonus AD (game data)
     Nami: none('Surging Tides'),
-    Nasus: { name: 'Soul Eater', note: 'Q stacks are counted in his Q; R burns % max HP every second', periodic: { every: 1, start: 0.5, label: 'R · Fury of the Sands', kind: 'ability', type: 'magic', dmg: c => (0.05 + 0.01 * c.ap / 100) * c.tmax } },
+    Nasus: { castDebuff: { E: { armor: 0.5, dur: 5 } }, name: 'Soul Eater', note: 'Q stacks are counted in his Q; R burns % max HP every second', periodic: { every: 1, start: 0.5, label: 'R · Fury of the Sands', kind: 'ability', type: 'magic', dmg: c => (0.05 + 0.01 * c.ap / 100) * c.tmax } },
     Nautilus: { name: 'Staggering Blow', note: 'First attack on a target', timedAuto: { every: 10, type: 'physical', dmg: () => 122 } },
     Neeko: { name: 'Inherent Glamour', note: '20% magic pen for 4s after her disguise breaks (opening)', stats: () => ({ mpen: 20 * 4 / 10 }) },
     // Form champions: both forms are used every rotation (cast, swap, cast again), from game-file formulas at 18.
@@ -1513,7 +1545,7 @@
     Nilah: none('Joy Unending'),
     Nocturne: { name: 'Umbra Blades', note: 'Empowered cleave', timedAuto: { every: 8, type: 'physical', dmg: c => 0.2 * c.ad } },
     Nunu: { name: 'Call of the Freljord', note: '+20% attack speed (game data)', stats: () => ({ as: 20 }) },
-    Olaf: { name: 'Berserker Rage', note: 'Attack speed from missing health (maxes at 30% health)', stats: c => ({ as: 100 * Math.min(1, c.smiss / 0.7) }) },
+    Olaf: { castDebuff: { Q: { armor: 0.2, dur: 4 } }, name: 'Berserker Rage', note: 'Attack speed from missing health (maxes at 30% health)', stats: c => ({ as: 100 * Math.min(1, c.smiss / 0.7) }) },
     Orianna: { name: 'Clockwork Windup', note: 'On-hit, stacking on repeated attacks', onHit: { type: 'magic', dmg: c => (59 + 0.15 * c.ap) * 1.4 } },
     Ornn: none('Living Forge'),
     // Mortal Will: every 5 actions (attacks and abilities) empower his next Q: +70% on the close-range stab (game data).
@@ -1528,7 +1560,7 @@
     Rell: { name: 'Break the Mold', note: 'E deals % max HP', periodic: { every: 12, start: 0.5, label: 'E · Attract and Repel', kind: 'ability', type: 'magic', dmg: c => 0.03 * c.tmax } },
     Renata: { name: 'Leverage', note: '% max HP on attacks', onHit: { type: 'magic', dmg: c => 0.01 * c.tmax } },
     Renekton: none('Reign of Anger'),
-    Rengar: none('Unseen Predator'),
+    Rengar: { ...none('Unseen Predator'), castDebuff: { R: { armorFlat: 25, dur: 4, auto: true } } },
     Riven: { name: 'Runic Blade', note: 'Charged attacks after abilities', afterAbility: { charges: 1, max: 3, type: 'physical', dmg: c => 0.6 * c.ad } },
     Rumble: { name: 'Junkyard Titan', note: 'Overheated attacks (part-time)', onHit: { type: 'magic', dmg: c => 0.4 * (50 + 0.3 * c.ap + 0.06 * c.tmax) } },
     Ryze: none('Arcane Mastery'),
@@ -1543,7 +1575,7 @@
     Shen: none('Ki Barrier', 'Shield only'),
     Shyvana: none('Fury of the Dragonborn'),
     Singed: none('Noxious Slipstream'),
-    Sion: none('Glory in Death'),
+    Sion: { ...none('Glory in Death'), castDebuff: { E: { armor: 0.25, dur: 4 } } },
     Sivir: none('Fleet of Foot'),
     Skarner: { name: 'Threads of Vibration', note: '3 hits: % max HP burn', everyNHits: { n: 3, cd: 4, dot: 4, type: 'magic', dmg: c => 0.04 * c.tmax + 0.02 * c.bhp } },
     Smolder: none('Dragon Practice', 'Stacks are counted in his abilities'),
@@ -1562,7 +1594,7 @@
       onHit: { type: 'magic', dmg: c => 50 + 0.3 * c.ap } , everyN: { n: 1, dot: 4, type: 'magic', dmg: c => 96 + 0.4 * c.ap } },
     Thresh: { name: 'Flay (E)', note: 'Charged attack damage + souls', onHit: { type: 'magic', dmg: c => 63 + 0.5 * c.ad } },
     Tristana: none('Draw a Bead'),
-    Trundle: { name: "King's Tribute", note: 'R drains 30% max HP over 4s; W zone: +110% attack speed for 8s', stats: () => ({ as: 110 * 0.8 }), periodic: { start: 0.5, dot: 4, label: 'R · Subjugate', kind: 'ability', type: 'magic', dmg: c => (0.30 + 0.02 * c.ap / 100) * c.tmax } },
+    Trundle: { castDebuff: { R: { armor: 0.4, mr: 0.4, dur: 8, delay: 1 } }, name: "King's Tribute", note: 'R drains 30% max HP over 4s; W zone: +110% attack speed for 8s', stats: () => ({ as: 110 * 0.8 }), periodic: { start: 0.5, dot: 4, label: 'R · Subjugate', kind: 'ability', type: 'magic', dmg: c => (0.30 + 0.02 * c.ap / 100) * c.tmax } },
     Tryndamere: { name: 'Battle Fury + Bloodlust (Q)', note: 'Crit chance from fury; Q passive AD from missing health', stats: c => ({ crit: 30, ad: 80 * c.smiss }) }, // game files: up to 80 AD at rank 5, scaling with missing health
     TwistedFate: { name: 'Stacked Deck (E)', note: 'Every 4th attack; E is passive', disable: ['E'], stats: () => ({ as: 45 }),
       everyN: { n: 4, type: 'magic', dmg: c => 165 + 0.5 * c.ap } },
@@ -1590,7 +1622,7 @@
     Velkoz: { name: 'Organic Deconstruction', note: '3 hits: true damage', everyNHits: { n: 3, type: 'true', dmg: c => 205 + 0.65 * c.ap } },
     Vex: { name: "Doom 'n Gloom", note: 'Empowered ability marks + detonates', onAbility: { cd: 12, type: 'magic', dmg: c => 140 + 0.2 * c.ap } },
     Vi: { name: 'Denting Blows (W)', note: 'Every 3rd attack % max HP; W is passive', disable: ['W'],
-      everyN: { n: 3, type: 'physical', dmg: c => (0.08 + c.bad / 3500) * c.tmax },
+      everyN: { n: 3, debuff: { armor: 0.2, dur: 4 }, type: 'physical', dmg: c => (0.08 + c.bad / 3500) * c.tmax },
       timedAuto: { every: 5, label: 'E · Relentless Force', kind: 'ability', type: 'physical', dmg: c => 110 + 1.1 * c.ad + c.ap } },
     Viego: { name: 'Blade of the Ruined King (Q)', note: '% current HP on-hit', onHit: { type: 'physical', dmg: c => 0.08 * c.thp } },
     Viktor: none('Glorious Evolution'),
@@ -1604,7 +1636,7 @@
     XinZhao: { name: 'Determination', note: 'Every 3rd attack', everyN: { n: 3, type: 'physical', dmg: c => 0.45 * c.ad } },
     Yasuo: { name: 'Way of the Wanderer', note: 'Double crit chance, crits deal 10% less; Q applies on-hit', onHitAbility: { Q: {} }, critChanceMult: 2, critScale: 0.9 },
     Yone: { name: 'Way of the Hunter', note: 'Double crit chance, crits deal 10% less; Q applies on-hit', onHitAbility: { Q: {} }, critChanceMult: 2, critScale: 0.9 },
-    Yorick: { name: 'Shepherd of Souls', note: 'Mist Walkers attack', periodic: { every: 1, start: 3, type: 'physical', dmg: c => 2 * (25 + 0.15 * c.ad) } },
+    Yorick: { castDebuff: { E: { armor: 0.25, dur: 4 } }, name: 'Shepherd of Souls', note: 'Mist Walkers attack', periodic: { every: 1, start: 3, type: 'physical', dmg: c => 2 * (25 + 0.15 * c.ad) } },
     Yunara: { name: 'Vow of the First Lands', note: 'Crits deal bonus magic damage', onHit: { type: 'magic', dmg: c => c.crit * 0.3 * c.ad } },
     Yuumi: { name: "Bop 'n' Block", note: 'Empowered attack', timedAuto: { every: 8, type: 'magic', dmg: c => 100 + 0.15 * c.ap } },
     Zaahen: { name: 'Cultivation of War', note: 'Determination stacks: AD', stats: () => ({ ad: 35 }) },
