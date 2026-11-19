@@ -163,6 +163,7 @@
     "sterak's gage": { adPerBaseAd: 0.5, tip: 'The Claws that Catch: +50% base AD' },
     "dawncore": { maxStacks: { ap: 15 }, tip: 'First Light: +15 AP from its 100% base mana regen' },
     "rod of ages": { maxStacks: { hp: 100, mana: 300, ap: 30 }, tip: 'Timeless: fully stacked (+100 HP, +300 mana, +30 AP)' },
+    "hubris": { maxStacks: { ad: 45 }, rangedStackMult: 0.667, tip: 'Eminence: 10 stacks, +45 AD (15 + 3 per stack; two-thirds for ranged)' },
     "hexoptics c44": { attackAmpRanged: 0.10, attackAmpMelee: 0.04, tip: 'Long-range attack amp' },
     "swiftmarch": { adaptive: 21, tip: 'Noxian Fervor: 5% of move speed as adaptive force' },
     "sundered sky": { sundered: true, tip: 'Guaranteed crit every 10s' },
@@ -229,7 +230,8 @@
       }
       const p = PASSIVES[it.name.toLowerCase()];
       if (p) fx.push({ ...p, item: it.name });
-      if (p && p.maxStacks) for (const [k, v] of Object.entries(p.maxStacks)) b[k] += v; // stacking items start fully stacked
+      // Stacking items start fully stacked; rangedStackMult scales the stacks for ranged champions (Hubris).
+      if (p && p.maxStacks) for (const [k, v] of Object.entries(p.maxStacks)) b[k] += v * (ch.ranged && p.rangedStackMult ? p.rangedStackMult : 1);
     }
     const has = key => fx.filter(f => f[key] !== undefined && f[key] !== false);
     const sum = key => has(key).reduce((acc, f) => acc + f[key], 0);
