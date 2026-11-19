@@ -6,7 +6,9 @@
   'use strict';
 
   const DDRAGON = 'https://ddragon.leagueoflegends.com';
-  const DUMMY = { hp: 10000, armor: 200, mr: 100 };
+  // baseHp: the average level-18 base health of all champions (set when the patch loads); the rest of the
+  // dummy's 10,000 counts as bonus health for effects that scale with the target's bonus health.
+  const DUMMY = { hp: 10000, armor: 200, mr: 100, baseHp: 2400 };
   const FIGHT_SECONDS = 10;
   const SELF_HP = 0.4; // your champion fights at 40% health (matters for missing-health scaling)
   const DT = 0.05;
@@ -28,6 +30,7 @@
       partype: c.partype, stats: c.stats, ranged: c.stats.attackrange > 300,
     }));
     fillMissingRatings(champs);
+    DUMMY.baseHp = Math.round(champs.reduce((a, c) => a + c.stats.hp + 17 * c.stats.hpperlevel, 0) / champs.length);
     return champs.sort((a, b) => a.name.localeCompare(b.name));
   }
 
@@ -105,26 +108,26 @@
     "manamune": { muramana: true, tip: 'Assumed stacked into Muramana' },
     "liandry's torment": { burn: 'liandry', ramp: { per: 2, cap: 6 }, tip: 'Torment: 2% max HP burn' },
     "blackfire torch": { burn: 'blackfire', apMultAdd: 0.04, tip: 'Baleful Blaze burn' },
-    "sunfire aegis": { immolate: true, tip: 'Immolate aura' },
-    "hollow radiance": { immolate: true, tip: 'Immolate aura' },
+    "sunfire aegis": { immolate: { base: 20, bhp: 0.015 }, tip: 'Immolate: 20 + 1.5% bonus HP per second' },
+    "hollow radiance": { immolate: { base: 10, bhp: 0.0175 }, tip: 'Immolate: 10 + 1.75% bonus HP per second' },
     "unending despair": { despair: true, tip: 'Anguish pulse every 4s' },
     "heartsteel": { heartsteel: true, tip: 'Colossal Consumption: 6% max HP hit' },
-    "nashor's tooth": { onHit: { magic: 15, ap: 0.2 }, tip: 'On-hit magic' },
+    "nashor's tooth": { onHit: { magic: 15, ap: 0.15 }, tip: 'On-hit 15 + 15% AP' },
     "wit's end": { onHit: { magic: 45 }, tip: 'On-hit magic' },
     "guinsoo's rageblade": { onHit: { magic: 30 }, asBonus: 32, guinsoo: true, tip: 'Phantom hits double on-hit' },
-    "terminus": { onHit: { magic: 30 }, pen: 0.10, tip: 'On-hit + 10% pen' },
+    "terminus": { onHit: { magic: 30 }, pen: 0.25, tip: 'On-hit + pen building to 30%' },
     "blade of the ruined king": { onHit: { curHpMelee: 0.09, curHpRanged: 0.06 }, tip: '% current HP on-hit' },
-    "titanic hydra": { onHit: { ownHpMelee: 0.015, ownHpRanged: 0.01 }, titanic: true, tip: 'Scales with your max HP' },
-    "kraken slayer": { everyN: { n: 3, phys: 150, missingAmp: 0.75 }, tip: 'Every 3rd attack' },
+    "titanic hydra": { onHit: { ownHpMelee: 0.01, ownHpRanged: 0.005 }, titanic: true, tip: '1% max HP on-hit; active 4% max HP' },
+    "kraken slayer": { everyN: { n: 3, phys: 150, missingAmp: 0.75, rangedMult: 0.8 }, tip: 'Every 3rd attack (80% ranged)' },
     "statikk shiv": { everyN: { n: 3, magic: 60 }, tip: 'Energized lightning' },
     "rapid firecannon": { everyN: { n: 3, magic: 40 }, tip: 'Energized attack' },
     "stormrazor": { everyN: { n: 3, magic: 90 }, tip: 'Energized bolt' },
     "hullbreaker": { everyN: { n: 5, hull: true }, tip: 'Skipper: every 5th attack, 120% base AD + 5% max HP' },
-    "voltaic cyclosword": { everyN: { n: 4, curHp: 0.05 }, tip: 'Energized % current HP' },
+    "voltaic cyclosword": { everyN: { n: 4, curHp: 0.08, curHpRanged: 0.06 }, tip: 'Energized: 8% current HP (6% ranged)' },
     "trinity force": { spellblade: { baseAd: 2.0, type: 'physical' }, tip: 'Spellblade 200% base AD' },
     "lich bane": { spellblade: { baseAd: 0.75, ap: 0.45, type: 'magic' }, tip: 'Spellblade AP burst' },
     "iceborn gauntlet": { spellblade: { baseAd: 1.5, type: 'physical' }, tip: 'Spellblade 150% base AD' },
-    "essence reaver": { spellblade: { baseAd: 1.0, bonusAd: 0.4, type: 'physical' }, tip: 'Spellblade' },
+    "essence reaver": { spellblade: { baseAd: 1.25, type: 'physical' }, tip: 'Spellblade 125% base AD' },
     "dusk and dawn": { spellblade: { flat: 40, ap: 0.12, type: 'magic', doubleOnHit: true }, tip: 'Spellblade double on-hit' },
     "infinity edge": { tip: 'Crit damage amp' },
     "the collector": { execute: 0.05, tip: 'Executes below 5% HP' },
@@ -132,7 +135,7 @@
     "bloodletter's curse": { bloodletter: true, tip: 'Shreds up to 30% MR' },
     "abyssal mask": { magicAmp: 0.12, tip: '+12% magic damage taken' },
     "shadowflame": { shadowflame: true, tip: '+20% magic/true dmg under 40% HP' },
-    "luden's echo": { luden: true, tip: 'Echo burst on ability' },
+    "luden's echo": { luden: true, tip: 'Echo: 75 + 5% AP, extra bolts at 20%, every 12s' },
     "stormsurge": { stormsurge: true, tip: 'Squall after big burst' },
     "hextech rocketbelt": { rocketbelt: true, tip: 'Opening missile volley' },
     "malignance": { malignance: true, tip: 'Hatefog burn on ult' },
@@ -145,7 +148,17 @@
     "experimental hexplate": { asBonus: 24, tip: 'Overdrive attack speed' },
     "fiendhunter bolts": { fiendhunter: true, tip: 'Post-ult crit barrage' },
     "hexoptics c44": { attackAmpRanged: 0.10, attackAmpMelee: 0.04, tip: 'Long-range attack amp' },
-    "sundered sky": { sundered: true, tip: 'First attack crits' },
+    "sundered sky": { sundered: true, tip: 'Guaranteed crit every 10s' },
+    "eclipse": { eclipse: true, tip: '2 hits in 2s: 8% max HP (5% ranged), every 6s' },
+    "dead man's plate": { dmp: true, tip: 'Opening charged attack: 40 + 100% base AD' },
+    "umbral glaive": { umbral: true, tip: 'Opening attack from the dark: true damage' },
+    "zeke's convergence": { zeke: true, tip: 'Storm after your ultimate: 30/s for 5s' },
+    // Item actives: used at the start of the fight and again whenever off cooldown.
+    "ravenous hydra": { active: { cd: 10, type: 'physical', dmg: (st) => 0.8 * st.totalAD }, tip: 'Active: 80% AD, every 10s' },
+    "stridebreaker": { active: { cd: 15, type: 'physical', dmg: (st) => 0.8 * st.totalAD }, tip: 'Active: 80% AD, every 15s' },
+    "profane hydra": { active: { cd: 10, type: 'physical', dmg: (st, hp) => 0.8 * st.totalAD * (hp < 0.5 * DUMMY.hp ? 1.3 : 1) }, tip: 'Active: 80% AD (more below 50% HP), every 10s' },
+    "hextech gunblade": { active: { cd: 60, type: 'magic', dmg: (st) => 253 + 0.3 * st.ap }, tip: 'Active: 253 + 30% AP' },
+    "redemption": { active: { cd: 90, delay: 2.5, type: 'true', dmg: () => 0.1 * DUMMY.hp }, tip: 'Active: 10% max HP true damage' },
   };
 
   // ---------- Champion damage profile ----------
@@ -236,7 +249,7 @@
     return { lvl: 18, t, ad: st.totalAD, bad: st.bonusAD, base: st.baseAD, ap: st.ap, hp: st.maxHP, bhp: st.bonusHP,
       arm: st.baseArmor + st.bonusArmor, barm: st.bonusArmor, mr: st.baseMR + st.bonusMR, bmr: st.bonusMR,
       crit: st.crit, cm: st.critMult, as: st.as, bas: st.bonusASPct / 100, mana: st.maxMana, bmana: st.maxMana - st.champMana,
-      leth: st.leth, ranged: ch.ranged, shp: SELF_HP, smiss: 1 - SELF_HP, thp: dummyHp, tmax: DUMMY.hp, tmiss: DUMMY.hp - dummyHp };
+      leth: st.leth, ranged: ch.ranged, shp: SELF_HP, smiss: 1 - SELF_HP, thp: dummyHp, tmax: DUMMY.hp, tmiss: DUMMY.hp - dummyHp, tbase: DUMMY.baseHp, tbhp: DUMMY.hp - DUMMY.baseHp };
   }
 
   // ---------- Simulation ----------
@@ -366,7 +379,17 @@
     let sbReadyAt = 0, sbArmed = false;
 
     let burnUntil = { liandry: -1, blackfire: -1 }, lastBurnTick = -1, ludenReady = 0;
-    let malignanceUntil = -1, empoweredAutos = 0, sunderedUsed = false, autoCount = 0;
+    let malignanceUntil = -1, empoweredAutos = 0, sunderedReady = 0, autoCount = 0, zekeUntil = -1;
+    // Eclipse: two separate attacks/abilities within 2s deal 8% max HP (ranged 62.5% of that), 6s cooldown.
+    let eclipseLast = -Infinity, eclipseReady = 0;
+    const eclipseHit = t => {
+      if (!hasAny('eclipse')) return;
+      if (t >= eclipseReady && t - eclipseLast <= 2 && t > eclipseLast) {
+        eclipseReady = t + 6; eclipseLast = -Infinity;
+        deal(t, 0.08 * DUMMY.hp * (ch.ranged ? 0.625 : 1), 'physical', 'Eclipse', 'item');
+      } else eclipseLast = t;
+    };
+    let openerDone = false;
     let heartsteelDone = false, stormsurgeAt = null, stormsurgeDone = false, titanicReady = 0;
 
     const onAbilityHit = (t, first, cast) => {
@@ -388,7 +411,8 @@
       if (spellblade && t >= sbReadyAt) { sbArmed = true; sbReadyAt = t + 1.5; }
       for (const f of has('burn')) burnUntil[f.burn] = t + 3;
       if (hasAny('abilityRamp')) shojinStacks = Math.min(4, shojinStacks + 1);
-      if (hasAny('luden') && t >= ludenReady) { ludenReady = t + 6; deal(t, 100 + 0.10 * st.ap, 'magic', "Luden's Echo", 'item'); }
+      if (hasAny('luden') && t >= ludenReady) { ludenReady = t + 12; deal(t, (75 + 0.05 * st.ap) * 2, 'magic', "Luden's Echo", 'item'); } // 1 bolt + 5 repeats at 20%
+      eclipseHit(t);
       if (first && hasAny('bastion')) deal(t, 60 + 0.05 * st.bonusAD, 'true', 'Bastionbreaker', 'item');
       if (first && st.muramana) deal(t, 0.035 * st.maxMana, 'physical', 'Manamune', 'item');
     };
@@ -410,7 +434,7 @@
           if (o.ownHpMelee) deal(t, st.maxHP * (ch.ranged ? o.ownHpRanged : o.ownHpMelee), 'physical', f.item, 'onhit');
         }
         if (pr.onHitAp) deal(t, pr.onHitAp * st.ap + 20, 'magic', 'Champion on-hit', 'onhit');
-        if (P && P.onHit) { if (P.onHit.dot) addDot(t, P.onHit, P.onHit.dmg); else dealP(t, P.onHit, P.onHit.dmg, 'onhit'); }
+        if (P && P.onHit && (!P.onHit.cond || P.onHit.cond(pctx(t)))) { if (P.onHit.dot) addDot(t, P.onHit, P.onHit.dmg); else dealP(t, P.onHit, P.onHit.dmg, 'onhit'); }
         if (st.muramana) deal(t, 0.012 * st.maxMana, 'physical', 'Manamune', 'onhit');
       }
     };
@@ -421,7 +445,7 @@
       let mult = P && P.noCrit ? 1 : 1 + st.crit * (st.critMult - 1);
       let trueBonus = 0;
       if (pN && pN.crit) mult = Math.max(st.critMult, pN.minCrit || 0); // e.g. Jhin's 4th shot always crits
-      else if (hasAny('sundered') && !sunderedUsed) { sunderedUsed = true; mult = st.critMult; }
+      else if (hasAny('sundered') && t >= sunderedReady) { sunderedReady = t + 10; mult = st.critMult; }
       else if (empoweredAutos > 0) {
         empoweredAutos--;
         mult = Math.max(mult, 1 + 0.8 * (st.critMult - 1));
@@ -434,6 +458,12 @@
         autoDmg *= 1 - Object.values(P.autoSplit).reduce((a, b) => a + b, 0);
       }
       deal(t, autoDmg, 'physical', 'Basic Attacks', 'attack');
+      if (!openerDone) {
+        openerDone = true;
+        if (hasAny('dmp')) deal(t, 40 + st.baseAD, 'physical', "Dead Man's Plate", 'onhit');
+        if (hasAny('umbral')) deal(t, (ch.ranged ? 2 : 3) * st.leth, 'true', 'Umbral Glaive', 'onhit');
+      }
+      eclipseHit(t);
       let pExtraOnHit = 0;
       if (P) {
         if (pN) { if (pN.dmg) fireP(t, pN); if (pN.extraOnHit) pExtraOnHit++; pAutoNReady = t + (pN.cd || 0); }
@@ -471,9 +501,9 @@
       for (const f of has('everyN')) {
         const e = f.everyN;
         if (autoCount % e.n !== 0) continue;
-        if (e.phys) deal(t, e.phys * (1 + (e.missingAmp || 0) * (1 - dummyHp / DUMMY.hp)), 'physical', f.item, 'onhit');
+        if (e.phys) deal(t, e.phys * (1 + (e.missingAmp || 0) * (1 - dummyHp / DUMMY.hp)) * (ch.ranged ? (e.rangedMult || 1) : 1), 'physical', f.item, 'onhit');
         if (e.magic) deal(t, e.magic, 'magic', f.item, 'onhit');
-        if (e.curHp) deal(t, e.curHp * dummyHp, 'physical', f.item, 'onhit');
+        if (e.curHp) deal(t, (ch.ranged && e.curHpRanged ? e.curHpRanged : e.curHp) * dummyHp, 'physical', f.item, 'onhit');
         // Hullbreaker Skipper (game files): 120% base AD + 5% max HP; ranged champions deal 70%.
         if (e.hull) deal(t, (1.2 * st.baseAD + 0.05 * st.maxHP) * (ch.ranged ? 0.7 : 1), 'physical', f.item, 'onhit');
       }
@@ -493,9 +523,16 @@
         crit: st.crit, critMult: st.critMult, mana: st.maxMana, baseMana: st.champMana, bonusMana: st.maxMana - st.champMana,
         lethality: st.leth, ms: 400 },
       target: { maxHp: DUMMY.hp, curHp: dummyHp, missingHp: DUMMY.hp - dummyHp, armor: DUMMY.armor, mr: DUMMY.mr,
-        baseHp: DUMMY.hp, bonusHp: 0 },
+        baseHp: DUMMY.baseHp, bonusHp: DUMMY.hp - DUMMY.baseHp },
       stacks: stackInfo.counter ?? 0,
     });
+    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi']);
+    const spellQueue = []; // scheduled ability hits/ticks: { at, raw(), type, label }
+    const onUltimate = t => {
+      if (hasAny('malignance')) { malignanceUntil = t + 3; malignanceShred = 10; }
+      if (hasAny('zeke')) zekeUntil = t + 5;
+      if (hasAny('fiendhunter')) empoweredAutos = 3;
+    };
     const tryCastRealSpell = (t) => {
       if (t < castLock) return;
       for (const sp of castable) {
@@ -509,16 +546,34 @@
           if (sp.mech.resetsAttack) nextAuto = Math.min(nextAuto, castLock);
           return;
         }
+        if (sp.mech && SPELL_MECHS.has(sp.mech.kind)) {
+          const m = sp.mech, label = `${sp.slot} · ${labels[sp.slot] || sp.name}`;
+          const ev = name => { const v = root.Potenshall.Abilities.evalCalc(name, sp.sp, { ...spellCtx(), rank: sp.rank }); return Number.isFinite(v) && v > 0 ? Math.min(v, 6000) : 0; };
+          let first = 0;
+          if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : 1), m.type, label, 'ability');
+          else if (m.kind === 'multi') for (const p of m.parts) first += deal(t, ev(p.calc), p.type, label, 'ability');
+          else if (m.kind === 'hits') {
+            for (let i = 0; i < m.n; i++) spellQueue.push({ at: t + (m.n > 1 ? i * m.over / (m.n - 1) : 0), label, type: m.type,
+              raw: () => { const b = ev(m.calc); return m.critCalc ? b + st.crit * (ev(m.critCalc) - b) : b; } });
+          } else if (m.kind === 'channel') {
+            const dur = Math.min(m.duration || 99, T);
+            for (let k = 0.5; k <= dur + 1e-9; k += 0.5) spellQueue.push({ at: t + k, label, type: m.type,
+              raw: () => (m.empCalc && k > m.empAfter ? ev(m.empCalc) : ev(m.perSec)) / 2 });
+          }
+          onAbilityHit(t, t >= bastionReady, { raw: first, type: m.type, label });
+          if (t >= bastionReady) bastionReady = t + 3;
+          if (sp.slot === 'R') onUltimate(t);
+          ready[sp.slot] = m.once ? Infinity : t + sp.cooldown * 100 / (100 + st.ah);
+          castLock = t + sp.castTime;
+          return;
+        }
         if (!sp.damaging) continue;
         const dmg = root.Potenshall.Abilities.evalSpellDamage(sp, spellCtx());
         const label = `${sp.slot} · ${labels[sp.slot] || sp.name}`;
         deal(t, dmg, sp.type, label, 'ability');
         onAbilityHit(t, t >= bastionReady, { raw: dmg, type: sp.type, label });
         if (t >= bastionReady) bastionReady = t + 3;
-        if (sp.slot === 'R') {
-          if (hasAny('malignance')) { malignanceUntil = t + 3; malignanceShred = 10; }
-          if (hasAny('fiendhunter')) empoweredAutos = 3;
-        }
+        if (sp.slot === 'R') onUltimate(t);
         ready[sp.slot] = t + sp.cooldown * 100 / (100 + st.ah);
         castLock = t + sp.castTime;
         return;
@@ -531,11 +586,20 @@
     // periodic may be one timer or a list (e.g. a passive plus an ability modeled as a timer). No 'every' = fires once.
     const pPeriodics = P ? [].concat(P.periodic || []).map(pe => ({ pe, at: pe.start || 0 })) : [];
     let pTimedOnceDone = false;
-    if (hasAny('rocketbelt')) deal(0, 125 + 0.15 * st.ap, 'magic', 'Hextech Rocketbelt', 'item');
+    if (hasAny('rocketbelt')) deal(0, 135 + 0.15 * st.ap, 'magic', 'Hextech Rocketbelt', 'item');
+    const actives = has('active').map(f => ({ ...f.active, item: f.item, at: f.active.delay || 0 }));
     if (spells) nextCombo = Infinity;
 
     for (let t = 0; t < T - 1e-9; t = +(t + DT).toFixed(4)) {
       if (spells) tryCastRealSpell(t);
+      // Channels and multi-hit abilities: each tick is real ability damage (item amps apply, burns stay lit).
+      for (let i = spellQueue.length - 1; i >= 0; i--) {
+        const q = spellQueue[i];
+        if (q.at > t + 1e-9) continue;
+        spellQueue.splice(i, 1);
+        deal(t, q.raw(), q.type, q.label, 'ability');
+        for (const f of has('burn')) burnUntil[f.burn] = t + 3;
+      }
       if (spells && t < castLock && t >= nextAuto) nextAuto = castLock; // can't attack mid-cast
       if (t >= nextCombo) {
         comboQueue.push({ at: t, mult: 1 / 3, src: 'Abilities', first: true },
@@ -546,10 +610,7 @@
       comboQueue = comboQueue.filter(c => {
         if (c.at > t + 1e-9) return true;
         castAbility(t, c.mult, c.src, c.first);
-        if (c.ult) {
-          if (hasAny('malignance')) { malignanceUntil = t + 3; malignanceShred = 10; }
-          if (hasAny('fiendhunter')) empoweredAutos = 3;
-        }
+        if (c.ult) onUltimate(t);
         return false;
       });
       // Passive timers: empowered attack coming off cooldown, periodic effects, auras.
@@ -587,14 +648,16 @@
           const v = P.aura.dmg(c); return typeof v === 'number' ? v / 2 : Object.fromEntries(Object.entries(v).map(([k, x]) => [k, x / 2]));
         }, 'dot');
         if (t <= burnUntil.liandry) deal(t, 0.01 * DUMMY.hp, 'magic', "Liandry's Torment", 'dot');
-        if (t <= burnUntil.blackfire) deal(t, (20 + 0.04 * st.ap) / 2, 'magic', 'Blackfire Torch', 'dot');
-        if (t <= malignanceUntil) deal(t, (20 + 0.05 * st.ap) / 2, 'magic', 'Malignance', 'dot');
-        if (hasAny('immolate')) deal(t, (20 + 0.015 * st.bonusHP) / 2, 'magic', has('immolate')[0].item, 'dot');
+        if (t <= burnUntil.blackfire) deal(t, (20 + 0.02 * st.ap) / 2, 'magic', 'Blackfire Torch', 'dot');
+        if (t <= zekeUntil) deal(t, 30 / 2, 'magic', "Zeke's Convergence", 'dot');
+        if (t <= malignanceUntil) deal(t, (60 + 0.05 * st.ap) / 2, 'magic', 'Malignance', 'dot');
+        for (const f of has('immolate')) deal(t, (f.immolate.base + f.immolate.bhp * st.bonusHP) / 2, 'magic', f.item, 'dot');
       }
-      if (hasAny('despair') && t >= nextDespair) { nextDespair = t + 4; deal(t, 25 + 0.025 * st.bonusHP, 'magic', 'Unending Despair', 'dot'); }
+      if (hasAny('despair') && t >= nextDespair) { nextDespair = t + 4; deal(t, 0.03 * st.bonusHP, 'magic', 'Unending Despair', 'dot'); }
+      for (const a of actives) if (t >= a.at) { a.at = t + a.cd; deal(t, a.dmg(st, dummyHp), a.type, a.item + ' (active)', 'item'); }
       if (hasAny('stormsurge') && !stormsurgeDone) {
         if (stormsurgeAt === null && total >= 0.25 * DUMMY.hp && t <= 2.5) stormsurgeAt = t + 2;
-        if (stormsurgeAt !== null && t >= stormsurgeAt) { stormsurgeDone = true; deal(t, 140 + 0.15 * st.ap, 'magic', 'Stormsurge', 'item'); }
+        if (stormsurgeAt !== null && t >= stormsurgeAt) { stormsurgeDone = true; deal(t, 125 + 0.1 * st.ap, 'magic', 'Stormsurge', 'item'); }
       }
     }
 
@@ -899,6 +962,11 @@
   //   everyN:      every Nth basic attack deals bonus damage (pctTargetMaxHp / flat / floor)
   //   empowerAuto: casting arms the next attack with bonus damage (adRatio = x total AD, bonusAdRatio, apRatio)
   //   buff:        cast at the start of the fight for bonus stats lasting the whole 10s
+  //   cast:        a normal cast, but damage comes from a named formula the generic reader misses (calc)
+  //   channel:     damage every tick for a duration (perSec formula; duration in seconds or a data value;
+  //                empCalc/empAfter: stronger per-second damage after a delay; once: cast a single time)
+  //   hits:        n hits spread over over seconds (calc per hit, critCalc blended by crit chance)
+  //   multi:       several formulas in one cast (parts: [{ calc, type }])
   // passiveCovered: the champion's damage passive is modeled here, so skip the generic marksman stand-in.
   const MECHANICS = {
     Vayne: {
@@ -907,12 +975,20 @@
       W: { kind: 'everyN', n: 3, type: 'true', pctTargetMaxHp: 'MaxHealthRatio', floor: 'DamageFloor' },
       R: { kind: 'buff', stats: { ad: 'BonusAttackDamage' } },
     },
+    Samira: { R: { kind: 'hits', type: 'physical', calc: 'DamageCalc', critCalc: 'CriticalDamageCalc', n: 10, over: 2 } },
+    Twitch: { E: { kind: 'multi', parts: [{ calc: 'MaxPhysicalDamage', type: 'physical' }, { calc: 'MaxMagicDamage', type: 'magic' }] } }, // 6 stacks
+    Anivia: { R: { kind: 'channel', type: 'magic', perSec: 'TotalDamagePerSecond', empCalc: 'EmpoweredDamagePerSecondTooltipOnly', empAfter: 1.5, duration: 99, once: true } },
+    Renekton: { R: { kind: 'channel', type: 'magic', perSec: 'TotalDamagePerSecond', duration: 'BuffDuration' } },
+    Rumble: { R: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 'TrailDuration' } },
+    Singed: { Q: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 99, once: true } },
+    Kennen: { R: { kind: 'hits', type: 'magic', calc: 'PerTickDamageCalculated', n: 6, over: 3 } },
+    Kayle: { E: { kind: 'cast', type: 'magic', calc: 'ActiveTotalExecuteDamage', pctOfMissing: true } }, // formula is a share of missing HP
   };
 
   function resolveMechanic(spec, sp, rank) {
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
-    for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+    for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.stats) m.stats = Object.fromEntries(Object.entries(spec.stats).map(([k, name]) => [k, dv(name)]));
     return m;
   }
@@ -959,7 +1035,7 @@
    Formula functions get c = { ad, bad (bonus AD), base (base AD), ap, hp, bhp (bonus HP), arm, barm, mr, bmr,
    crit (0-1), cm (crit multiplier), as, bas (bonus AS fraction), mana, bmana, leth, ranged,
    shp / smiss (your own health / missing health share: the fight assumes 40% health),
-   thp (dummy current HP), tmax (10,000), tmiss (missing HP), t (seconds) }.
+   thp (dummy current HP), tmax (10,000), tmiss (missing HP), tbase / tbhp (dummy base / bonus HP), t (seconds) }.
 
    Building blocks:
      stats(c)        -> extra stats { ad, ap, as (bonus %), crit (%), critDmg (%), armor, mr, hp, ah, leth, arpen (%), mpen (%) }
@@ -1011,7 +1087,9 @@
     Briar: { name: 'Crimson Curse', note: 'Stacking bleed from attacks and abilities', stackDot: { max: 5, dur: 5, type: 'physical', perStack: c => (25 + 0.05 * c.bad) / 5 } },
     Caitlyn: { name: 'Headshot', note: 'Every 6th attack, and after a net/trap hit', everyN: { n: 6, type: 'physical', dmg: c => c.ad * (1.2 + c.crit * 1.3125 * (c.cm / 1.75)) },
       afterAbility: { cd: 10, type: 'physical', dmg: c => c.ad * (1.2 + c.crit * 1.3125 * (c.cm / 1.75)) } },
-    Camille: { name: 'Adaptive Defenses', note: 'Q empowered attacks, the second part true damage', timedAuto: { every: 4, label: 'Q · Precision Protocol', kind: 'ability', dmg: c => ({ physical: 0.3 * c.ad, true: 0.5 * c.ad }) } },
+    Camille: { name: 'Adaptive Defenses', note: 'Q empowered attacks, the second part true damage', timedAuto: { every: 4, label: 'Q · Precision Protocol', kind: 'ability', dmg: c => ({ physical: 0.3 * c.ad, true: 0.5 * c.ad }) },
+      // R (Hextech Ultimatum) cast at the start: attacks deal 15 + 8% current HP magic for 4s.
+      onHit: { cond: c => c.t >= 0.5 && c.t <= 4.5, label: 'R · Hextech Ultimatum', kind: 'ability', type: 'magic', dmg: c => 15 + 0.08 * c.thp } },
     Cassiopeia: none('Serpentine Grace'),
     Chogath: none('Carnivore', 'Healing only'),
     Corki: { name: 'Hextech Munitions', note: 'Attacks deal 80% magic damage', autoSplit: { magic: 0.8 } },

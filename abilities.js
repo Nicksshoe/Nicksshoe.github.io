@@ -211,6 +211,11 @@
   //   everyN:      every Nth basic attack deals bonus damage (pctTargetMaxHp / flat / floor)
   //   empowerAuto: casting arms the next attack with bonus damage (adRatio = x total AD, bonusAdRatio, apRatio)
   //   buff:        cast at the start of the fight for bonus stats lasting the whole 10s
+  //   cast:        a normal cast, but damage comes from a named formula the generic reader misses (calc)
+  //   channel:     damage every tick for a duration (perSec formula; duration in seconds or a data value;
+  //                empCalc/empAfter: stronger per-second damage after a delay; once: cast a single time)
+  //   hits:        n hits spread over over seconds (calc per hit, critCalc blended by crit chance)
+  //   multi:       several formulas in one cast (parts: [{ calc, type }])
   // passiveCovered: the champion's damage passive is modeled here, so skip the generic marksman stand-in.
   const MECHANICS = {
     Vayne: {
@@ -219,12 +224,20 @@
       W: { kind: 'everyN', n: 3, type: 'true', pctTargetMaxHp: 'MaxHealthRatio', floor: 'DamageFloor' },
       R: { kind: 'buff', stats: { ad: 'BonusAttackDamage' } },
     },
+    Samira: { R: { kind: 'hits', type: 'physical', calc: 'DamageCalc', critCalc: 'CriticalDamageCalc', n: 10, over: 2 } },
+    Twitch: { E: { kind: 'multi', parts: [{ calc: 'MaxPhysicalDamage', type: 'physical' }, { calc: 'MaxMagicDamage', type: 'magic' }] } }, // 6 stacks
+    Anivia: { R: { kind: 'channel', type: 'magic', perSec: 'TotalDamagePerSecond', empCalc: 'EmpoweredDamagePerSecondTooltipOnly', empAfter: 1.5, duration: 99, once: true } },
+    Renekton: { R: { kind: 'channel', type: 'magic', perSec: 'TotalDamagePerSecond', duration: 'BuffDuration' } },
+    Rumble: { R: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 'TrailDuration' } },
+    Singed: { Q: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 99, once: true } },
+    Kennen: { R: { kind: 'hits', type: 'magic', calc: 'PerTickDamageCalculated', n: 6, over: 3 } },
+    Kayle: { E: { kind: 'cast', type: 'magic', calc: 'ActiveTotalExecuteDamage', pctOfMissing: true } }, // formula is a share of missing HP
   };
 
   function resolveMechanic(spec, sp, rank) {
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
-    for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+    for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.stats) m.stats = Object.fromEntries(Object.entries(spec.stats).map(([k, name]) => [k, dv(name)]));
     return m;
   }

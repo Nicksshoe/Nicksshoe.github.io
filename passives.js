@@ -6,7 +6,7 @@
    Formula functions get c = { ad, bad (bonus AD), base (base AD), ap, hp, bhp (bonus HP), arm, barm, mr, bmr,
    crit (0-1), cm (crit multiplier), as, bas (bonus AS fraction), mana, bmana, leth, ranged,
    shp / smiss (your own health / missing health share: the fight assumes 40% health),
-   thp (dummy current HP), tmax (10,000), tmiss (missing HP), t (seconds) }.
+   thp (dummy current HP), tmax (10,000), tmiss (missing HP), tbase / tbhp (dummy base / bonus HP), t (seconds) }.
 
    Building blocks:
      stats(c)        -> extra stats { ad, ap, as (bonus %), crit (%), critDmg (%), armor, mr, hp, ah, leth, arpen (%), mpen (%) }
@@ -58,7 +58,9 @@
     Briar: { name: 'Crimson Curse', note: 'Stacking bleed from attacks and abilities', stackDot: { max: 5, dur: 5, type: 'physical', perStack: c => (25 + 0.05 * c.bad) / 5 } },
     Caitlyn: { name: 'Headshot', note: 'Every 6th attack, and after a net/trap hit', everyN: { n: 6, type: 'physical', dmg: c => c.ad * (1.2 + c.crit * 1.3125 * (c.cm / 1.75)) },
       afterAbility: { cd: 10, type: 'physical', dmg: c => c.ad * (1.2 + c.crit * 1.3125 * (c.cm / 1.75)) } },
-    Camille: { name: 'Adaptive Defenses', note: 'Q empowered attacks, the second part true damage', timedAuto: { every: 4, label: 'Q · Precision Protocol', kind: 'ability', dmg: c => ({ physical: 0.3 * c.ad, true: 0.5 * c.ad }) } },
+    Camille: { name: 'Adaptive Defenses', note: 'Q empowered attacks, the second part true damage', timedAuto: { every: 4, label: 'Q · Precision Protocol', kind: 'ability', dmg: c => ({ physical: 0.3 * c.ad, true: 0.5 * c.ad }) },
+      // R (Hextech Ultimatum) cast at the start: attacks deal 15 + 8% current HP magic for 4s.
+      onHit: { cond: c => c.t >= 0.5 && c.t <= 4.5, label: 'R · Hextech Ultimatum', kind: 'ability', type: 'magic', dmg: c => 15 + 0.08 * c.thp } },
     Cassiopeia: none('Serpentine Grace'),
     Chogath: none('Carnivore', 'Healing only'),
     Corki: { name: 'Hextech Munitions', note: 'Attacks deal 80% magic damage', autoSplit: { magic: 0.8 } },
