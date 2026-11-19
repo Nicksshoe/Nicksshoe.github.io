@@ -598,10 +598,10 @@ function showResults(res, isBest){
       </div>
       <div style="display:grid;gap:16px;align-content:start">
         <div class="panel">
-          <h3>Bausffs Meter</h3>
+          <h3>Meta Meter</h3>
           <div class="meter">${Array.from({length:6}, (_, i) => `<i class="${i < abs ? 'on' : ''}"></i>`).join('')}</div>
           <div class="muted" style="font-size:13px">${abs}/6 off-script items</div>
-          <p class="quote">“${quote}”</p>
+          <p class="quote">${quote}</p>
         </div>
         <div class="panel">
           <h3>Level 18 Stats</h3>
@@ -642,7 +642,7 @@ function share(res, tier, abs){
   const lines = [
     `Potenshall Damage ${S.mode === 'daily' ? today() : '(free play)'} · Patch ${DATA.patch}`,
     `${S.champ.name}: ${S.items.map(i => i.name).join(', ')}`,
-    `${fmt(res.total)} damage in 10s · ${tier.name} · Bausffs Meter ${'🟪'.repeat(abs)}${'⬛'.repeat(6-abs)}`,
+    `${fmt(res.total)} damage in 10s · ${tier.name} · Meta Meter ${'🟪'.repeat(abs)}${'⬛'.repeat(6-abs)}`,
   ].join('\n');
   const done = () => toast('Copied to clipboard');
   if (navigator.clipboard) navigator.clipboard.writeText(lines).then(done, () => prompt('Copy your result:', lines));
