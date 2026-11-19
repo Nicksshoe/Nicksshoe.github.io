@@ -398,7 +398,8 @@
 
     // ---- Champion passive helpers ----
     const PSRC = P ? `Passive · ${P.name}` : 'Passive';
-    const pctx = t => passiveCtx(st, dummyHp, t, ch);
+    const pState = {}; // per-fight state a passive table keeps (Elise's spiderlings, Frenzy and Rappel windows)
+    const pctx = t => Object.assign(passiveCtx(st, dummyHp, t, ch), { ps: pState });
     // A passive damage spec returns a number (of spec.type) or { physical, magic, true }.
     const dealP = (t, spec, fn, kind, label) => {
       const out = fn(pctx(t));
@@ -890,6 +891,7 @@
       if (t <= tempASUntil) bonus += tempAS;
       if (empoweredAutos > 0) bonus += 50;
       if (empowered && empowered.asBonus) bonus += empowered.asBonus < 5 ? empowered.asBonus * 100 : empowered.asBonus; // Skarner Q
+      if (P && P.asBuffNow) bonus += P.asBuffNow(pctx(t)); // timed attack speed from a hand-modeled kit (Elise's Skittering Frenzy)
       const as = P && P.fixedAS ? st.as : Math.min(2.5, st.as + asRatioNow * bonus / 100);
       return 1 / (as * pr.uptime);
     };
@@ -963,6 +965,7 @@
         if (t < x.at) continue;
         x.at = t + (x.pe.every || Infinity) * (x.pe.ability ? 100 / (100 + st.ah) : 1); // ability cooldowns shrink with haste
         if (!x.pe.cond || x.pe.cond(pctx(t))) {
+          if (x.pe.onFire) x.pe.onFire(pState, t); // state changes from the cast (spiderling gained, buff window opened)
           if (x.pe.charges) { onHitCharges.set(x.pe, x.pe.charges); nextAuto = Math.min(nextAuto, t + 0.1); } // empowers the next attacks
           else fireP(t, x.pe);
           if (x.pe.ability) { onAbilityHit(t, true, x.pe.noDamage ? { noDamage: true } : null); if (x.pe.ult) onUltimate(t); }
@@ -1660,14 +1663,28 @@
       stats: c => ({ ad: 0.032 * c.hp }), timedAuto: { every: 6, resetsAttack: true, label: 'E · Blunt Force Trauma', kind: 'ability', type: 'physical', dmg: c => (45 + 0.05 * c.bhp) * (1 + 0.4 * Math.min(1, c.smiss / 0.7)) } },
     Ekko: { name: 'Z-Drive Resonance + Parallel Convergence (W)', note: 'Every 3rd hit; W passive: attacks on targets below 30% HP deal 3% (+3% per 100 AP) missing HP', everyNHits: { n: 3, cd: 5, type: 'magic', dmg: c => 85 + 0.8 * c.ap },
       onHit: { cond: c => c.thp < 0.3 * c.tmax, label: 'W · Parallel Convergence', type: 'magic', dmg: c => (0.03 + 0.03 * c.ap / 100) * c.tmiss } },
-    Elise: { name: 'Spider Queen', note: 'Human Neurotoxin and Volatile Spiderling, then Spider form: Venomous Bite, empowered attacks, spiderlings', ownKit: true,
-      onHit: { cond: c => c.t >= 1, label: 'Spider form attacks', kind: 'ability', type: 'magic', dmg: c => 44 + 0.15 * c.ap },
-      periodic: [
-        { every: 6, start: 0.3, ability: true, label: 'Q · Neurotoxin', kind: 'ability', type: 'magic', dmg: c => 160 + (0.04 + 0.03 * c.ap / 100) * c.thp },
-        { every: 12, start: 0.6, ability: true, label: 'W · Volatile Spiderling', kind: 'ability', type: 'magic', dmg: c => 220 + 0.75 * c.ap },
-        { every: 6, start: 1.0, ability: true, label: 'Spider Q · Venomous Bite', kind: 'ability', type: 'magic', dmg: c => 170 + (0.08 + 0.03 * c.ap / 100) * c.tmiss },
-        { every: 1, start: 1.2, label: 'Spiderlings', kind: 'ability', type: 'magic', dmg: c => 3 * (40 + 0.15 * c.ap) },
-      ] },
+    // Game files, level 18 (R rank 4, basics rank 5). Human Q, W and E hits each give a dormant spiderling (up to 5),
+    // which attack in Spider Form. Skittering Frenzy (spider W): +130% attack speed for Elise and her spiderlings for 3s
+    // (cooldown 6s in the files). Rappel (spider E): Spider Queen's bonus damage +100% for 5s after landing (cooldown 18s).
+    // She swaps forms (R, 3s cooldown) to keep both Qs on cooldown, so the spider bonus applies to every attack after 1s.
+    Elise: (() => {
+      const ling = ps => { ps.lings = Math.min(5, (ps.lings || 0) + 1); };
+      const frenzy = c => c.t < (c.ps.frenzyUntil || 0);
+      return { name: 'Spider Queen', note: 'Human Q, W and Cocoon each add a spiderling (up to 5); Spider form: Venomous Bite, Skittering Frenzy, Rappel, empowered attacks', ownKit: true,
+        asBuffNow: c => frenzy(c) ? 130 : 0,
+        onHit: { cond: c => c.t >= 1, label: 'Spider form attacks', kind: 'ability', type: 'magic', dmg: c => (44 + 0.15 * c.ap) * (c.t < (c.ps.rappelUntil || 0) ? 2 : 1) },
+        periodic: [
+          { every: 6, start: 0.3, ability: true, onFire: ling, label: 'Q · Neurotoxin', kind: 'ability', type: 'magic', dmg: c => 160 + (0.04 + 0.03 * c.ap / 100) * c.thp },
+          { every: 12, start: 0.6, ability: true, onFire: ling, label: 'W · Volatile Spiderling', kind: 'ability', type: 'magic', dmg: c => 220 + 0.75 * c.ap },
+          { every: 10, start: 0.8, ability: true, noDamage: true, onFire: ling, label: 'E · Cocoon', kind: 'ability', dmg: () => 0 },
+          { every: 18, start: 1.0, ability: true, noDamage: true, onFire: (ps, t) => { ps.rappelUntil = t + 5; }, label: 'Spider E · Rappel', kind: 'ability', dmg: () => 0 },
+          { every: 6, start: 1.1, ability: true, label: 'Spider Q · Venomous Bite', kind: 'ability', type: 'magic', dmg: c => 170 + (0.08 + 0.03 * c.ap / 100) * c.tmiss },
+          { every: 6, start: 1.2, ability: true, noDamage: true, onFire: (ps, t) => { ps.frenzyUntil = t + 3; }, label: 'Spider W · Skittering Frenzy', kind: 'ability', dmg: () => 0 },
+          // Spiderlings: about 1 attack per second each with Spider W's +25% passive; Frenzy's +130% roughly doubles that.
+          { every: 0.5, start: 1.2, label: 'Spiderlings', kind: 'ability', type: 'magic', cond: c => c.ps.lings > 0,
+            dmg: c => c.ps.lings * (40 + 0.15 * c.ap) / 2 * (frenzy(c) ? 2.04 : 1) },
+        ] };
+    })(),
     Evelynn: { castDebuff: { W: { mr: 0.45, dur: 4 } }, name: 'Demon Shade', note: 'E deals % max HP', periodic: { every: 8, start: 0.3, ability: true, label: 'E · Whiplash', kind: 'ability', type: 'magic', dmg: c => 180 + (0.03 + 0.015 * c.ap / 100) * c.tmax } },
     Ezreal: { name: 'Rising Spell Force', note: 'Attack speed from ability hits; Q applies on-hit and Spellblade', stats: () => ({ as: 45 }), onHitAbility: { Q: { spellblade: true } } },
     Fiddlesticks: { name: 'A Harmless Scarecrow', note: 'Q deals % current HP (min 120)', periodic: { every: 13, start: 0.5, ability: true, label: 'Q · Terrify', kind: 'ability', type: 'magic', dmg: c => Math.max(120, (0.06 + 0.03 * c.ap / 100) * c.thp) } },

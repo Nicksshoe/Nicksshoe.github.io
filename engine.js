@@ -397,7 +397,8 @@
 
     // ---- Champion passive helpers ----
     const PSRC = P ? `Passive · ${P.name}` : 'Passive';
-    const pctx = t => passiveCtx(st, dummyHp, t, ch);
+    const pState = {}; // per-fight state a passive table keeps (Elise's spiderlings, Frenzy and Rappel windows)
+    const pctx = t => Object.assign(passiveCtx(st, dummyHp, t, ch), { ps: pState });
     // A passive damage spec returns a number (of spec.type) or { physical, magic, true }.
     const dealP = (t, spec, fn, kind, label) => {
       const out = fn(pctx(t));
@@ -889,6 +890,7 @@
       if (t <= tempASUntil) bonus += tempAS;
       if (empoweredAutos > 0) bonus += 50;
       if (empowered && empowered.asBonus) bonus += empowered.asBonus < 5 ? empowered.asBonus * 100 : empowered.asBonus; // Skarner Q
+      if (P && P.asBuffNow) bonus += P.asBuffNow(pctx(t)); // timed attack speed from a hand-modeled kit (Elise's Skittering Frenzy)
       const as = P && P.fixedAS ? st.as : Math.min(2.5, st.as + asRatioNow * bonus / 100);
       return 1 / (as * pr.uptime);
     };
@@ -962,6 +964,7 @@
         if (t < x.at) continue;
         x.at = t + (x.pe.every || Infinity) * (x.pe.ability ? 100 / (100 + st.ah) : 1); // ability cooldowns shrink with haste
         if (!x.pe.cond || x.pe.cond(pctx(t))) {
+          if (x.pe.onFire) x.pe.onFire(pState, t); // state changes from the cast (spiderling gained, buff window opened)
           if (x.pe.charges) { onHitCharges.set(x.pe, x.pe.charges); nextAuto = Math.min(nextAuto, t + 0.1); } // empowers the next attacks
           else fireP(t, x.pe);
           if (x.pe.ability) { onAbilityHit(t, true, x.pe.noDamage ? { noDamage: true } : null); if (x.pe.ult) onUltimate(t); }
