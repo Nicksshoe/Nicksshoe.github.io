@@ -660,7 +660,12 @@
       // Passive timers: empowered attack coming off cooldown, periodic effects, auras.
       if (P && P.timedAuto && !pTimedArmed && t >= pTimedReady && !(P.timedAuto.once && pTimedOnceDone)) {
         const ta = P.timedAuto;
-        if (!ta.cond || ta.cond(pctx(t))) { pTimedArmed = true; pTimedOnceDone = true; pTimedReady = t + (ta.every || Infinity); }
+        if (!ta.cond || ta.cond(pctx(t))) {
+          pTimedArmed = true; pTimedOnceDone = true;
+          // Ability-based empowered attacks: cooldown shrinks with haste, and an attack reset fires it right away.
+          pTimedReady = t + (ta.every || Infinity) * (ta.kind === 'ability' ? 100 / (100 + st.ah) : 1);
+          if (ta.resetsAttack) nextAuto = Math.min(nextAuto, t + 0.1);
+        }
       }
       for (const x of pPeriodics) {
         if (t < x.at) continue;
@@ -834,6 +839,8 @@
       E: [['HweiEQ', 'Damage'], ['HweiEW', 'Damage'], ['HweiEE', 'Damage']],   // Grim Visage / Gaze of the Abyss / Stirring Torrent
     },
   };
+  // A few champions list their spells out of Q/W/E/R order in the game data.
+  const SLOT_ORDER = { Naafiri: ['Q', 'R', 'E', 'W'] };
   const readSpell = obj => {
     const sp = obj.mSpell || {}, dv = {};
     for (const d of sp.DataValues || []) if (d.name && d.values) dv[d.name] = d.values;
@@ -845,7 +852,9 @@
     if (!rec || !rec.spellNames) return null;
     const byPath = {};
     for (const [k, v] of Object.entries(bin)) if (v && v.__type === 'SpellObject') byPath[k] = v;
-    const find = name => Object.entries(byPath).find(([k]) => k.endsWith('/' + name));
+    // Spell paths are matched case-insensitively (Naafiri's W is listed as 'Naafiriw').
+    const find = name => Object.entries(byPath).find(([k]) => k.toLowerCase().endsWith('/' + name.toLowerCase()));
+    const order = SLOT_ORDER[champId] || SLOTS;
 
     const spells = rec.spellNames.slice(0, 4).map((name, i) => {
       const hit = find(name);
@@ -856,11 +865,11 @@
       const bot = obj.BotData || {};
       let cds = sp.cooldownTime || [];
       return {
-        slot: SLOTS[i], name: sp.mAlternateName || name.split('/').pop(),
+        slot: order[i], name: sp.mAlternateName || name.split('/').pop(),
         cds, dv, calcs: sp.mSpellCalculations || {},
         bot: bot[BOT_DAMAGE] && (bot[BOT_DAMAGE].mFormulaParts || []).length ? bot[BOT_DAMAGE] : null,
         damageTag: bot.DamageTag, castTime: sp.spellCastTime || 0.25,
-        variants: ((VARIANTS[champId] || {})[SLOTS[i]] || []).map(([vname, calc]) => {
+        variants: ((VARIANTS[champId] || {})[order[i]] || []).map(([vname, calc]) => {
           const h = find(vname); if (!h) return null;
           const r = readSpell(h[1]);
           return { name: vname, dv: r.dv, calcs: r.calcs, calc };
@@ -1068,6 +1077,8 @@
     Jinx: { R: { kind: 'execute', type: 'physical', calc: 'DamageMax', missPct: 0.35, holdKill: true, latest: 9.5 } },
     Akshan: { R: { kind: 'execute', type: 'physical', missAmp: { max: 3, at: 1 }, holdKill: true, latest: 9.5 } },
     Smolder: { Q: { kind: 'execute', type: 'physical', threshold: 'Tier3_ExecuteThresholdStart', noHold: true } }, // 225 stacks
+    // Darkin Daggers: first dagger + bleed + second dagger (minimum), all physical.
+    Naafiri: { Q: { kind: 'multi', parts: [{ calc: 'TotalDamageFirstCast', type: 'physical' }, { calc: 'TotalBleedDamage', type: 'physical' }, { calc: 'TotalMinDamageSecondCast', type: 'physical' }] } },
     Kayle: { E: { kind: 'cast', type: 'magic', calc: 'ActiveTotalExecuteDamage', pctOfMissing: true } }, // formula is a share of missing HP
   };
 
@@ -1213,7 +1224,7 @@
     Draven: { name: 'Spinning Axe (Q)', note: 'Juggled axes empower every attack; Q is modeled here', disable: ['Q'],
       everyN: { n: 1, type: 'physical', dmg: c => (60 + 1.15 * c.bad) * avgCrit(c) } },
     DrMundo: { name: 'Blunt Force Trauma (E)', note: 'E passive: +3.2% max HP as AD; empowered attack every 6s, up to +40% at low health',
-      stats: c => ({ ad: 0.032 * c.hp }), timedAuto: { every: 6, label: 'E · Blunt Force Trauma', kind: 'ability', type: 'physical', dmg: c => (45 + 0.05 * c.bhp) * (1 + 0.4 * Math.min(1, c.smiss / 0.7)) } },
+      stats: c => ({ ad: 0.032 * c.hp }), timedAuto: { every: 6, resetsAttack: true, label: 'E · Blunt Force Trauma', kind: 'ability', type: 'physical', dmg: c => (45 + 0.05 * c.bhp) * (1 + 0.4 * Math.min(1, c.smiss / 0.7)) } },
     Ekko: { name: 'Z-Drive Resonance', note: 'Every 3rd hit', everyNHits: { n: 3, cd: 5, type: 'magic', dmg: c => 85 + 0.8 * c.ap } },
     Elise: { name: 'Spider Queen', note: 'Human Neurotoxin and Volatile Spiderling, then Spider form: Venomous Bite, empowered attacks, spiderlings', ownKit: true,
       onHit: { cond: c => c.t >= 1, label: 'Spider form attacks', kind: 'ability', type: 'magic', dmg: c => 44 + 0.15 * c.ap },
@@ -1300,7 +1311,7 @@
     MonkeyKing: none('Stone Skin'),
     Mordekaiser: { name: 'Darkness Rise', note: 'Damage aura after 3 hits', aura: { hits: 3, linger: 4, type: 'magic', dmg: c => 5 + 0.3 * c.ap + 0.05 * c.tmax } },
     Morgana: none('Soul Siphon', 'Healing only'),
-    Naafiri: { name: 'We Are More', note: 'Packmates attack with her', periodic: { every: 1, start: 0.5, type: 'physical', dmg: c => 2 * (25 + 0.08 * c.bad) } },
+    Naafiri: { name: 'We Are More', note: 'Packmates attack with her', periodic: { every: 1, start: 0.5, type: 'physical', dmg: c => 2 * (15 + 0.06 * c.bad) } }, // 2 packmates, about 29 per hit at 230 bonus AD (game data)
     Nami: none('Surging Tides'),
     Nasus: { name: 'Soul Eater', note: 'Q stacks are counted in his Q; R burns % max HP every second', periodic: { every: 1, start: 0.5, label: 'R · Fury of the Sands', kind: 'ability', type: 'magic', dmg: c => (0.05 + 0.01 * c.ap / 100) * c.tmax } },
     Nautilus: { name: 'Staggering Blow', note: 'First attack on a target', timedAuto: { every: 10, type: 'physical', dmg: () => 122 } },

@@ -35,6 +35,8 @@
       E: [['HweiEQ', 'Damage'], ['HweiEW', 'Damage'], ['HweiEE', 'Damage']],   // Grim Visage / Gaze of the Abyss / Stirring Torrent
     },
   };
+  // A few champions list their spells out of Q/W/E/R order in the game data.
+  const SLOT_ORDER = { Naafiri: ['Q', 'R', 'E', 'W'] };
   const readSpell = obj => {
     const sp = obj.mSpell || {}, dv = {};
     for (const d of sp.DataValues || []) if (d.name && d.values) dv[d.name] = d.values;
@@ -46,7 +48,9 @@
     if (!rec || !rec.spellNames) return null;
     const byPath = {};
     for (const [k, v] of Object.entries(bin)) if (v && v.__type === 'SpellObject') byPath[k] = v;
-    const find = name => Object.entries(byPath).find(([k]) => k.endsWith('/' + name));
+    // Spell paths are matched case-insensitively (Naafiri's W is listed as 'Naafiriw').
+    const find = name => Object.entries(byPath).find(([k]) => k.toLowerCase().endsWith('/' + name.toLowerCase()));
+    const order = SLOT_ORDER[champId] || SLOTS;
 
     const spells = rec.spellNames.slice(0, 4).map((name, i) => {
       const hit = find(name);
@@ -57,11 +61,11 @@
       const bot = obj.BotData || {};
       let cds = sp.cooldownTime || [];
       return {
-        slot: SLOTS[i], name: sp.mAlternateName || name.split('/').pop(),
+        slot: order[i], name: sp.mAlternateName || name.split('/').pop(),
         cds, dv, calcs: sp.mSpellCalculations || {},
         bot: bot[BOT_DAMAGE] && (bot[BOT_DAMAGE].mFormulaParts || []).length ? bot[BOT_DAMAGE] : null,
         damageTag: bot.DamageTag, castTime: sp.spellCastTime || 0.25,
-        variants: ((VARIANTS[champId] || {})[SLOTS[i]] || []).map(([vname, calc]) => {
+        variants: ((VARIANTS[champId] || {})[order[i]] || []).map(([vname, calc]) => {
           const h = find(vname); if (!h) return null;
           const r = readSpell(h[1]);
           return { name: vname, dv: r.dv, calcs: r.calcs, calc };
@@ -269,6 +273,8 @@
     Jinx: { R: { kind: 'execute', type: 'physical', calc: 'DamageMax', missPct: 0.35, holdKill: true, latest: 9.5 } },
     Akshan: { R: { kind: 'execute', type: 'physical', missAmp: { max: 3, at: 1 }, holdKill: true, latest: 9.5 } },
     Smolder: { Q: { kind: 'execute', type: 'physical', threshold: 'Tier3_ExecuteThresholdStart', noHold: true } }, // 225 stacks
+    // Darkin Daggers: first dagger + bleed + second dagger (minimum), all physical.
+    Naafiri: { Q: { kind: 'multi', parts: [{ calc: 'TotalDamageFirstCast', type: 'physical' }, { calc: 'TotalBleedDamage', type: 'physical' }, { calc: 'TotalMinDamageSecondCast', type: 'physical' }] } },
     Kayle: { E: { kind: 'cast', type: 'magic', calc: 'ActiveTotalExecuteDamage', pctOfMissing: true } }, // formula is a share of missing HP
   };
 

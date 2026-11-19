@@ -82,6 +82,7 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 .cards.champs{grid-template-columns:repeat(auto-fill,minmax(135px,1fr))}
 .cards.items{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
 .card{background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius);padding:12px;text-align:left;position:relative;
+  display:flex;flex-direction:column;justify-content:flex-start;
   transition:border-color .15s,transform .15s,box-shadow .15s;animation:pop .35s both}
 .card:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:0 10px 24px #0008,0 0 0 1px var(--gold-dim)}
 @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
@@ -91,7 +92,7 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 .card .sub{font-size:12px;color:var(--muted);text-transform:capitalize;margin-bottom:8px}
 .tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
 .tag{font-size:11px;padding:2px 7px;border-radius:999px;border:1px solid var(--line);color:var(--gold2)}
-.bars{display:grid;gap:4px;font-size:11px;color:var(--muted)}
+.bars{display:grid;gap:4px;font-size:11px;color:var(--muted);margin-top:auto} /* pinned to the bottom so every card lines up */
 .bar{display:grid;grid-template-columns:52px 1fr;align-items:center;gap:6px}
 .bar i{height:5px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}
 .bar i::after{content:"";position:absolute;inset:0;width:var(--w);background:var(--c)}

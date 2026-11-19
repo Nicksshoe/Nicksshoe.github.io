@@ -659,7 +659,12 @@
       // Passive timers: empowered attack coming off cooldown, periodic effects, auras.
       if (P && P.timedAuto && !pTimedArmed && t >= pTimedReady && !(P.timedAuto.once && pTimedOnceDone)) {
         const ta = P.timedAuto;
-        if (!ta.cond || ta.cond(pctx(t))) { pTimedArmed = true; pTimedOnceDone = true; pTimedReady = t + (ta.every || Infinity); }
+        if (!ta.cond || ta.cond(pctx(t))) {
+          pTimedArmed = true; pTimedOnceDone = true;
+          // Ability-based empowered attacks: cooldown shrinks with haste, and an attack reset fires it right away.
+          pTimedReady = t + (ta.every || Infinity) * (ta.kind === 'ability' ? 100 / (100 + st.ah) : 1);
+          if (ta.resetsAttack) nextAuto = Math.min(nextAuto, t + 0.1);
+        }
       }
       for (const x of pPeriodics) {
         if (t < x.at) continue;
