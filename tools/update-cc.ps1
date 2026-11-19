@@ -6,13 +6,15 @@ $root = Split-Path $PSScriptRoot -Parent
 if (-not $Patch) { $Patch = (Invoke-RestMethod 'https://ddragon.leagueoflegends.com/api/versions.json')[0] }
 $full = Invoke-RestMethod "https://ddragon.leagueoflegends.com/cdn/$Patch/data/en_US/championFull.json"
 $cc = '\b(stun(s|ned|ning)?|root(s|ed|ing)?|snare(s|d)?|knock(s|ing|ed)?\s+(up|back|aside|airborne)|airborne|charm(s|ed|ing)?|fear(s|ed|ing)?|flee(s|ing)?|taunt(s|ed|ing)?|suppress(es|ed|ing)?|sleep|asleep|pull(s|ed|ing)?)\b'
+# Text matches that aren't crowd control (e.g. Ahri Q's orb is "pulled" back to her).
+$notCC = @{ Ahri = 'Q' }
 $out = [ordered]@{}
 foreach ($p in $full.data.PSObject.Properties) {
   $slots = ''
   for ($i = 0; $i -lt 4; $i++) {
     $sp = $p.Value.spells[$i]
     $text = (($sp.tooltip + ' ' + $sp.description) -replace '<[^>]+>', ' ')
-    if ($text -match $cc) { $slots += 'QWER'[$i] }
+    if ($text -match $cc -and -not ($notCC[$p.Name] -and $notCC[$p.Name].Contains('QWER'[$i]))) { $slots += 'QWER'[$i] }
   }
   if ($slots) { $out[$p.Name] = $slots }
 }
