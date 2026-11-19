@@ -140,8 +140,9 @@ async function allTime(env, origin, me, low) {
      WHERE score = (SELECT ${low ? 'MIN' : 'MAX'}(score) FROM scores WHERE client = s.client)
      GROUP BY client ORDER BY score ${low ? 'ASC' : 'DESC'} LIMIT 50`
   ).all();
+  // date: the day of a Daily score, so the page can hide today's Daily builds from players who haven't played it yet.
   const rows = results.map(r => ({ name: r.name, champ: r.champ, items: r.items, score: r.score, mode: r.mode,
-    patch: r.patch || (r.mode === 'free' ? r.period : ''), mine: !!me && r.client === me }));
+    date: r.mode === 'daily' ? r.period : '', patch: r.patch || (r.mode === 'free' ? r.period : ''), mine: !!me && r.client === me }));
   return new Response(JSON.stringify({ rows }), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=15', ...cors(origin) } });
 }
 

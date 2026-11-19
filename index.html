@@ -454,8 +454,19 @@ async function showBoard(mode, order, freePeriod){
       sel.onchange = () => showBoard('free', order, sel.value);
     }).catch(() => {});
   }
+  // Today's daily board stays hidden until this browser has finished today's daily, so nobody can copy the best builds.
+  if (mode === 'daily' && !store.get('daily:'+today())) {
+    $('#boardBody').innerHTML = `<div style="text-align:center;padding:28px 12px;border:1px dashed var(--line);border-radius:10px">
+      <div style="font-size:28px">🔒</div><h3 style="margin:8px 0 4px">${t('lockTitle')}</h3><p class="muted" style="margin:0 0 14px">${t('lockSub')}</p>
+      <button class="btn primary" id="lbPlayDaily">${t('playDaily')}</button></div>`;
+    $('#lbPlayDaily').onclick = () => newGame('daily');
+    return;
+  }
   try {
     const { rows } = await LB.board(mode, period, order);
+    // All-time: a best score set in today's Daily keeps its rank, but its build stays hidden until you've played today.
+    const dailyOpen = !!store.get('daily:'+today());
+    const masked = r => !dailyOpen && r.mode === 'daily' && r.date === today();
     const champName = id => { const c = DATA.champions.find(x => x.id === id); return c ? cName(c) : id; };
     // All-time rows: mode and patch go under the score, so a long name can't push them out of view.
     const tag = r => mode !== 'all' ? '' : `<div class="muted" style="font-size:11px;white-space:nowrap;margin-top:2px">${r.mode === 'daily' ? t('daily') : t('freeTag')} · ${t('patch')} ${esc(r.patch || '?')}</div>`;
@@ -463,10 +474,12 @@ async function showBoard(mode, order, freePeriod){
       <div style="display:grid;grid-template-columns:36px 36px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;
         background:${r.mine ? '#c8aa6e22' : 'var(--panel2)'};border:1px solid ${r.mine ? 'var(--gold-dim)' : 'var(--line)'}">
         <b style="color:${i < 3 ? 'var(--gold2)' : 'var(--muted)'};text-align:center">${i + 1}</b>
-        <img src="${img.champ(r.champ)}" alt="" style="width:36px;height:36px;border-radius:6px">
+        ${masked(r) ? `<div title="${esc(t('lockTitle'))}" style="width:36px;height:36px;border-radius:6px;background:var(--bg);display:grid;place-items:center">🔒</div>`
+          : `<img src="${img.champ(r.champ)}" alt="" style="width:36px;height:36px;border-radius:6px">`}
         <div style="min-width:0"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.name)}</div>
-          <div style="display:flex;gap:3px;margin-top:3px;flex-wrap:wrap">${String(r.items).split(',').map(id => `<img src="${img.item(id)}" alt="" style="width:20px;height:20px;border-radius:3px">`).join('')}
-          <span class="muted" style="font-size:12px;margin-left:6px">${esc(champName(r.champ))}</span></div></div>
+          <div style="display:flex;gap:3px;margin-top:3px;flex-wrap:wrap">${masked(r) ? `<span class="muted" style="font-size:12px">${t('lockTitle')}</span>`
+            : `${String(r.items).split(',').map(id => `<img src="${img.item(id)}" alt="" style="width:20px;height:20px;border-radius:3px">`).join('')}
+          <span class="muted" style="font-size:12px;margin-left:6px">${esc(champName(r.champ))}</span>`}</div></div>
         <div style="text-align:end"><b style="font-variant-numeric:tabular-nums">${fmt(r.score)}</b>${tag(r)}</div></div>`).join('')}</div>`
       : `<p class="muted">${t('noScores')}</p>`;
   } catch (e) { $('#boardBody').innerHTML = `<p class="muted">${t('lbError', { msg: esc(e.message) })}</p>`; }
