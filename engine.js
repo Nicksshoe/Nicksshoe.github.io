@@ -157,6 +157,8 @@
     "yun tal wildarrows": { critBonus: 25, asBonus: 18, tip: '+25% crit (fully stacked) + Flurry' },
     "experimental hexplate": { hexplate: true, ultHaste: 30, tip: 'Overdrive: +50% AS (25% ranged) for 8s after your ultimate, 30s cooldown; +30 ultimate haste' },
     "fiendhunter bolts": { fiendhunter: true, ultHaste: 30, tip: 'After your ultimate (45s cooldown): 3 attacks +50% AS that crit for 80% (real crits +15% true); +30 ultimate haste' },
+    "imperial mandate": { mandate: true, tip: 'Immobilizing abilities: +20 haste and mark the target 7% Vulnerable for 4s' },
+    "horizon focus": { horizon: true, tip: 'Hypershot (ranged champions): +10% damage for 6s after an ability hit, 30s cooldown' },
     "lord dominik's regards": { giantSlayer: 0.15, tip: 'Giant Slayer: up to +15% damage vs bonus health (full at 1500)' },
     "sterak's gage": { adPerBaseAd: 0.5, tip: 'The Claws that Catch: +50% base AD' },
     "dawncore": { maxStacks: { ap: 15 }, tip: 'First Light: +15 AP from its 100% base mana regen' },
@@ -334,7 +336,15 @@
       * (t < shredUntil ? 1 - shredPct : 1) * debuffMult(t, 'armor') * st.arpenKeep - st.leth);
     const mrAt = t => Math.max(0, Math.max(0, DUMMY.mr - debuffFlat(t, 'mrFlat')) * (1 - 0.075 * bloodStacks) * debuffMult(t, 'mr')
       * st.mpenKeep - st.mpenFlat - malignanceShred);
-    const castDebuff = (t, slot) => { if (P && P.castDebuff && P.castDebuff[slot]) addDebuff(t, P.castDebuff[slot], slot); };
+    // Imperial Mandate: +20 haste on immobilizing abilities; immobilizing marks the target 7% Vulnerable for 4s.
+    // Which abilities immobilize comes from Riot's ability text (cc.js).
+    const immob = new Set((((root.Potenshall.Immobilize || {})[ch.id]) || '').split(''));
+    const cdOf = (slot, base) => base * 100 / (100 + st.ah + (slot === 'R' ? sum('ultHaste') : 0) + (hasAny('mandate') && immob.has(slot) ? 20 : 0));
+    let mandateUntil = -1, horizonUntil = -1, horizonReady = 0;
+    const castDebuff = (t, slot) => {
+      if (P && P.castDebuff && P.castDebuff[slot]) addDebuff(t, P.castDebuff[slot], slot);
+      if (hasAny('mandate') && immob.has(slot)) mandateUntil = t + 4;
+    };
 
     const comboCD = pr.cd * 100 / (100 + st.ah);
     const comboDamage = () => {
@@ -356,6 +366,8 @@
       if (kind === 'ability' || kind === 'passive') amt *= 1 + sum('abilityRamp') * 4 * (ch.ranged ? 0.5 : 1); // Spear of Shojin, fully stacked (half for ranged)
       // Lord Dominik's Giant Slayer: up to +15% damage, full against 1500+ bonus health (the dummy has far more).
       if (hasAny('giantSlayer')) amt *= 1 + sum('giantSlayer') * Math.min(1, (DUMMY.hp - DUMMY.baseHp) / 1500);
+      if (t <= mandateUntil) amt *= 1.07;  // Imperial Mandate: Vulnerable
+      if (t <= horizonUntil) amt *= 1.10;  // Horizon Focus: Hypershot
       if (kind === 'attack' || kind === 'split') amt *= 1 + (ch.ranged ? sum('attackAmpRanged') : sum('attackAmpMelee'));
       if (type === 'magic') amt *= 1 + sum('magicAmp');
       if ((type === 'magic' || type === 'true') && hasAny('shadowflame') && dummyHp < 0.4 * DUMMY.hp) amt *= 1.2;
@@ -468,6 +480,9 @@
       }
       if (spellblade && t >= sbReadyAt) { sbArmed = true; sbReadyAt = t + 1.5; }
       for (const f of has('burn')) burnUntil[f.burn] = t + 3;
+      // Horizon Focus Hypershot: ability damage from 600+ range (assumed for ranged champions) makes you deal 10% more
+      // damage to the target for 6s, 30s cooldown.
+      if (hasAny('horizon') && ch.ranged && !(cast && cast.noDamage) && t >= horizonReady) { horizonUntil = t + 6; horizonReady = t + 30; }
       if (hasAny('luden') && t >= ludenReady) { ludenReady = t + 12; deal(t, (75 + 0.05 * st.ap) * 2, 'magic', "Luden's Echo", 'item'); } // 1 bolt + 5 repeats at 20%
       eclipseHit(t);
       // Shaped Charge (game data): a damaging ability adds 40 + 150% lethality true damage (ranged 50%), 20s cooldown.
@@ -647,7 +662,7 @@
           if (empowered) continue; // don't waste it before the armed attack lands
           empowered = { ...sp.mech, label: `${sp.slot} · ${labels[sp.slot] || sp.name}` };
           onAbilityHit(t, false); castDebuff(t, sp.slot);
-          ready[sp.slot] = t + sp.cooldown * 100 / (100 + st.ah);
+          ready[sp.slot] = t + cdOf(sp.slot, sp.cooldown);
           castLock = t + sp.castTime;
           if (sp.mech.resetsAttack) nextAuto = Math.min(nextAuto, castLock);
           return;
@@ -705,7 +720,7 @@
           if (sp.slot === 'R' && opening) onUltimate(t);
           if (opening) castDebuff(t, sp.slot);
           ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : m.recasts && recastLeft[sp.slot] > 0 ? t + (m.recastGap || 1)
-            : t + sp.cooldown * 100 / (100 + st.ah + (sp.slot === 'R' ? sum('ultHaste') : 0));
+            : t + cdOf(sp.slot, sp.cooldown);
           castLock = t + sp.castTime;
           return;
         }
@@ -735,7 +750,7 @@
         if (t >= bastionReady) bastionReady = t + 3;
         if (sp.slot === 'R') onUltimate(t);
         castDebuff(t, sp.slot);
-        ready[sp.slot] = t + sp.cooldown * 100 / (100 + st.ah + (sp.slot === 'R' ? sum('ultHaste') : 0));
+        ready[sp.slot] = t + cdOf(sp.slot, sp.cooldown);
         castLock = t + sp.castTime;
         return;
       }
@@ -777,12 +792,12 @@
       if (hasAny('actualizer') && t < 8) for (const s of ['Q', 'W', 'E']) if (ready[s] > t && ready[s] !== Infinity) ready[s] -= 0.3 * DT;
       for (const a of autoDebuffs) if (t >= a.at) {
         addDebuff(t, a.d, a.slot);
-        a.at = t + a.cd * 100 / (100 + st.ah + (a.slot === 'R' ? sum('ultHaste') : 0));
+        a.at = t + cdOf(a.slot, a.cd);
       }
       if (markState && t >= markState.until) { const mk = markState; markState = null; deal(t, mk.base + mk.pct * mk.sum, mk.type, mk.label, 'ability'); }
       if (t >= ultBuffAt) {
         onUltimate(t);
-        ultBuffAt = rSpell && rSpell.cooldown > 0 ? t + rSpell.cooldown * 100 / (100 + st.ah + sum('ultHaste')) : Infinity;
+        ultBuffAt = rSpell && rSpell.cooldown > 0 ? t + cdOf('R', rSpell.cooldown) : Infinity;
       }
       if (spells) tryCastRealSpell(t);
       // Channels and multi-hit abilities: each tick is real ability damage (item amps apply, burns stay lit).
