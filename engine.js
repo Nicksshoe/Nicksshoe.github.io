@@ -127,7 +127,7 @@
     "guinsoo's rageblade": { onHit: { magic: 30 }, asBonus: 32, guinsoo: true, tip: 'Fully stacked (+32% AS): every 3rd attack applies on-hit twice' },
     "terminus": { onHit: { magic: 30 }, pen: 0.30, tip: 'On-hit + 30% pen (fully stacked)' },
     "blade of the ruined king": { onHit: { curHpMelee: 0.09, curHpRanged: 0.06 }, tip: '% current HP on-hit' },
-    "titanic hydra": { onHit: { ownHpMelee: 0.01, ownHpRanged: 0.005 }, titanic: true, tip: '1% max HP on-hit; active 4% max HP' },
+    "titanic hydra": { onHit: { ownHpMelee: 0.01, ownHpRanged: 0.005 }, titanic: true, tip: '1% max HP on-hit; active 4% max HP (half for ranged)' },
     "kraken slayer": { everyN: { n: 3, phys: 200, missingAmp: 0.75, rangedMult: 0.8 }, tip: 'Every 3rd attack: 200 at level 18, up to +75% vs missing health (80% ranged)' },
     "statikk shiv": { everyN: { n: 3, magic: 60, onHit: true }, tip: 'Energized lightning: 60 magic, applies on-hit effects again' },
     "rapid firecannon": { everyN: { n: 3, magic: 40 }, tip: 'Energized attack' },
@@ -173,7 +173,7 @@
     // Item actives: used at the start of the fight and again whenever off cooldown.
     "ravenous hydra": { active: { cd: 10, type: 'physical', dmg: (st) => 0.8 * st.totalAD }, tip: 'Active: 80% AD, every 10s' },
     "stridebreaker": { active: { cd: 15, type: 'physical', dmg: (st) => 0.8 * st.totalAD }, tip: 'Active: 80% AD, every 15s' },
-    "profane hydra": { active: { cd: 10, type: 'physical', dmg: (st, hp) => 0.8 * st.totalAD * (hp < 0.5 * DUMMY.hp ? 1.3 : 1) }, tip: 'Active: 80% AD (more below 50% HP), every 10s' },
+    "profane hydra": { active: { cd: 10, type: 'physical', dmg: (st) => 0.8 * st.totalAD }, tip: 'Active: 80% AD, every 10s' },
     "hextech gunblade": { active: { cd: 60, type: 'magic', dmg: (st) => 253 + 0.3 * st.ap }, tip: 'Active: 253 + 30% AP' },
     "redemption": { active: { cd: 90, delay: 2.5, type: 'true', dmg: () => 0.1 * DUMMY.hp }, tip: 'Active: 10% max HP true damage' },
   };
@@ -633,7 +633,7 @@
         // Hullbreaker Skipper (game files): 120% base AD + 5% max HP; ranged champions deal 70%.
         if (e.hull) deal(t, (1.2 * st.baseAD + 0.05 * st.maxHP) * (ch.ranged ? 0.7 : 1), 'physical', f.item, 'onhit');
       }
-      if (hasAny('titanic') && t >= titanicReady) { titanicReady = t + 10; deal(t, 0.04 * st.maxHP, 'physical', 'Titanic Hydra', 'onhit'); }
+      if (hasAny('titanic') && t >= titanicReady) { titanicReady = t + 10; deal(t, 0.04 * st.maxHP * (ch.ranged ? 0.5 : 1), 'physical', 'Titanic Hydra', 'onhit'); } // ranged: half
       if (hasAny('heartsteel') && !heartsteelDone && t >= 2.5) { heartsteelDone = true; deal(t, 70 + 0.06 * st.maxHP, 'physical', 'Heartsteel', 'onhit'); }
     };
 
