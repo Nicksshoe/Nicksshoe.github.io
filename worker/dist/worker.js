@@ -474,7 +474,7 @@
         trueBonus = 0.15 * st.totalAD * st.critMult * st.crit;
       }
       let autoDmg = st.totalAD * mult * pr.autoAmp;
-      if (P && P.autoMult) autoDmg *= typeof P.autoMult === 'function' ? P.autoMult(pctx(t)) : P.autoMult;
+      if (P && P.autoMult != null) autoDmg *= typeof P.autoMult === 'function' ? P.autoMult(pctx(t)) : P.autoMult;
       if (P && P.autoSplit) {
         for (const [ty, share] of Object.entries(P.autoSplit)) deal(t, autoDmg * share, ty, 'Basic Attacks', 'attack');
         autoDmg *= 1 - Object.values(P.autoSplit).reduce((a, b) => a + b, 0);
@@ -557,7 +557,9 @@
     const mitigation = type => type === 'true' ? 1
       : type === 'magic' ? 100 / (100 + Math.max(0, DUMMY.mr * (1 - 0.075 * bloodStacks) * st.mpenKeep - st.mpenFlat - malignanceShred))
       : 100 / (100 + Math.max(0, DUMMY.armor * (1 - 0.06 * cleaverStacks) * st.arpenKeep - st.leth));
+    let lastUltAt = null; const summons = [];
     const onUltimate = t => {
+      lastUltAt = t;
       if (hasAny('malignance')) { malignanceUntil = t + 3; malignanceShred = 10; }
       if (hasAny('zeke')) zekeUntil = t + 5;
       if (hasAny('fiendhunter')) empoweredAutos = 3;
@@ -623,6 +625,15 @@
         const dmg = root.Potenshall.Abilities.evalSpellDamage(sp, spellCtx());
         const label = `${sp.slot} · ${sp.lastVariant || labels[sp.slot] || sp.name}`;
         deal(t, dmg, sp.type, label, 'ability');
+        // Shadows (Zed): every active shadow repeats this ability on the target with its own formula.
+        if (P && P.shadows && sp.slot === P.shadows.slot) {
+          const sh = P.shadows, cdW = (sh.w.every || 16) * 100 / (100 + st.ah);
+          const n = (t >= sh.w.start && (t - sh.w.start) % cdW <= sh.w.dur ? 1 : 0) + (lastUltAt !== null && t - lastUltAt <= sh.rDur ? 1 : 0);
+          const per = root.Potenshall.Abilities.evalCalc(sh.calc, sp.sp, { ...spellCtx(), rank: sp.rank });
+          if (n && per > 0) deal(t, n * Math.min(per, 6000), sp.type, `${sp.slot} · Shadow shurikens`, 'ability');
+        }
+        // Summons (Zyra plants): some abilities grow plants that attack for a while.
+        if (P && P.summon && P.summon.from[sp.slot]) for (let i = 0; i < P.summon.from[sp.slot]; i++) summons.push(t + P.summon.dur);
         onAbilityHit(t, t >= bastionReady, { raw: dmg, type: sp.type, label });
         if (t >= bastionReady) bastionReady = t + 3;
         if (sp.slot === 'R') onUltimate(t);
@@ -696,6 +707,12 @@
       // Half-second damage-over-time ticks
       if (Math.floor(t * 2) !== lastBurnTick) {
         lastBurnTick = Math.floor(t * 2);
+        if (P && P.summon) {
+          for (let i = summons.length - 1; i >= 0; i--) if (t > summons[i]) summons.splice(i, 1);
+          // Extra summons on the same target deal reduced damage (Zyra: plants after the first deal 50%).
+          const eff = summons.length ? 1 + (summons.length - 1) * (P.summon.extraMult ?? 1) : 0;
+          if (eff) dealP(t, P.summon, c => eff * P.summon.dmg(c) / 2, 'ability', P.summon.label);
+        }
         for (let i = dots.length - 1; i >= 0; i--) {
           const d = dots[i];
           if (t > d.until) { dots.splice(i, 1); continue; }
@@ -1220,7 +1237,10 @@
     Ashe: { name: 'Frost Shot', note: 'Crits become bonus damage on slowed targets', noCrit: true, autoMult: c => 1.1 + c.crit * 0.75 * (c.cm / 1.75) },
     AurelionSol: none('Cosmic Creator', 'Stardust stacks are counted in his abilities'),
     Aurora: { name: 'Spirit Abjuration', note: 'Every 3rd hit, % max HP', everyNHits: { n: 3, cd: 5, type: 'magic', dmg: c => (0.01 + 0.015 * c.ap / 100) * c.tmax } },
-    Azir: none("Shurima's Legacy"),
+    // Sand soldiers (W) do Azir's attacking: each attack is a soldier stab (game data: 174 + 65% AP magic at rank 5),
+    // with a second soldier adding 25%. W itself isn't cast for damage.
+    Azir: { name: 'Arise! (W) soldiers', note: 'Attacks are sand soldier stabs (magic, AP); two soldiers out', disable: ['W'], autoMult: 0,
+      onHit: { label: 'W · Soldier stabs', kind: 'ability', type: 'magic', dmg: c => (174 + 0.65 * c.ap) * 1.25 } },
     Bard: { name: "Traveler's Call", note: 'Meeps on attacks (40 chimes assumed)', onHit: { type: 'magic', dmg: c => 0.6 * (147 + 0.3 * c.ap) } },
     Belveth: { name: 'Death in Lavender', note: 'Lavender stacks + post-ability attack speed', stats: () => ({ as: 70 }) },
     Blitzcrank: none('Mana Barrier', 'Shield only'),
@@ -1439,12 +1459,16 @@
     Yuumi: { name: "Bop 'n' Block", note: 'Empowered attack', timedAuto: { every: 8, type: 'magic', dmg: c => 100 + 0.15 * c.ap } },
     Zaahen: { name: 'Cultivation of War', note: 'Determination stacks: AD', stats: () => ({ ad: 35 }) },
     Zac: { name: 'Cell Division', note: 'W deals % max HP', periodic: { every: 4, start: 0.3, label: 'W · Unstable Matter', kind: 'ability', type: 'magic', dmg: c => 100 + (0.08 + 0.04 * c.ap / 100) * c.tmax } },
-    Zed: { name: 'Contempt for the Weak', note: 'Below 50% HP: 10% max HP', timedAuto: { every: 10, cond: c => c.thp < 0.5 * c.tmax, type: 'magic', dmg: c => 0.1 * c.tmax } },
+    // Living Shadow: the W shadow (5.25s, 16s cooldown) and the R shadow (7.5s) each throw their own Razor Shuriken at the
+    // target for the reduced pass-through amount (game data: 144 + 60% bonus AD). Shadow E slashes don't stack damage.
+    Zed: { name: 'Contempt for the Weak + shadows', note: 'Below 50% HP: 10% max HP; W and R shadows repeat Q', shadows: { slot: 'Q', calc: 'PassThroughDamage', w: { start: 0.1, every: 16, dur: 5.25 }, rDur: 7.5 },
+      timedAuto: { every: 10, cond: c => c.thp < 0.5 * c.tmax, type: 'magic', dmg: c => 0.1 * c.tmax } },
     Zeri: none('Living Battery'),
     Ziggs: { name: 'Short Fuse', note: 'Empowered attack after abilities', timedAuto: { every: 12, abilityCdr: 4, type: 'magic', dmg: c => 128 + 0.5 * c.ap } },
     Zilean: none('Time in a Bottle'),
     Zoe: { name: 'More Sparkles!', note: 'Next attack after an ability', afterAbility: { type: 'magic', dmg: c => 130 + 0.2 * c.ap } },
-    Zyra: { name: 'Garden of Thorns', note: 'Plants attack', periodic: { every: 1, start: 1, type: 'magic', dmg: c => 0.6 * (100 + 0.15 * c.ap) } },
+    // Plants: every Q grows 2 seeds and every E 1 into plants that attack once a second for 8s (game data: 75 + 20% AP).
+    Zyra: { name: 'Garden of Thorns', note: 'Q grows 2 plants, E grows 1; plants attack for 8s (extra plants on one target deal 50%)', summon: { from: { Q: 2, E: 1 }, dur: 8, extraMult: 0.5, label: 'Plants', type: 'magic', dmg: c => 75 + 0.2 * c.ap } },
   };
 
   root.Potenshall = root.Potenshall || {};

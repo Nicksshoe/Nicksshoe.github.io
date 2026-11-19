@@ -473,7 +473,7 @@
         trueBonus = 0.15 * st.totalAD * st.critMult * st.crit;
       }
       let autoDmg = st.totalAD * mult * pr.autoAmp;
-      if (P && P.autoMult) autoDmg *= typeof P.autoMult === 'function' ? P.autoMult(pctx(t)) : P.autoMult;
+      if (P && P.autoMult != null) autoDmg *= typeof P.autoMult === 'function' ? P.autoMult(pctx(t)) : P.autoMult;
       if (P && P.autoSplit) {
         for (const [ty, share] of Object.entries(P.autoSplit)) deal(t, autoDmg * share, ty, 'Basic Attacks', 'attack');
         autoDmg *= 1 - Object.values(P.autoSplit).reduce((a, b) => a + b, 0);
@@ -556,7 +556,9 @@
     const mitigation = type => type === 'true' ? 1
       : type === 'magic' ? 100 / (100 + Math.max(0, DUMMY.mr * (1 - 0.075 * bloodStacks) * st.mpenKeep - st.mpenFlat - malignanceShred))
       : 100 / (100 + Math.max(0, DUMMY.armor * (1 - 0.06 * cleaverStacks) * st.arpenKeep - st.leth));
+    let lastUltAt = null; const summons = [];
     const onUltimate = t => {
+      lastUltAt = t;
       if (hasAny('malignance')) { malignanceUntil = t + 3; malignanceShred = 10; }
       if (hasAny('zeke')) zekeUntil = t + 5;
       if (hasAny('fiendhunter')) empoweredAutos = 3;
@@ -622,6 +624,15 @@
         const dmg = root.Potenshall.Abilities.evalSpellDamage(sp, spellCtx());
         const label = `${sp.slot} · ${sp.lastVariant || labels[sp.slot] || sp.name}`;
         deal(t, dmg, sp.type, label, 'ability');
+        // Shadows (Zed): every active shadow repeats this ability on the target with its own formula.
+        if (P && P.shadows && sp.slot === P.shadows.slot) {
+          const sh = P.shadows, cdW = (sh.w.every || 16) * 100 / (100 + st.ah);
+          const n = (t >= sh.w.start && (t - sh.w.start) % cdW <= sh.w.dur ? 1 : 0) + (lastUltAt !== null && t - lastUltAt <= sh.rDur ? 1 : 0);
+          const per = root.Potenshall.Abilities.evalCalc(sh.calc, sp.sp, { ...spellCtx(), rank: sp.rank });
+          if (n && per > 0) deal(t, n * Math.min(per, 6000), sp.type, `${sp.slot} · Shadow shurikens`, 'ability');
+        }
+        // Summons (Zyra plants): some abilities grow plants that attack for a while.
+        if (P && P.summon && P.summon.from[sp.slot]) for (let i = 0; i < P.summon.from[sp.slot]; i++) summons.push(t + P.summon.dur);
         onAbilityHit(t, t >= bastionReady, { raw: dmg, type: sp.type, label });
         if (t >= bastionReady) bastionReady = t + 3;
         if (sp.slot === 'R') onUltimate(t);
@@ -695,6 +706,12 @@
       // Half-second damage-over-time ticks
       if (Math.floor(t * 2) !== lastBurnTick) {
         lastBurnTick = Math.floor(t * 2);
+        if (P && P.summon) {
+          for (let i = summons.length - 1; i >= 0; i--) if (t > summons[i]) summons.splice(i, 1);
+          // Extra summons on the same target deal reduced damage (Zyra: plants after the first deal 50%).
+          const eff = summons.length ? 1 + (summons.length - 1) * (P.summon.extraMult ?? 1) : 0;
+          if (eff) dealP(t, P.summon, c => eff * P.summon.dmg(c) / 2, 'ability', P.summon.label);
+        }
         for (let i = dots.length - 1; i >= 0; i--) {
           const d = dots[i];
           if (t > d.until) { dots.splice(i, 1); continue; }
