@@ -570,6 +570,7 @@
     });
     const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute', 'mark']);
     let markState = null; // Zed-style mark: stores damage dealt until it pops
+    const recastLeft = {}; // recasts still available per slot
     const spellQueue = []; // scheduled ability hits/ticks: { at, raw(), type, label }
     // Expected share of a hit that gets through the dummy's resists right now (used to time executes).
     const mitigation = type => type === 'true' ? 1
@@ -635,8 +636,12 @@
           }
           onAbilityHit(t, t >= bastionReady, { raw: first, type: m.type, label });
           if (t >= bastionReady) bastionReady = t + 3;
-          if (sp.slot === 'R') onUltimate(t);
-          ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : t + sp.cooldown * 100 / (100 + st.ah + (sp.slot === 'R' ? sum('ultHaste') : 0));
+          // Recastable abilities (Ahri R): each recast is its own cast; the cooldown starts after the last one.
+          const opening = !m.recasts || !(recastLeft[sp.slot] > 0);
+          if (m.recasts) recastLeft[sp.slot] = (opening ? m.recasts : recastLeft[sp.slot]) - 1;
+          if (sp.slot === 'R' && opening) onUltimate(t);
+          ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : m.recasts && recastLeft[sp.slot] > 0 ? t + (m.recastGap || 1)
+            : t + sp.cooldown * 100 / (100 + st.ah + (sp.slot === 'R' ? sum('ultHaste') : 0));
           castLock = t + sp.castTime;
           return;
         }
@@ -1173,6 +1178,13 @@
     Akshan: { R: { kind: 'execute', type: 'physical', missAmp: { max: 3, at: 1 }, holdKill: true, latest: 9.5 } },
     Smolder: { Q: { kind: 'execute', type: 'physical', threshold: 'Tier3_ExecuteThresholdStart', noHold: true } }, // 225 stacks
     // Darkin Daggers: first dagger + bleed + second dagger (minimum), all physical.
+    // Ahri: Q hits going out (magic) and coming back (true); all three W flames hit the one target (repeats deal 40%);
+    // R is three dashes 1s apart, each firing a bolt and counting as its own cast.
+    Ahri: {
+      Q: { kind: 'multi', parts: [{ calc: 'TotalDamage', type: 'magic' }, { calc: 'TotalDamage', type: 'true' }] },
+      W: { kind: 'multi', parts: [{ calc: 'SingleFireDamage', type: 'magic' }, { calc: 'MultiFireDamage', type: 'magic' }, { calc: 'MultiFireDamage', type: 'magic' }] },
+      R: { kind: 'cast', type: 'magic', calc: 'RCalculatedDamage', recasts: 3, recastGap: 1 },
+    },
     Naafiri: { Q: { kind: 'multi', parts: [{ calc: 'TotalDamageFirstCast', type: 'physical' }, { calc: 'TotalBleedDamage', type: 'physical' }, { calc: 'TotalMinDamageSecondCast', type: 'physical' }] } },
     Kayle: { E: { kind: 'cast', type: 'magic', calc: 'ActiveTotalExecuteDamage', pctOfMissing: true } }, // formula is a share of missing HP
   };
