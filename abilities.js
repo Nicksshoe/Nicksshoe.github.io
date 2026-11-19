@@ -65,7 +65,7 @@
       let cds = sp.cooldownTime || [];
       return {
         champ: champId, slot: order[i], name: sp.mAlternateName || name.split('/').pop(),
-        cds, ammo: sp.mAmmoRechargeTime || [], maxAmmo: sp.mMaxAmmo || [], dv, eff: effects(sp), calcs: sp.mSpellCalculations || {},
+        cds, ammo: sp.mAmmoRechargeTime || [], maxAmmo: sp.mMaxAmmo || [], cost: sp.mana || [], dv, eff: effects(sp), calcs: sp.mSpellCalculations || {},
         bot: bot[BOT_DAMAGE] && (bot[BOT_DAMAGE].mFormulaParts || []).length ? bot[BOT_DAMAGE] : null,
         damageTag: bot.DamageTag, castTime: sp.spellCastTime || 0.25,
         variants: ((VARIANTS[champId] || {})[order[i]] || []).map(([vname, calc]) => {
@@ -354,6 +354,14 @@
       Q: { kind: 'cast', type: 'physical', calc: 'TotalDamage', asCalc: 'TotalQAttackSpeed', asDur: 'BaseASDuration', zoneCd: 'CDNewValue' },
       E: { kind: 'afterHits', type: 'physical', hits: 3, window: 'TotalDuration', calc: 'BaseBiteDamage', pctMissingCalc: 'PercentBiteDamage' },
     },
+    // Akali: E is two casts (30% + 70% of the total). R1 vaults; R2 recast 2.5s later scales up to 3x with missing health
+    // (max at 30% health left). W restores 100 energy and raises her max energy by 100 while the shroud lasts.
+    Akali: {
+      W: { kind: 'cast', noDamage: true, type: 'magic', energyMax: 'EnergyRestore', duration: 'BaseDuration', whenEnergyBelow: 70 },
+      E: { kind: 'multi', parts: [{ calc: 'E1Damage', type: 'magic' }, { calc: 'E2DamageCalc', type: 'magic' }] },
+      R: { kind: 'cast', type: 'magic', calc: 'Cast1Damage', recasts: 2, recastGap: 'CooldownBetweenCasts', recastCalc: 'Cast2DamageMin',
+        recastMaxMult: 3, recastFullAt: 'MaxExecuteThreshold' },
+    },
     // Katarina: W only drops a dagger (passives.js: daggers). R: Death Lotus, 15 knives over 2.5s, each magic + physical
     // (bonus AD, grows with bonus attack speed) with on-hit effects at 35% (rank 3).
     Katarina: {
@@ -378,7 +386,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));
@@ -402,6 +410,8 @@
         cooldown: cooldownFor(sp, rank), castTime: Math.min(0.75, sp.castTime || 0.25),
         // Multi-charge abilities: charges, the recharge time per charge, and the short lockout between casts.
         ...chargesFor(sp, rank),
+        // Energy/mana cost at this rank (the game lists costs from rank 1, unlike cooldowns).
+        cost: +((sp.cost && sp.cost[rank - 1]) || 0),
       };
     });
     spells.passiveCovered = !!mech.passiveCovered;

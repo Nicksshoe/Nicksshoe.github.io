@@ -659,6 +659,18 @@
     let cloneUntil = -1, cloneMult = 0; // Wukong's clone copies attacks and his R
     let tempAS = 0, tempASUntil = -1;    // attack speed from a cast (Wukong E, Kindred Q)
     let zoneUntil = -1, eArm = null;      // Kindred: W's territory, E's armed pounce
+    // Energy (Akali, Zed, Lee Sin, Kennen, Shen): abilities cost energy, which regenerates over time. Akali's W raises
+    // her max energy for a while, so regeneration banks above the normal cap.
+    const useEnergy = ch.partype === 'Energy' && !!spells;
+    const eMax0 = ch.stats.mp || 200, eRegen = (ch.stats.mpregen || 50) / 5;
+    let energy = eMax0, energyAt = 0, energyMaxBonus = 0, energyMaxUntil = -1;
+    const energyNow = t => {
+      const cap = eMax0 + (t < energyMaxUntil ? energyMaxBonus : 0);
+      energy = Math.min(cap, energy + eRegen * Math.max(0, t - energyAt)); energyAt = t;
+      return energy;
+    };
+    const canAfford = (sp, t) => !useEnergy || !(sp.cost > 0) || energyNow(t) >= sp.cost - 1e-9;
+    const payEnergy = (sp, t) => { if (useEnergy && sp.cost > 0) { energyNow(t); energy -= sp.cost; } };
     // Multi-charge abilities (Karthus Q, Nilah E...): cast charges back to back, then wait for each recharge.
     const ammoSt = {};
     // Katarina: Q and W drop a dagger; picking it up slashes (Voracity, applies on-hits) and cuts E's cooldown.
@@ -722,6 +734,8 @@
     };
     const castOne = (t) => {
       for (const sp of castOrder) {
+        if (!canAfford(sp, t)) continue; // energy champions wait for enough energy
+        if (useEnergy && sp.mech && sp.mech.whenEnergyBelow && energyNow(t) >= sp.mech.whenEnergyBelow) continue; // Akali W: refill when low
         if ((ready[sp.slot] || 0) > t + 1e-9) continue;
         if (sp.mech && sp.mech.kind === 'empowerAuto') {
           if (empowered) continue; // don't waste it before the armed attack lands
@@ -731,7 +745,7 @@
           onAbilityHit(t, false); castDebuff(t, sp.slot);
           // Multi-charge empowers (Skarner Q): the cooldown starts when the last empowered attack lands.
           ready[sp.slot] = sp.mech.cdAfterCharges ? Infinity : t + cdOf(sp.slot, sp.cooldown);
-          castLock = t + sp.castTime;
+          castLock = t + sp.castTime; payEnergy(sp, t);
           if (sp.mech.resetsAttack) nextAuto = Math.min(nextAuto, castLock);
           return;
         }
@@ -762,7 +776,13 @@
             if (thrHp > 0 && dummyHp > 0 && dummyHp < thrHp) record(t, dummyHp, 'true', label.replace(/ · .*/, ' · Execute'));
             resetNow = !!m.resetOnKill && kills > killsBefore;
           } else if (m.kind === 'cast' && m.noDamage) first = 0; // utility casts (Katarina W drops a dagger)
-          else if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, label, 'ability');
+          else if (m.kind === 'cast' && m.recastCalc && m.recasts && recastLeft[sp.slot] > 0) {
+            // Akali R2: the recast scales with the target's missing health, up to recastMaxMult at recastFullAt health left.
+            const miss = 1 - dummyHp / DUMMY.hp, full = 1 - (m.recastFullAt || 0.3);
+            first = deal(t, ev(m.recastCalc) * (1 + ((m.recastMaxMult || 1) - 1) * Math.min(1, miss / full)), m.type, label, 'ability');
+          } else if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, label, 'ability');
+          // Akali W: restores energy and raises her max energy by the same amount while the shroud lasts.
+          if (m.energyMax) { energyNow(t); energyMaxBonus = m.energyMax; energyMaxUntil = t + (m.duration || 5); energy += m.energyMax; }
           // Temporary attack speed from a cast (Wukong E); game data stores 60% as 0.6.
           if (m.asCalc) { const a = ev(m.asCalc); tempAS = a < 5 ? a * 100 : a; tempASUntil = t + (m.asDur || 4); } // Kindred Q
           if (m.asBonus) {
@@ -815,7 +835,7 @@
           if (opening) castDebuff(t, sp.slot);
           ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : m.recasts && recastLeft[sp.slot] > 0 ? t + (m.recastGap || 1)
             : afterCharge(sp, t, t + cdOf(sp.slot, m.zoneCd && t < zoneUntil ? m.zoneCd : sp.cooldown)); // Kindred Q: shorter inside her zone
-          castLock = t + sp.castTime;
+          castLock = t + sp.castTime; payEnergy(sp, t);
           dropDagger(t, sp.slot);
           return;
         }
@@ -846,7 +866,7 @@
         if (sp.slot === 'R') onUltimate(t);
         castDebuff(t, sp.slot);
         ready[sp.slot] = afterCharge(sp, t, t + cdOf(sp.slot, sp.cooldown));
-        castLock = t + sp.castTime;
+        castLock = t + sp.castTime; payEnergy(sp, t);
         dropDagger(t, sp.slot);
         return;
       }

@@ -660,6 +660,18 @@
     let cloneUntil = -1, cloneMult = 0; // Wukong's clone copies attacks and his R
     let tempAS = 0, tempASUntil = -1;    // attack speed from a cast (Wukong E, Kindred Q)
     let zoneUntil = -1, eArm = null;      // Kindred: W's territory, E's armed pounce
+    // Energy (Akali, Zed, Lee Sin, Kennen, Shen): abilities cost energy, which regenerates over time. Akali's W raises
+    // her max energy for a while, so regeneration banks above the normal cap.
+    const useEnergy = ch.partype === 'Energy' && !!spells;
+    const eMax0 = ch.stats.mp || 200, eRegen = (ch.stats.mpregen || 50) / 5;
+    let energy = eMax0, energyAt = 0, energyMaxBonus = 0, energyMaxUntil = -1;
+    const energyNow = t => {
+      const cap = eMax0 + (t < energyMaxUntil ? energyMaxBonus : 0);
+      energy = Math.min(cap, energy + eRegen * Math.max(0, t - energyAt)); energyAt = t;
+      return energy;
+    };
+    const canAfford = (sp, t) => !useEnergy || !(sp.cost > 0) || energyNow(t) >= sp.cost - 1e-9;
+    const payEnergy = (sp, t) => { if (useEnergy && sp.cost > 0) { energyNow(t); energy -= sp.cost; } };
     // Multi-charge abilities (Karthus Q, Nilah E...): cast charges back to back, then wait for each recharge.
     const ammoSt = {};
     // Katarina: Q and W drop a dagger; picking it up slashes (Voracity, applies on-hits) and cuts E's cooldown.
@@ -723,6 +735,8 @@
     };
     const castOne = (t) => {
       for (const sp of castOrder) {
+        if (!canAfford(sp, t)) continue; // energy champions wait for enough energy
+        if (useEnergy && sp.mech && sp.mech.whenEnergyBelow && energyNow(t) >= sp.mech.whenEnergyBelow) continue; // Akali W: refill when low
         if ((ready[sp.slot] || 0) > t + 1e-9) continue;
         if (sp.mech && sp.mech.kind === 'empowerAuto') {
           if (empowered) continue; // don't waste it before the armed attack lands
@@ -732,7 +746,7 @@
           onAbilityHit(t, false); castDebuff(t, sp.slot);
           // Multi-charge empowers (Skarner Q): the cooldown starts when the last empowered attack lands.
           ready[sp.slot] = sp.mech.cdAfterCharges ? Infinity : t + cdOf(sp.slot, sp.cooldown);
-          castLock = t + sp.castTime;
+          castLock = t + sp.castTime; payEnergy(sp, t);
           if (sp.mech.resetsAttack) nextAuto = Math.min(nextAuto, castLock);
           return;
         }
@@ -763,7 +777,13 @@
             if (thrHp > 0 && dummyHp > 0 && dummyHp < thrHp) record(t, dummyHp, 'true', label.replace(/ · .*/, ' · Execute'));
             resetNow = !!m.resetOnKill && kills > killsBefore;
           } else if (m.kind === 'cast' && m.noDamage) first = 0; // utility casts (Katarina W drops a dagger)
-          else if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, label, 'ability');
+          else if (m.kind === 'cast' && m.recastCalc && m.recasts && recastLeft[sp.slot] > 0) {
+            // Akali R2: the recast scales with the target's missing health, up to recastMaxMult at recastFullAt health left.
+            const miss = 1 - dummyHp / DUMMY.hp, full = 1 - (m.recastFullAt || 0.3);
+            first = deal(t, ev(m.recastCalc) * (1 + ((m.recastMaxMult || 1) - 1) * Math.min(1, miss / full)), m.type, label, 'ability');
+          } else if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, label, 'ability');
+          // Akali W: restores energy and raises her max energy by the same amount while the shroud lasts.
+          if (m.energyMax) { energyNow(t); energyMaxBonus = m.energyMax; energyMaxUntil = t + (m.duration || 5); energy += m.energyMax; }
           // Temporary attack speed from a cast (Wukong E); game data stores 60% as 0.6.
           if (m.asCalc) { const a = ev(m.asCalc); tempAS = a < 5 ? a * 100 : a; tempASUntil = t + (m.asDur || 4); } // Kindred Q
           if (m.asBonus) {
@@ -816,7 +836,7 @@
           if (opening) castDebuff(t, sp.slot);
           ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : m.recasts && recastLeft[sp.slot] > 0 ? t + (m.recastGap || 1)
             : afterCharge(sp, t, t + cdOf(sp.slot, m.zoneCd && t < zoneUntil ? m.zoneCd : sp.cooldown)); // Kindred Q: shorter inside her zone
-          castLock = t + sp.castTime;
+          castLock = t + sp.castTime; payEnergy(sp, t);
           dropDagger(t, sp.slot);
           return;
         }
@@ -847,7 +867,7 @@
         if (sp.slot === 'R') onUltimate(t);
         castDebuff(t, sp.slot);
         ready[sp.slot] = afterCharge(sp, t, t + cdOf(sp.slot, sp.cooldown));
-        castLock = t + sp.castTime;
+        castLock = t + sp.castTime; payEnergy(sp, t);
         dropDagger(t, sp.slot);
         return;
       }
@@ -1150,7 +1170,7 @@
       let cds = sp.cooldownTime || [];
       return {
         champ: champId, slot: order[i], name: sp.mAlternateName || name.split('/').pop(),
-        cds, ammo: sp.mAmmoRechargeTime || [], maxAmmo: sp.mMaxAmmo || [], dv, eff: effects(sp), calcs: sp.mSpellCalculations || {},
+        cds, ammo: sp.mAmmoRechargeTime || [], maxAmmo: sp.mMaxAmmo || [], cost: sp.mana || [], dv, eff: effects(sp), calcs: sp.mSpellCalculations || {},
         bot: bot[BOT_DAMAGE] && (bot[BOT_DAMAGE].mFormulaParts || []).length ? bot[BOT_DAMAGE] : null,
         damageTag: bot.DamageTag, castTime: sp.spellCastTime || 0.25,
         variants: ((VARIANTS[champId] || {})[order[i]] || []).map(([vname, calc]) => {
@@ -1439,6 +1459,14 @@
       Q: { kind: 'cast', type: 'physical', calc: 'TotalDamage', asCalc: 'TotalQAttackSpeed', asDur: 'BaseASDuration', zoneCd: 'CDNewValue' },
       E: { kind: 'afterHits', type: 'physical', hits: 3, window: 'TotalDuration', calc: 'BaseBiteDamage', pctMissingCalc: 'PercentBiteDamage' },
     },
+    // Akali: E is two casts (30% + 70% of the total). R1 vaults; R2 recast 2.5s later scales up to 3x with missing health
+    // (max at 30% health left). W restores 100 energy and raises her max energy by 100 while the shroud lasts.
+    Akali: {
+      W: { kind: 'cast', noDamage: true, type: 'magic', energyMax: 'EnergyRestore', duration: 'BaseDuration', whenEnergyBelow: 70 },
+      E: { kind: 'multi', parts: [{ calc: 'E1Damage', type: 'magic' }, { calc: 'E2DamageCalc', type: 'magic' }] },
+      R: { kind: 'cast', type: 'magic', calc: 'Cast1Damage', recasts: 2, recastGap: 'CooldownBetweenCasts', recastCalc: 'Cast2DamageMin',
+        recastMaxMult: 3, recastFullAt: 'MaxExecuteThreshold' },
+    },
     // Katarina: W only drops a dagger (passives.js: daggers). R: Death Lotus, 15 knives over 2.5s, each magic + physical
     // (bonus AD, grows with bonus attack speed) with on-hit effects at 35% (rank 3).
     Katarina: {
@@ -1463,7 +1491,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));
@@ -1487,6 +1515,8 @@
         cooldown: cooldownFor(sp, rank), castTime: Math.min(0.75, sp.castTime || 0.25),
         // Multi-charge abilities: charges, the recharge time per charge, and the short lockout between casts.
         ...chargesFor(sp, rank),
+        // Energy/mana cost at this rank (the game lists costs from rank 1, unlike cooldowns).
+        cost: +((sp.cost && sp.cost[rank - 1]) || 0),
       };
     });
     spells.passiveCovered = !!mech.passiveCovered;
@@ -1567,7 +1597,8 @@
     Aatrox: { name: 'Deathbringer Stance + World Ender', note: 'Empowered attack: 12% max HP; R: +40% total AD for the whole fight', stats: c => ({ ad: 0.4 * c.ad }),
       timedAuto: { every: 16, abilityCdr: 2, type: 'physical', dmg: c => 0.12 * c.tmax } },
     Ahri: none('Essence Theft', 'Healing only'),
-    Akali: { name: "Assassin's Mark", note: 'Next attack after an ability', afterAbility: { type: 'magic', dmg: c => 144 + 0.6 * c.bad + 0.5 * c.ap } },
+    // Assassin's Mark at level 18: 182 + 60% bonus AD + 55% AP magic (game files).
+    Akali: { name: "Assassin's Mark", note: 'Next attack after an ability', afterAbility: { type: 'magic', dmg: c => 182 + 0.6 * c.bad + 0.55 * c.ap } },
     Akshan: { name: 'Dirty Fighting', note: 'Double-shot attacks + every 3rd hit', autoMult: 1.5, everyNHits: { n: 3, type: 'magic', dmg: c => 150 + 0.6 * c.ap } },
     Alistar: none('Triumphant Roar', 'Healing only'),
     Ambessa: { name: "Drakehound's Step", note: 'Dash-empowered attack after abilities', afterAbility: { type: 'physical', dmg: c => 0.03 * c.tmax + 0.2 * c.bad } },

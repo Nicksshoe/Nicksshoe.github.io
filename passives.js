@@ -48,7 +48,8 @@
     Aatrox: { name: 'Deathbringer Stance + World Ender', note: 'Empowered attack: 12% max HP; R: +40% total AD for the whole fight', stats: c => ({ ad: 0.4 * c.ad }),
       timedAuto: { every: 16, abilityCdr: 2, type: 'physical', dmg: c => 0.12 * c.tmax } },
     Ahri: none('Essence Theft', 'Healing only'),
-    Akali: { name: "Assassin's Mark", note: 'Next attack after an ability', afterAbility: { type: 'magic', dmg: c => 144 + 0.6 * c.bad + 0.5 * c.ap } },
+    // Assassin's Mark at level 18: 182 + 60% bonus AD + 55% AP magic (game files).
+    Akali: { name: "Assassin's Mark", note: 'Next attack after an ability', afterAbility: { type: 'magic', dmg: c => 182 + 0.6 * c.bad + 0.55 * c.ap } },
     Akshan: { name: 'Dirty Fighting', note: 'Double-shot attacks + every 3rd hit', autoMult: 1.5, everyNHits: { n: 3, type: 'magic', dmg: c => 150 + 0.6 * c.ap } },
     Alistar: none('Triumphant Roar', 'Healing only'),
     Ambessa: { name: "Drakehound's Step", note: 'Dash-empowered attack after abilities', afterAbility: { type: 'physical', dmg: c => 0.03 * c.tmax + 0.2 * c.bad } },
