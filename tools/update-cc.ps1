@@ -6,8 +6,12 @@ $root = Split-Path $PSScriptRoot -Parent
 if (-not $Patch) { $Patch = (Invoke-RestMethod 'https://ddragon.leagueoflegends.com/api/versions.json')[0] }
 $full = Invoke-RestMethod "https://ddragon.leagueoflegends.com/cdn/$Patch/data/en_US/championFull.json"
 $cc = '\b(stun(s|ned|ning)?|root(s|ed|ing)?|snare(s|d)?|knock(s|ing|ed)?\s+(up|back|aside|airborne)|airborne|charm(s|ed|ing)?|fear(s|ed|ing)?|flee(s|ing)?|taunt(s|ed|ing)?|suppress(es|ed|ing)?|sleep|asleep|pull(s|ed|ing)?)\b'
-# Text matches that aren't crowd control (e.g. Ahri Q's orb is "pulled" back to her).
-$notCC = @{ Ahri = 'Q' }
+# Text matches that aren't crowd control on an enemy champion (reviewed against every match on 16.23):
+# Ahri Q orb pulled back; Aatrox R fears minions; Annie R mentions her passive stun; Bel'Veth E and Briar W affect
+# themselves; Kha'Zix "Taste Their Fear"; Kled E and Sejuani W hit only minions/monsters; Rumble W "pulls up a shield";
+# Shen Q only slows; Taliyah Q stuns monsters; Zyra W seeds; Illaoi E pulls a spirit; Fiora W stuns only on a parry.
+$notCC = @{ Ahri = 'Q'; Aatrox = 'R'; Annie = 'R'; Belveth = 'E'; Briar = 'W'; Khazix = 'QR'; Kled = 'E'; Rumble = 'W'
+  Sejuani = 'W'; Shen = 'Q'; Taliyah = 'Q'; Zyra = 'W'; Illaoi = 'E'; Fiora = 'W' }
 $out = [ordered]@{}
 foreach ($p in $full.data.PSObject.Properties) {
   $slots = ''
