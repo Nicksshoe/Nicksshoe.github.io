@@ -432,16 +432,17 @@ async function showBoard(mode, order, freePeriod){
   try {
     const { rows } = await LB.board(mode, period, order);
     const champName = id => { const c = DATA.champions.find(x => x.id === id); return c ? cName(c) : id; };
-    const tag = r => mode !== 'all' ? '' : `<span class="tag" style="margin-inline-start:6px">${r.mode === 'daily' ? t('daily') : t('freeTag')} · ${esc(r.patch || '?')}</span>`;
+    // All-time rows: mode and patch go under the score, so a long name can't push them out of view.
+    const tag = r => mode !== 'all' ? '' : `<div class="muted" style="font-size:11px;white-space:nowrap;margin-top:2px">${r.mode === 'daily' ? t('daily') : t('freeTag')} · ${t('patch')} ${esc(r.patch || '?')}</div>`;
     $('#boardBody').innerHTML = rows.length ? `<div style="display:grid;gap:6px">${rows.map((r, i) => `
       <div style="display:grid;grid-template-columns:36px 36px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;
         background:${r.mine ? '#c8aa6e22' : 'var(--panel2)'};border:1px solid ${r.mine ? 'var(--gold-dim)' : 'var(--line)'}">
         <b style="color:${i < 3 ? 'var(--gold2)' : 'var(--muted)'};text-align:center">${i + 1}</b>
         <img src="${img.champ(r.champ)}" alt="" style="width:36px;height:36px;border-radius:6px">
-        <div style="min-width:0"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.name)}${tag(r)}</div>
+        <div style="min-width:0"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.name)}</div>
           <div style="display:flex;gap:3px;margin-top:3px;flex-wrap:wrap">${String(r.items).split(',').map(id => `<img src="${img.item(id)}" alt="" style="width:20px;height:20px;border-radius:3px">`).join('')}
           <span class="muted" style="font-size:12px;margin-left:6px">${esc(champName(r.champ))}</span></div></div>
-        <b style="font-variant-numeric:tabular-nums">${fmt(r.score)}</b></div>`).join('')}</div>`
+        <div style="text-align:end"><b style="font-variant-numeric:tabular-nums">${fmt(r.score)}</b>${tag(r)}</div></div>`).join('')}</div>`
       : `<p class="muted">${t('noScores')}</p>`;
   } catch (e) { $('#boardBody').innerHTML = `<p class="muted">${t('lbError', { msg: esc(e.message) })}</p>`; }
 }
