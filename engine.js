@@ -112,7 +112,7 @@
   // Unknown items still count their raw stats.
   const PASSIVES = {
     "rabadon's deathcap": { apMult: 1.30, tip: 'Magical Opus: +30% total AP' },
-    "overlord's bloodmail": { adPerBonusHp: 0.025, tip: 'Tyranny: AD from bonus HP' },
+    "overlord's bloodmail": { adPerBonusHp: 0.025, retribution: 0.1, tip: 'Tyranny: 2.5% bonus HP as AD; Retribution: up to +10% AD from missing health (max at 70% missing)' },
     "riftmaker": { apPerBonusHp: 0.02, ramp: { per: 2, cap: 8 }, tip: 'Void Corruption: +8% damage (assumed fully stacked)' },
     "archangel's staff": { apPerBonusMana: 0.01, tip: 'Awe: AP from bonus mana' },
     "manamune": { muramana: true, tip: 'Assumed stacked into Muramana' },
@@ -128,8 +128,8 @@
     "terminus": { onHit: { magic: 30 }, pen: 0.30, tip: 'On-hit + 30% pen (fully stacked)' },
     "blade of the ruined king": { onHit: { curHpMelee: 0.09, curHpRanged: 0.06 }, tip: '% current HP on-hit' },
     "titanic hydra": { onHit: { ownHpMelee: 0.01, ownHpRanged: 0.005 }, titanic: true, tip: '1% max HP on-hit; active 4% max HP' },
-    "kraken slayer": { everyN: { n: 3, phys: 150, missingAmp: 0.75, rangedMult: 0.8 }, tip: 'Every 3rd attack (80% ranged)' },
-    "statikk shiv": { everyN: { n: 3, magic: 60 }, tip: 'Energized lightning' },
+    "kraken slayer": { everyN: { n: 3, phys: 200, missingAmp: 0.75, rangedMult: 0.8 }, tip: 'Every 3rd attack: 200 at level 18, up to +75% vs missing health (80% ranged)' },
+    "statikk shiv": { everyN: { n: 3, magic: 60, onHit: true }, tip: 'Energized lightning: 60 magic, applies on-hit effects again' },
     "rapid firecannon": { everyN: { n: 3, magic: 40 }, tip: 'Energized attack' },
     "stormrazor": { everyN: { n: 3, magic: 100 }, tip: 'Energized bolt: 100 magic damage' },
     "hullbreaker": { everyN: { n: 5, hull: true }, tip: 'Skipper: every 5th attack, 120% base AD + 5% max HP' },
@@ -138,10 +138,10 @@
     "lich bane": { spellblade: { baseAd: 0.75, ap: 0.45, type: 'magic' }, tip: 'Spellblade AP burst' },
     "iceborn gauntlet": { spellblade: { baseAd: 1.5, type: 'physical' }, tip: 'Spellblade 150% base AD' },
     "essence reaver": { spellblade: { baseAd: 1.25, critFlat: 50, type: 'physical' }, tip: 'Spellblade 125% base AD (+50 x crit chance)' },
-    "dusk and dawn": { spellblade: { flat: 40, ap: 0.12, type: 'magic', doubleOnHit: true }, tip: 'Spellblade double on-hit' },
+    "dusk and dawn": { spellblade: { baseAd: 0.75, ap: 0.1, type: 'magic', doubleOnHit: true }, tip: 'Spellblade: 75% base AD + 10% AP, applies on-hit twice' },
     "infinity edge": { tip: 'Crit damage amp' },
     "the collector": { execute: 0.05, tip: 'Executes below 5% HP' },
-    "black cleaver": { cleaver: true, tip: 'Shreds up to 30% armor' },
+    "black cleaver": { cleaver: true, tip: 'Shreds up to 30% armor (half for ranged)' },
     "bloodletter's curse": { bloodletter: true, tip: 'Shreds up to 30% MR' },
     "abyssal mask": { magicAmp: 0.12, tip: '+12% magic damage taken' },
     "shadowflame": { shadowflame: true, tip: '+20% magic/true dmg under 40% HP' },
@@ -151,12 +151,15 @@
     "malignance": { malignance: true, ultHaste: 20, tip: 'Hatefog burn on ult; +20 ultimate haste' },
     "bastionbreaker": { bastion: true, tip: 'Shaped Charge: 40 + 150% lethality true damage on an ability hit, 20s cooldown (half for ranged)' },
     "spear of shojin": { ahBonus: 25, abilityRamp: 0.03, tip: 'Focused Will: +12% ability and passive damage (fully stacked)' },
-    "actualizer": { ahBonus: 20, abilityAmp: 0.15, tip: 'Empowered ability damage' },
+    "actualizer": { ahBonus: 20, abilityAmp: 0.15, actualizer: true, tip: 'Empowered for the first 8s: more ability damage, basic cooldowns tick 30% faster' },
     "navori flickerblade": { navori: true, tip: 'Transcendence: attacks cut remaining Q/W/E cooldowns by 15%' },
     "endless hunger": { ahPerBonusAd: 0.12, tip: 'Haste from bonus AD' },
     "yun tal wildarrows": { critBonus: 25, asBonus: 18, tip: '+25% crit (fully stacked) + Flurry' },
     "experimental hexplate": { hexplate: true, ultHaste: 30, tip: 'Overdrive: +50% AS (25% ranged) for 8s after your ultimate, 30s cooldown; +30 ultimate haste' },
     "fiendhunter bolts": { fiendhunter: true, ultHaste: 30, tip: 'After your ultimate (45s cooldown): 3 attacks +50% AS that crit for 80% (real crits +15% true); +30 ultimate haste' },
+    "lord dominik's regards": { giantSlayer: 0.15, tip: 'Giant Slayer: up to +15% damage vs bonus health (full at 1500)' },
+    "sterak's gage": { adPerBaseAd: 0.5, tip: 'The Claws that Catch: +50% base AD' },
+    "dawncore": { maxStacks: { ap: 15 }, tip: 'First Light: +15 AP from its 100% base mana regen' },
     "rod of ages": { maxStacks: { hp: 100, mana: 300, ap: 30 }, tip: 'Timeless: fully stacked (+100 HP, +300 mana, +30 AP)' },
     "hexoptics c44": { attackAmpRanged: 0.10, attackAmpMelee: 0.04, tip: 'Long-range attack amp' },
     "swiftmarch": { adaptive: 21, tip: 'Noxian Fervor: 5% of move speed as adaptive force' },
@@ -237,7 +240,9 @@
     const muramana = has('muramana').length > 0;
     const maxMana = champMana + b.mana + (muramana ? 360 : 0);
 
-    let bonusAD = b.ad + sum('adPerBonusHp') * bonusHP + (muramana ? 0.02 * maxMana : 0);
+    let bonusAD = b.ad + sum('adPerBonusHp') * bonusHP + (muramana ? 0.02 * maxMana : 0) + sum('adPerBaseAd') * baseAD;
+    // Overlord's Bloodmail Retribution: up to +10% AD, full at 70% missing health (the fight is at 40% health).
+    if (sum('retribution')) bonusAD += sum('retribution') * Math.min(1, (1 - SELF_HP) / 0.7) * (baseAD + bonusAD);
     // Adaptive force: AP if the build has more AP than bonus AD, otherwise 0.6 AD per point.
     const adaptive = sum('adaptive');
     const apLean = b.ap > b.ad || (b.ap === b.ad && ch.info.magic > ch.info.attack); // ties go to the champion's own damage type
@@ -325,7 +330,7 @@
     };
     const debuffMult = (t, k) => resDebuffs.reduce((m, d) => t >= d.from && t < d.until ? m * (1 - d[k]) : m, 1);
     const debuffFlat = (t, k) => resDebuffs.reduce((s, d) => t >= d.from && t < d.until ? s + d[k] : s, 0);
-    const armorAt = t => Math.max(0, Math.max(0, DUMMY.armor - debuffFlat(t, 'armorFlat')) * (1 - 0.06 * cleaverStacks)
+    const armorAt = t => Math.max(0, Math.max(0, DUMMY.armor - debuffFlat(t, 'armorFlat')) * (1 - 0.06 * cleaverStacks * (ch.ranged ? 0.5 : 1))
       * (t < shredUntil ? 1 - shredPct : 1) * debuffMult(t, 'armor') * st.arpenKeep - st.leth);
     const mrAt = t => Math.max(0, Math.max(0, DUMMY.mr - debuffFlat(t, 'mrFlat')) * (1 - 0.075 * bloodStacks) * debuffMult(t, 'mr')
       * st.mpenKeep - st.mpenFlat - malignanceShred);
@@ -348,7 +353,9 @@
       const ramp = has('ramp').reduce((acc, f) => acc + f.ramp.cap, 0); // in-combat ramps assumed fully stacked
       amt *= 1 + ramp / 100;
       if (kind === 'ability') amt *= 1 + sum('abilityAmp') * (t < 8 ? 1 : 0);
-      if (kind === 'ability' || kind === 'passive') amt *= 1 + sum('abilityRamp') * 4; // Spear of Shojin, fully stacked: ability and passive damage
+      if (kind === 'ability' || kind === 'passive') amt *= 1 + sum('abilityRamp') * 4 * (ch.ranged ? 0.5 : 1); // Spear of Shojin, fully stacked (half for ranged)
+      // Lord Dominik's Giant Slayer: up to +15% damage, full against 1500+ bonus health (the dummy has far more).
+      if (hasAny('giantSlayer')) amt *= 1 + sum('giantSlayer') * Math.min(1, (DUMMY.hp - DUMMY.baseHp) / 1500);
       if (kind === 'attack' || kind === 'split') amt *= 1 + (ch.ranged ? sum('attackAmpRanged') : sum('attackAmpMelee'));
       if (type === 'magic') amt *= 1 + sum('magicAmp');
       if ((type === 'magic' || type === 'true') && hasAny('shadowflame') && dummyHp < 0.4 * DUMMY.hp) amt *= 1.2;
@@ -584,6 +591,7 @@
         if (autoCount % e.n !== 0) continue;
         if (e.phys) deal(t, e.phys * (1 + (e.missingAmp || 0) * (1 - dummyHp / DUMMY.hp)) * (ch.ranged ? (e.rangedMult || 1) : 1), 'physical', f.item, 'onhit');
         if (e.magic) deal(t, e.magic, 'magic', f.item, 'onhit');
+        if (e.onHit) onHitEffects(t, 1); // Statikk Shiv's lightning applies on-hit effects again
         if (e.curHp) deal(t, (ch.ranged && e.curHpRanged ? e.curHpRanged : e.curHp) * dummyHp, 'physical', f.item, 'onhit');
         // Hullbreaker Skipper (game files): 120% base AD + 5% max HP; ranged champions deal 70%.
         if (e.hull) deal(t, (1.2 * st.baseAD + 0.05 * st.maxHP) * (ch.ranged ? 0.7 : 1), 'physical', f.item, 'onhit');
@@ -765,6 +773,8 @@
     const autoDebuffs = P && P.castDebuff ? Object.entries(P.castDebuff).filter(([, d]) => d.auto)
       .map(([slot, d]) => ({ slot, d, at: d.start ?? 0.1, cd: ((spells || []).find(s => s.slot === slot) || {}).cooldown || Infinity })) : [];
     for (let t = 0; t < T - 1e-9; t = +(t + DT).toFixed(4)) {
+      // Actualizer: while empowered (first 8s), basic ability cooldowns progress 30% faster.
+      if (hasAny('actualizer') && t < 8) for (const s of ['Q', 'W', 'E']) if (ready[s] > t && ready[s] !== Infinity) ready[s] -= 0.3 * DT;
       for (const a of autoDebuffs) if (t >= a.at) {
         addDebuff(t, a.d, a.slot);
         a.at = t + a.cd * 100 / (100 + st.ah + (a.slot === 'R' ? sum('ultHaste') : 0));
