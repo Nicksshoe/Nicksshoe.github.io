@@ -15,9 +15,20 @@
     if (cache.has(champId)) return cache.get(champId);
     const p = (async () => {
       const id = champId.toLowerCase();
-      const res = await fetch(`${CDRAGON}/${id}/${id}.bin.json`);
-      if (!res.ok) throw new Error(`CommunityDragon ${res.status} for ${champId}`);
-      const kit = parseKit(await res.json(), champId);
+      // CommunityDragon is sometimes slow or stalls: each try gets a time limit, and a failed try is retried twice.
+      let bin = null, lastErr = null;
+      for (let attempt = 0; attempt < 3 && !bin; attempt++) {
+        if (attempt) await new Promise(r => setTimeout(r, 1000 * attempt));
+        const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timer = ctl ? setTimeout(() => ctl.abort(), 12000) : null;
+        try {
+          const res = await fetch(`${CDRAGON}/${id}/${id}.bin.json`, ctl ? { signal: ctl.signal } : {});
+          if (!res.ok) throw new Error(`CommunityDragon ${res.status} for ${champId}`);
+          bin = await res.json();
+        } catch (e) { lastErr = e; } finally { if (timer) clearTimeout(timer); }
+      }
+      if (!bin) throw lastErr || new Error(`CommunityDragon unavailable for ${champId}`);
+      const kit = parseKit(bin, champId);
       if (kit) kit.id = champId;
       return kit;
     })();
