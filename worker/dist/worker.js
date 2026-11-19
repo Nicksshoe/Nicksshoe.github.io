@@ -709,7 +709,13 @@
     };
     // Abilities flagged 'first' (e.g. Zed R) are cast before anything else.
     // and abilities flagged 'last' (channels like Aurelion Sol Q) after everything else.
-    const castRank = s => s.mech && s.mech.first ? 0 : s.mech && s.mech.last ? 2 : 1;
+    const castRank = s => s.mech && s.mech.order != null ? s.mech.order : s.mech && s.mech.first ? 0 : s.mech && s.mech.last ? 2 : 1;
+    // Sigils (LeBlanc Q, Mimic Q): a mark on the target that pops for its own damage when the next ability hits it.
+    let sigils = [];
+    const popSigils = t => {
+      const live = sigils.filter(s => t <= s.until); sigils = [];
+      for (const s of live) deal(t, s.raw, s.type, s.label + ' (mark)', 'ability');
+    };
     const castOrder = castable ? [...castable].sort((a, b) => castRank(a) - castRank(b)) : [];
     // Rengar's Ferocity: +1 per ability cast; at max his next ability is empowered. He always spends it on empowered Q,
     // which ignores Q's cooldown: the next attack deals the empowered bonus and he gains attack speed.
@@ -830,6 +836,11 @@
             // Kindred E: Wolf pounces on her Nth attack within the window: flat + a share of missing health (crit-scaled).
             eArm = { left: m.hits || 3, until: t + (m.window || 4), label, type: m.type, raw: () => ev(m.calc) + ev(m.pctMissingCalc) * (DUMMY.hp - dummyHp) };
           }
+          // LeBlanc: this hit pops any Sigil already on the target, then her own Sigil (if any) goes on; E's chain
+          // deals its second hit after the tether, and that hit pops Sigils too.
+          if (first > 0 && sigils.length) popSigils(t);
+          if (m.sigil) { const v = ev(m.sigil); if (v > 0) sigils.push({ until: t + (m.sigilDur || 3.5), raw: v, type: m.type, label }); }
+          if (m.delayCalc) spellQueue.push({ at: t + (m.delayAfter || 1.5), label, type: m.type, raw: () => ev(m.delayCalc), after: tt => { if (sigils.length) popSigils(tt); } });
           onAbilityHit(t, t >= bastionReady, { raw: first, type: m.type, label, noDamage: m.kind === 'clone' });
           if (t >= bastionReady) bastionReady = t + 3;
           // Recastable abilities (Ahri R): each recast is its own cast; the cooldown starts after the last one.
@@ -1361,7 +1372,7 @@
   }
   // Charges that can't be stacked on one target: Caitlyn's traps can't re-trap a trapped target, Teemo's shroom
   // poison refreshes instead of stacking, and a Gangplank barrel chain hits a target only once. These keep a normal cooldown.
-  const NO_CHARGES = new Set(['Caitlyn W', 'Teemo R', 'Gangplank E']);
+  const NO_CHARGES = new Set(['Caitlyn W', 'Teemo R', 'Gangplank E', 'Leblanc R']); // LeBlanc's 2nd "charge" is the RW return
 
   // ---------- Mechanic overrides ----------
   // Some abilities aren't "cast for damage": passive on-hit procs, empowered next attacks, or
@@ -1419,6 +1430,15 @@
     //   resetOnKill: recast right away after a kill; noHold: cast on cooldown but still execute; latest: fire anyway.
     // Death Mark: opened with first so the 3s mark stores the whole burst, then pops for 100% AD + 55% of it.
     Zed: { R: { kind: 'mark', type: 'physical', first: true, pct: 'RDamageAmp', duration: 'RDeathMarkDuration' } },
+    // LeBlanc: Q, then R copying it (Mimic: RQ), then W and E. Each Sigil (Q, RQ) pops for its mark damage when the next
+    // ability hits; E's chain deals its second hit after the 1.5s tether. order: cast priority (lower first).
+    //   sigil: mark formula, popped by the next ability hit within sigilDur; delayCalc/delayAfter: a later second hit.
+    Leblanc: {
+      Q: { kind: 'cast', type: 'magic', calc: 'Damage', sigil: 'MarkDamage', sigilDur: 'MarkDuration', order: 0.5 },
+      R: { kind: 'cast', type: 'magic', calc: 'RQ1Damage', sigil: 'RQ2Damage', sigilDur: 'RQMarkDuration', order: 0.6 },
+      W: { kind: 'cast', type: 'magic', calc: 'TotalDamage' },
+      E: { kind: 'cast', type: 'magic', calc: 'InitialDamage', delayCalc: 'DelayedDamage', delayAfter: 'TetherDuration' },
+    },
     Urgot: { R: { kind: 'execute', type: 'physical', threshold: 'RHealthThreshold', latest: 9.5 } },
     Syndra: { R: { kind: 'execute', type: 'magic', calc: 'MaxDamageCalc', threshold: 'UpgradeExecuteThreshold', latest: 9.5 } }, // all 7 spheres
     Pyke: { R: { kind: 'execute', type: 'physical', thresholdCalc: 'RDamage', calc: 'RDamage', aboveMult: 0.5, resetOnKill: true, latest: 9.5 } },
@@ -1506,7 +1526,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));

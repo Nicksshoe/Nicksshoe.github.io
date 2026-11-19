@@ -708,7 +708,13 @@
     };
     // Abilities flagged 'first' (e.g. Zed R) are cast before anything else.
     // and abilities flagged 'last' (channels like Aurelion Sol Q) after everything else.
-    const castRank = s => s.mech && s.mech.first ? 0 : s.mech && s.mech.last ? 2 : 1;
+    const castRank = s => s.mech && s.mech.order != null ? s.mech.order : s.mech && s.mech.first ? 0 : s.mech && s.mech.last ? 2 : 1;
+    // Sigils (LeBlanc Q, Mimic Q): a mark on the target that pops for its own damage when the next ability hits it.
+    let sigils = [];
+    const popSigils = t => {
+      const live = sigils.filter(s => t <= s.until); sigils = [];
+      for (const s of live) deal(t, s.raw, s.type, s.label + ' (mark)', 'ability');
+    };
     const castOrder = castable ? [...castable].sort((a, b) => castRank(a) - castRank(b)) : [];
     // Rengar's Ferocity: +1 per ability cast; at max his next ability is empowered. He always spends it on empowered Q,
     // which ignores Q's cooldown: the next attack deals the empowered bonus and he gains attack speed.
@@ -829,6 +835,11 @@
             // Kindred E: Wolf pounces on her Nth attack within the window: flat + a share of missing health (crit-scaled).
             eArm = { left: m.hits || 3, until: t + (m.window || 4), label, type: m.type, raw: () => ev(m.calc) + ev(m.pctMissingCalc) * (DUMMY.hp - dummyHp) };
           }
+          // LeBlanc: this hit pops any Sigil already on the target, then her own Sigil (if any) goes on; E's chain
+          // deals its second hit after the tether, and that hit pops Sigils too.
+          if (first > 0 && sigils.length) popSigils(t);
+          if (m.sigil) { const v = ev(m.sigil); if (v > 0) sigils.push({ until: t + (m.sigilDur || 3.5), raw: v, type: m.type, label }); }
+          if (m.delayCalc) spellQueue.push({ at: t + (m.delayAfter || 1.5), label, type: m.type, raw: () => ev(m.delayCalc), after: tt => { if (sigils.length) popSigils(tt); } });
           onAbilityHit(t, t >= bastionReady, { raw: first, type: m.type, label, noDamage: m.kind === 'clone' });
           if (t >= bastionReady) bastionReady = t + 3;
           // Recastable abilities (Ahri R): each recast is its own cast; the cooldown starts after the last one.

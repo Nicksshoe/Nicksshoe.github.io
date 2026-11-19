@@ -248,7 +248,7 @@
   }
   // Charges that can't be stacked on one target: Caitlyn's traps can't re-trap a trapped target, Teemo's shroom
   // poison refreshes instead of stacking, and a Gangplank barrel chain hits a target only once. These keep a normal cooldown.
-  const NO_CHARGES = new Set(['Caitlyn W', 'Teemo R', 'Gangplank E']);
+  const NO_CHARGES = new Set(['Caitlyn W', 'Teemo R', 'Gangplank E', 'Leblanc R']); // LeBlanc's 2nd "charge" is the RW return
 
   // ---------- Mechanic overrides ----------
   // Some abilities aren't "cast for damage": passive on-hit procs, empowered next attacks, or
@@ -306,6 +306,15 @@
     //   resetOnKill: recast right away after a kill; noHold: cast on cooldown but still execute; latest: fire anyway.
     // Death Mark: opened with first so the 3s mark stores the whole burst, then pops for 100% AD + 55% of it.
     Zed: { R: { kind: 'mark', type: 'physical', first: true, pct: 'RDamageAmp', duration: 'RDeathMarkDuration' } },
+    // LeBlanc: Q, then R copying it (Mimic: RQ), then W and E. Each Sigil (Q, RQ) pops for its mark damage when the next
+    // ability hits; E's chain deals its second hit after the 1.5s tether. order: cast priority (lower first).
+    //   sigil: mark formula, popped by the next ability hit within sigilDur; delayCalc/delayAfter: a later second hit.
+    Leblanc: {
+      Q: { kind: 'cast', type: 'magic', calc: 'Damage', sigil: 'MarkDamage', sigilDur: 'MarkDuration', order: 0.5 },
+      R: { kind: 'cast', type: 'magic', calc: 'RQ1Damage', sigil: 'RQ2Damage', sigilDur: 'RQMarkDuration', order: 0.6 },
+      W: { kind: 'cast', type: 'magic', calc: 'TotalDamage' },
+      E: { kind: 'cast', type: 'magic', calc: 'InitialDamage', delayCalc: 'DelayedDamage', delayAfter: 'TetherDuration' },
+    },
     Urgot: { R: { kind: 'execute', type: 'physical', threshold: 'RHealthThreshold', latest: 9.5 } },
     Syndra: { R: { kind: 'execute', type: 'magic', calc: 'MaxDamageCalc', threshold: 'UpgradeExecuteThreshold', latest: 9.5 } }, // all 7 spheres
     Pyke: { R: { kind: 'execute', type: 'physical', thresholdCalc: 'RDamage', calc: 'RDamage', aboveMult: 0.5, resetOnKill: true, latest: 9.5 } },
@@ -393,7 +402,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));
