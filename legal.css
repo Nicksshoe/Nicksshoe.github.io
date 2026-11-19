@@ -1,0 +1,25 @@
+/* Shared styles for the Terms of Service and Privacy Policy pages. */
+:root{--bg:#070b14;--panel:#111a2e;--line:#2a3550;--gold:#c8aa6e;--gold2:#f0e6d2;--gold-dim:#785a28;--text:#e8e2d4;--muted:#8c93a8}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(1200px 600px at 50% -200px,#1a2747 0%,var(--bg) 60%) fixed,var(--bg);color:var(--text);
+  font:15px/1.65 Inter,system-ui,sans-serif;min-height:100vh}
+.wrap{max-width:760px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 0 16px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.logo{font-family:Cinzel,serif;font-weight:800;font-size:24px;letter-spacing:.06em;line-height:1;text-decoration:none;
+  background:linear-gradient(180deg,var(--gold2),var(--gold) 55%,var(--gold-dim));-webkit-background-clip:text;background-clip:text;color:transparent}
+.spacer{flex:1}
+nav a{color:var(--muted);font-size:13px;text-decoration:none;margin-left:14px}
+nav a:hover,nav a[aria-current]{color:var(--gold2)}
+h1{font:800 30px Cinzel,serif;color:var(--gold2);margin:0 0 4px;letter-spacing:.03em}
+.updated{color:var(--muted);font-size:13px;margin:0 0 24px}
+h2{font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin:28px 0 8px}
+p,li{color:var(--text)}
+ul{padding-left:20px}
+li{margin:4px 0}
+a{color:var(--gold)}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:8px 6px;vertical-align:top}
+th{color:var(--muted);font-weight:600}
+footer{margin-top:40px;padding:16px 0;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+@media (max-width:560px){h1{font-size:24px}nav a{margin-left:10px}}
