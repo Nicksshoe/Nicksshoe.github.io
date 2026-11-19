@@ -253,7 +253,20 @@
     Kennen: { R: { kind: 'hits', type: 'magic', calc: 'PerTickDamageCalculated', n: 6, over: 3 } },
     // Execute ultimates: held until the hit leaves the target under the threshold, then the execute kills it.
     // If the dummy never gets that low, it's fired near the end of the fight for its damage.
+    //   execute: threshold (share of max HP or a data value) / thresholdCalc (absolute HP from a formula); calc: damage
+    //   formula (default: the cast's own); missAmp {max, at}: up to +max x damage as missing HP reaches 'at';
+    //   missPct: + share of missing HP; aboveMult: damage when above the threshold; holdKill: wait until it kills;
+    //   resetOnKill: recast right away after a kill; noHold: cast on cooldown but still execute; latest: fire anyway.
     Urgot: { R: { kind: 'execute', type: 'physical', threshold: 'RHealthThreshold', latest: 9.5 } },
+    Syndra: { R: { kind: 'execute', type: 'magic', calc: 'MaxDamageCalc', threshold: 'UpgradeExecuteThreshold', latest: 9.5 } }, // all 7 spheres
+    Pyke: { R: { kind: 'execute', type: 'physical', thresholdCalc: 'RDamage', calc: 'RDamage', aboveMult: 0.5, resetOnKill: true, latest: 9.5 } },
+    Darius: { R: { kind: 'execute', type: 'true', calc: 'MaximumDamage', holdKill: true, resetOnKill: true, latest: 9.5 } },
+    Garen: { R: { kind: 'execute', type: 'true', flat: 'BaseDamage', missPct: 0.35, holdKill: true, latest: 9.5 } },
+    Fiddlesticks: { W: { kind: 'execute', type: 'magic', flat: 'DamagePerSecond', flatMult: 2, missPct: 0.22, noHold: true } }, // 2s drain + 22% missing HP
+    Veigar: { R: { kind: 'execute', type: 'magic', calc: 'MinDamage', missAmp: { max: 1, at: 0.667 }, holdKill: true, latest: 9.5 } },
+    Jinx: { R: { kind: 'execute', type: 'physical', calc: 'DamageMax', missPct: 0.35, holdKill: true, latest: 9.5 } },
+    Akshan: { R: { kind: 'execute', type: 'physical', missAmp: { max: 3, at: 1 }, holdKill: true, latest: 9.5 } },
+    Smolder: { Q: { kind: 'execute', type: 'physical', threshold: 'Tier3_ExecuteThresholdStart', noHold: true } }, // 225 stacks
     Kayle: { E: { kind: 'cast', type: 'magic', calc: 'ActiveTotalExecuteDamage', pctOfMissing: true } }, // formula is a share of missing HP
   };
 

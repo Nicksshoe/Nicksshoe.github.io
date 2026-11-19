@@ -549,6 +549,10 @@
     });
     const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute']);
     const spellQueue = []; // scheduled ability hits/ticks: { at, raw(), type, label }
+    // Expected share of a hit that gets through the dummy's resists right now (used to time executes).
+    const mitigation = type => type === 'true' ? 1
+      : type === 'magic' ? 100 / (100 + Math.max(0, DUMMY.mr * (1 - 0.075 * bloodStacks) * st.mpenKeep - st.mpenFlat - malignanceShred))
+      : 100 / (100 + Math.max(0, DUMMY.armor * (1 - 0.06 * cleaverStacks) * st.arpenKeep - st.leth));
     const onUltimate = t => {
       if (hasAny('malignance')) { malignanceUntil = t + 3; malignanceShred = 10; }
       if (hasAny('zeke')) zekeUntil = t + 5;
@@ -571,12 +575,24 @@
           const m = sp.mech, label = `${sp.slot} · ${labels[sp.slot] || sp.name}`;
           const ev = name => { const v = root.Potenshall.Abilities.evalCalc(name, sp.sp, { ...spellCtx(), rank: sp.rank }); return Number.isFinite(v) && v > 0 ? Math.min(v, 6000) : 0; };
           let first = 0;
+          let resetNow = false;
           if (m.kind === 'execute') {
-            const raw = root.Potenshall.Abilities.evalCalc(sp.calc, sp.sp, { ...spellCtx(), rank: sp.rank });
-            const thr = (m.threshold > 1 ? m.threshold / 100 : m.threshold) * DUMMY.hp;
-            if (dummyHp > thr + raw && t < m.latest) continue; // hold it until it can execute
-            first = deal(t, Math.min(raw, 6000), m.type, label, 'ability');
-            if (dummyHp > 0 && dummyHp < thr) record(t, dummyHp, 'true', label.replace(/ · .*/, ' · Execute'));
+            // Held until it executes or kills (a real player waits for the moment), fired anyway at 'latest'.
+            const evx = c => root.Potenshall.Abilities.evalCalc(c, sp.sp, { ...spellCtx(), rank: sp.rank });
+            const miss = DUMMY.hp - dummyHp;
+            const thrHp = m.thresholdCalc ? evx(m.thresholdCalc) : m.threshold ? (m.threshold > 1 ? m.threshold / 100 : m.threshold) * DUMMY.hp : 0;
+            let raw = m.flat != null ? m.flat * (m.flatMult || 1) : evx(m.calc || sp.calc);
+            if (m.missAmp) raw *= 1 + m.missAmp.max * Math.min(1, miss / DUMMY.hp / (m.missAmp.at || 1));
+            if (m.missPct) raw += m.missPct * miss;
+            if (m.aboveMult && dummyHp > thrHp) raw *= m.aboveMult;
+            raw = Number.isFinite(raw) && raw > 0 ? Math.min(raw, 6000) : 0;
+            const est = raw * mitigation(m.type);
+            const go = m.noHold || t >= (m.latest ?? 0) || (thrHp > 0 && dummyHp - est < thrHp) || (m.holdKill && est >= dummyHp);
+            if (!go) continue;
+            const killsBefore = kills;
+            first = deal(t, raw, m.type, label, 'ability');
+            if (thrHp > 0 && dummyHp > 0 && dummyHp < thrHp) record(t, dummyHp, 'true', label.replace(/ · .*/, ' · Execute'));
+            resetNow = !!m.resetOnKill && kills > killsBefore;
           } else if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : 1), m.type, label, 'ability');
           else if (m.kind === 'multi') for (const p of m.parts) first += deal(t, ev(p.calc), p.type, label, 'ability');
           else if (m.kind === 'hits') {
@@ -590,7 +606,7 @@
           onAbilityHit(t, t >= bastionReady, { raw: first, type: m.type, label });
           if (t >= bastionReady) bastionReady = t + 3;
           if (sp.slot === 'R') onUltimate(t);
-          ready[sp.slot] = m.once ? Infinity : t + sp.cooldown * 100 / (100 + st.ah);
+          ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : t + sp.cooldown * 100 / (100 + st.ah);
           castLock = t + sp.castTime;
           return;
         }
@@ -1035,7 +1051,20 @@
     Kennen: { R: { kind: 'hits', type: 'magic', calc: 'PerTickDamageCalculated', n: 6, over: 3 } },
     // Execute ultimates: held until the hit leaves the target under the threshold, then the execute kills it.
     // If the dummy never gets that low, it's fired near the end of the fight for its damage.
+    //   execute: threshold (share of max HP or a data value) / thresholdCalc (absolute HP from a formula); calc: damage
+    //   formula (default: the cast's own); missAmp {max, at}: up to +max x damage as missing HP reaches 'at';
+    //   missPct: + share of missing HP; aboveMult: damage when above the threshold; holdKill: wait until it kills;
+    //   resetOnKill: recast right away after a kill; noHold: cast on cooldown but still execute; latest: fire anyway.
     Urgot: { R: { kind: 'execute', type: 'physical', threshold: 'RHealthThreshold', latest: 9.5 } },
+    Syndra: { R: { kind: 'execute', type: 'magic', calc: 'MaxDamageCalc', threshold: 'UpgradeExecuteThreshold', latest: 9.5 } }, // all 7 spheres
+    Pyke: { R: { kind: 'execute', type: 'physical', thresholdCalc: 'RDamage', calc: 'RDamage', aboveMult: 0.5, resetOnKill: true, latest: 9.5 } },
+    Darius: { R: { kind: 'execute', type: 'true', calc: 'MaximumDamage', holdKill: true, resetOnKill: true, latest: 9.5 } },
+    Garen: { R: { kind: 'execute', type: 'true', flat: 'BaseDamage', missPct: 0.35, holdKill: true, latest: 9.5 } },
+    Fiddlesticks: { W: { kind: 'execute', type: 'magic', flat: 'DamagePerSecond', flatMult: 2, missPct: 0.22, noHold: true } }, // 2s drain + 22% missing HP
+    Veigar: { R: { kind: 'execute', type: 'magic', calc: 'MinDamage', missAmp: { max: 1, at: 0.667 }, holdKill: true, latest: 9.5 } },
+    Jinx: { R: { kind: 'execute', type: 'physical', calc: 'DamageMax', missPct: 0.35, holdKill: true, latest: 9.5 } },
+    Akshan: { R: { kind: 'execute', type: 'physical', missAmp: { max: 3, at: 1 }, holdKill: true, latest: 9.5 } },
+    Smolder: { Q: { kind: 'execute', type: 'physical', threshold: 'Tier3_ExecuteThresholdStart', noHold: true } }, // 225 stacks
     Kayle: { E: { kind: 'cast', type: 'magic', calc: 'ActiveTotalExecuteDamage', pctOfMissing: true } }, // formula is a share of missing HP
   };
 
@@ -1338,14 +1367,18 @@
     TwistedFate: { name: 'Stacked Deck (E)', note: 'Every 4th attack; E is passive', disable: ['E'], stats: () => ({ as: 45 }),
       everyN: { n: 4, type: 'magic', dmg: c => 165 + 0.5 * c.ap } },
     Twitch: { name: 'Deadly Venom', note: 'Stacking true-damage poison', stackDot: { max: 6, dur: 6, type: 'true', perStack: c => 6 + 0.03 * c.ap } },
-    // Udyr swaps stances every rotation and awakens one every other rotation: Q for AD builds, R for AP builds.
-    Udyr: { name: 'Bridge Between (Awaken)', note: 'Awakens Q (AD) or R (AP) every other rotation; awakened Q lightning hits a lone target 6 times', ownKit: true,
-      stats: () => ({ as: 35 }),
+    // Udyr rotates all four stances every 6s (1.5s apart): every cast triggers Bridge Between's attack speed, and Q adds
+    // +68% for 4s (game data, rank 5). One stance is awakened every other rotation: Q for AD builds, R for AP builds.
+    Udyr: { name: 'Bridge Between (Awaken)', note: 'Rotates Q, E, W, R every 6s (each cast grants attack speed); awakens Q (AD) or R (AP) every other rotation', ownKit: true,
+      // Q: +68% for 4 of every 6s; passive after each of 4 casts per rotation: about +40% kept up; awakened Q: +70% for 4 of 12s.
+      stats: c => ({ as: 68 * 4 / 6 + 40 + (c.ap > c.bad ? 0 : 70 * 4 / 12) }),
       periodic: [
-        { every: 6, start: 0.3, ability: true, label: 'Q · Wilding Claw', kind: 'ability', type: 'physical', dmg: c => c.ap > c.bad ? 0 : 2 * (30 + 0.2 * c.bad) + 0.07 * c.tmax },
+        { every: 6, start: 0.3, ability: true, label: 'Q · Wilding Claw', kind: 'ability', type: 'physical', dmg: c => 2 * (30 + 0.2 * c.bad) + 2 * (0.035 + 0.0002 * c.bad) * c.tmax }, // 2 claws: 7% (+4% per 100 bonus AD) max HP in total
         { every: 12, start: 0.3, label: 'Q · Awakened lightning', kind: 'ability', type: 'magic', dmg: c => c.ap > c.bad ? 0 : 6 * 0.03 * c.tmax },
-        { every: 6, start: 0.3, ability: true, key: 'udR', dot: 4, label: 'R · Wingborne Storm', kind: 'ability', type: 'magic', dmg: c => c.ap > c.bad ? 4 * (68 + 0.35 * c.ap) : 0 },
-        { every: 12, start: 0.3, key: 'udR2', dot: 4, label: 'R · Awakened storm', kind: 'ability', type: 'magic', dmg: c => c.ap > c.bad ? 4 * (68 + 0.35 * c.ap) : 0 },
+        { every: 6, start: 1.8, ability: true, label: 'E · Blazing Stampede', kind: 'ability', dmg: () => 0 },
+        { every: 6, start: 3.3, ability: true, label: 'W · Iron Mantle', kind: 'ability', dmg: () => 0 },
+        { every: 6, start: 4.8, ability: true, key: 'udR', dot: 4, label: 'R · Wingborne Storm', kind: 'ability', type: 'magic', dmg: c => 4 * (68 + 0.35 * c.ap) },
+        { every: 12, start: 4.8, key: 'udR2', dot: 4, label: 'R · Awakened storm', kind: 'ability', type: 'magic', dmg: c => c.ap > c.bad ? 4 * (68 + 0.35 * c.ap) : 0 },
       ] },
     Urgot: { name: 'Echoing Flames', note: 'Leg shotguns; W machine gun', periodic: [{ every: 2.5, start: 0.5, type: 'physical', dmg: c => 0.4 * c.ad + 0.06 * c.tmax },
       { every: 1, start: 1, label: 'W · Purge', kind: 'ability', type: 'physical', dmg: c => 3 * (12 + 0.4 * c.ad) }] },

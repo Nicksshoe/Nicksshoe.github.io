@@ -548,6 +548,10 @@
     });
     const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute']);
     const spellQueue = []; // scheduled ability hits/ticks: { at, raw(), type, label }
+    // Expected share of a hit that gets through the dummy's resists right now (used to time executes).
+    const mitigation = type => type === 'true' ? 1
+      : type === 'magic' ? 100 / (100 + Math.max(0, DUMMY.mr * (1 - 0.075 * bloodStacks) * st.mpenKeep - st.mpenFlat - malignanceShred))
+      : 100 / (100 + Math.max(0, DUMMY.armor * (1 - 0.06 * cleaverStacks) * st.arpenKeep - st.leth));
     const onUltimate = t => {
       if (hasAny('malignance')) { malignanceUntil = t + 3; malignanceShred = 10; }
       if (hasAny('zeke')) zekeUntil = t + 5;
@@ -570,12 +574,24 @@
           const m = sp.mech, label = `${sp.slot} · ${labels[sp.slot] || sp.name}`;
           const ev = name => { const v = root.Potenshall.Abilities.evalCalc(name, sp.sp, { ...spellCtx(), rank: sp.rank }); return Number.isFinite(v) && v > 0 ? Math.min(v, 6000) : 0; };
           let first = 0;
+          let resetNow = false;
           if (m.kind === 'execute') {
-            const raw = root.Potenshall.Abilities.evalCalc(sp.calc, sp.sp, { ...spellCtx(), rank: sp.rank });
-            const thr = (m.threshold > 1 ? m.threshold / 100 : m.threshold) * DUMMY.hp;
-            if (dummyHp > thr + raw && t < m.latest) continue; // hold it until it can execute
-            first = deal(t, Math.min(raw, 6000), m.type, label, 'ability');
-            if (dummyHp > 0 && dummyHp < thr) record(t, dummyHp, 'true', label.replace(/ · .*/, ' · Execute'));
+            // Held until it executes or kills (a real player waits for the moment), fired anyway at 'latest'.
+            const evx = c => root.Potenshall.Abilities.evalCalc(c, sp.sp, { ...spellCtx(), rank: sp.rank });
+            const miss = DUMMY.hp - dummyHp;
+            const thrHp = m.thresholdCalc ? evx(m.thresholdCalc) : m.threshold ? (m.threshold > 1 ? m.threshold / 100 : m.threshold) * DUMMY.hp : 0;
+            let raw = m.flat != null ? m.flat * (m.flatMult || 1) : evx(m.calc || sp.calc);
+            if (m.missAmp) raw *= 1 + m.missAmp.max * Math.min(1, miss / DUMMY.hp / (m.missAmp.at || 1));
+            if (m.missPct) raw += m.missPct * miss;
+            if (m.aboveMult && dummyHp > thrHp) raw *= m.aboveMult;
+            raw = Number.isFinite(raw) && raw > 0 ? Math.min(raw, 6000) : 0;
+            const est = raw * mitigation(m.type);
+            const go = m.noHold || t >= (m.latest ?? 0) || (thrHp > 0 && dummyHp - est < thrHp) || (m.holdKill && est >= dummyHp);
+            if (!go) continue;
+            const killsBefore = kills;
+            first = deal(t, raw, m.type, label, 'ability');
+            if (thrHp > 0 && dummyHp > 0 && dummyHp < thrHp) record(t, dummyHp, 'true', label.replace(/ · .*/, ' · Execute'));
+            resetNow = !!m.resetOnKill && kills > killsBefore;
           } else if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : 1), m.type, label, 'ability');
           else if (m.kind === 'multi') for (const p of m.parts) first += deal(t, ev(p.calc), p.type, label, 'ability');
           else if (m.kind === 'hits') {
@@ -589,7 +605,7 @@
           onAbilityHit(t, t >= bastionReady, { raw: first, type: m.type, label });
           if (t >= bastionReady) bastionReady = t + 3;
           if (sp.slot === 'R') onUltimate(t);
-          ready[sp.slot] = m.once ? Infinity : t + sp.cooldown * 100 / (100 + st.ah);
+          ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : t + sp.cooldown * 100 / (100 + st.ah);
           castLock = t + sp.castTime;
           return;
         }
