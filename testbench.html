@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Potential Damage · Test bench</title>
+<style>
+:root{--bg:#0a0f1a;--panel:#111a2b;--line:#22314d;--text:#e8e3d6;--muted:#8f9bb3;--gold:#c8a24a;--phys:#ff8a3d;--magic:#4aa8ff;--true:#f2f2f2;
+  --ok:#2fbf71;--warn:#e2a93f;--bad:#e2463f;--info:#6c8cff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,system-ui,sans-serif}
+header{padding:18px 20px 10px;border-bottom:1px solid var(--line)}
+h1{margin:0;font-size:20px;letter-spacing:.04em;color:var(--gold)}
+header p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:6px;padding:12px 20px 0;flex-wrap:wrap}
+.tabs button,.btn{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font:inherit;cursor:pointer}
+.tabs button.on{border-color:var(--gold);color:var(--gold)}
+main{padding:14px 20px 40px}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.bar input,.bar select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit}
+.bar label{color:var(--muted);font-size:13px;display:flex;gap:6px;align-items:center}
+.summary{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--muted);cursor:pointer;background:none;font-family:inherit}
+.chip b{color:var(--text)}
+.chip.on{border-color:var(--gold);color:var(--gold)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;white-space:nowrap}
+th{position:sticky;top:0;background:#0d1524;color:var(--muted);font-weight:600;cursor:pointer;user-select:none}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.row{cursor:pointer}
+tr.row:hover td{background:#14203a}
+tr.detail td{background:#0d1524;white-space:normal}
+.pill{display:inline-block;border-radius:6px;padding:1px 7px;font-size:11px;font-weight:600;margin:1px 3px 1px 0}
+.s-ok{background:#2fbf7122;color:var(--ok)}.s-buff,.s-passive,.s-utility{background:#6c8cff22;color:var(--info)}
+.s-missing,.s-zero{background:#e2463f22;color:var(--bad)}.s-high,.s-review{background:#e2a93f22;color:var(--warn)}
+.ph{color:var(--phys)}.mg{color:var(--magic)}.tr{color:var(--true)}
+.muted{color:var(--muted)}
+.sub{margin:6px 0 12px;width:auto}
+.sub th{position:static}
+.sources{columns:2;column-gap:24px;margin:6px 0 0;padding:0;list-style:none;font-size:12px}
+.sources li{display:flex;justify-content:space-between;gap:10px;break-inside:avoid}
+img.icon{width:22px;height:22px;border-radius:4px;vertical-align:middle;margin-right:6px}
+.note{color:var(--muted);font-size:12px;max-width:820px}
+@media (max-width:640px){.sources{columns:1}main,header,.tabs{padding-left:14px;padding-right:14px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Test bench</h1>
+  <p>Runs the real engine in your browser: level 18, 10 seconds against the 10,000 HP dummy (200 armor, 100 MR), same rules as the game.</p>
+</header>
+<div class="tabs"><button data-tab="champs" class="on">Champions · no items</button><button data-tab="items">Items · one at a time</button></div>
+<main id="main"><p class="muted">Loading patch data…</p></main>
+
+<script src="engine.js"></script>
+<script src="abilities.js"></script>
+<script src="passives.js"></script>
+<script src="itemgroups.js"></script>
+<script>
+(() => {
+const P = window.Potenshall;
+let DATA, STACKS, DD, champRows = null, itemRun = null, tab = 'champs';
+const $ = s => document.querySelector(s);
+const fmt = n => Math.round(n).toLocaleString('en-US');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// Abilities whose Riot text mentions damage but which are utility/defensive (the text is about damage taken, etc.).
+const UTILITY_OK = new Set(['Aatrox E', 'Alistar R', 'AurelionSol W', 'Braum E', 'Garen W', 'Janna E', 'Kindred R', 'MasterYi W',
+  'MissFortune W', 'Mordekaiser W', 'Nilah W', 'Rammus E', 'Rell E', 'Ryze R', 'Sivir R', 'Sona W', 'Sona E', 'TahmKench E',
+  'Taliyah R', 'Teemo W', 'Tryndamere Q', 'Tryndamere W', 'Warwick E', 'Yuumi E', 'Kalista W', 'Aatrox R']);
+
+async function loadKit(ch) {
+  try {
+    const kit = await P.Abilities.loadKit(ch.id);
+    return { kit, spells: P.Abilities.describeKit(kit, ch.info.magic > ch.info.attack ? 'magic' : 'physical') };
+  } catch { return { kit: null, spells: null }; }
+}
+const run = (ch, items, k) => P.simulate(ch, items, { kit: k.kit, spells: k.spells, stacks: STACKS && STACKS.champions });
+
+// ---------- Champions, no items ----------
+async function runChampions() {
+  const rows = [];
+  for (const ch of DATA.champions) {
+    const k = await loadKit(ch);
+    const r = run(ch, [], k);
+    const PS = (P.ChampPassives || {})[ch.id] || {};
+    const dis = new Set(PS.disable || []);
+    const ddS = DD.data[ch.id] ? DD.data[ch.id].spells : [];
+    const slots = (k.spells && k.spells.usable ? k.spells : []).map(s => {
+      const hs = r.hits.filter(h => h.src.startsWith(s.slot + ' · '));
+      const times = [...new Set(hs.filter(h => !/tick|clone|Clone|Shadow|echo|Execute/.test(h.src)).map(h => h.t.toFixed(1)))];
+      const i = 'QWER'.indexOf(s.slot), tip = ((ddS[i] || {}).tooltip || '').replace(/<[^>]+>/g, '');
+      const mech = s.mech ? s.mech.kind : (s.damaging ? 'formula' : 'none');
+      const o = { slot: s.slot, name: (ddS[i] || {}).name || s.name, rank: s.rank, cd: s.cooldown, mech, type: s.type,
+        dmg: hs.reduce((a, h) => a + h.amt, 0), casts: times.length, times: times.join(' '), status: 'ok', note: '' };
+      if (dis.has(s.slot)) { o.status = 'passive'; o.note = 'Modeled in the champion passive table'; }
+      else if (PS.ownKit) { o.status = 'passive'; o.note = 'Whole kit modeled by hand (forms / rotation)'; }
+      else if (mech === 'buff') { o.status = 'buff'; o.note = 'Self-buff: its stats apply for its share of the fight'; }
+      else if (mech === 'none' && /damage/i.test(tip) && !UTILITY_OK.has(ch.id + ' ' + s.slot)) { o.status = 'missing'; o.note = 'Deals damage in game, not modeled yet'; }
+      else if (mech === 'none') { o.status = 'utility'; o.note = 'Utility / defensive: no damage'; }
+      else if (o.dmg === 0) { o.status = 'zero'; o.note = 'Cast but dealt 0 damage'; }
+      else if (o.casts && o.dmg / o.casts > 2500) { o.status = 'high'; o.note = 'Very high per cast: worth a look'; }
+      return o;
+    });
+    const flags = [];
+    if (!r.realKit) flags.push('estimate');
+    if (slots.some(s => s.status === 'missing' || s.status === 'zero')) flags.push('missing');
+    if (slots.some(s => s.status === 'high') || r.total > 2500) flags.push('high');
+    if (r.total < 400) flags.push('low');
+    rows.push({ ch, total: r.total, by: r.byType, realKit: r.realKit, passive: r.passive, stack: (STACKS && STACKS.champions[ch.id] || {}).counter,
+      stats: r.stats, sources: Object.entries(r.bySource).sort((a, b) => b[1] - a[1]), slots, flags });
+  }
+  return rows;
+}
+
+let sortKey = 'total', sortDir = -1, filter = 'all', query = '', open = new Set();
+const FLAG_INFO = {
+  missing: ['s-missing', 'Ability not dealing its damage'], high: ['s-high', 'High: worth a look'],
+  low: ['s-review', 'Low total'], estimate: ['s-review', 'No real kit data'],
+};
+function renderChamps() {
+  const rows = champRows;
+  const count = f => rows.filter(r => r.flags.includes(f)).length;
+  const list = rows.filter(r => (filter === 'all' || (filter === 'flagged' ? r.flags.length : r.flags.includes(filter)))
+      && (!query || r.ch.name.toLowerCase().includes(query)))
+    .sort((a, b) => {
+      const v = r => sortKey === 'name' ? r.ch.name : sortKey === 'class' ? r.ch.tags[0] : sortKey in r.by ? r.by[sortKey] : r[sortKey];
+      const x = v(a), y = v(b);
+      return (typeof x === 'string' ? x.localeCompare(y) : x - y) * sortDir;
+    });
+  const totals = rows.map(r => r.total).sort((a, b) => a - b);
+  $('#main').innerHTML = `
+    <div class="bar"><input id="q" placeholder="Search champion" value="${esc(query)}"><button class="btn" id="rerun">Run again</button>
+      <span class="muted">${rows.length} champions · median ${fmt(totals[totals.length >> 1])} · click a row for its abilities</span></div>
+    <div class="summary">
+      ${[['all', 'All', rows.length], ['flagged', 'Any flag', rows.filter(r => r.flags.length).length], ['missing', 'Missing damage', count('missing')],
+        ['high', 'High', count('high')], ['low', 'Low', count('low')], ['estimate', 'No kit data', count('estimate')]]
+        .map(([k, l, n]) => `<button class="chip ${filter === k ? 'on' : ''}" data-f="${k}">${l} <b>${n}</b></button>`).join('')}
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr>${[['name', 'Champion'], ['class', 'Class'], ['total', 'Total', 1], ['physical', 'Physical', 1], ['magic', 'Magic', 1], ['true', 'True', 1], ['flags', 'Flags']]
+        .map(([k, l, n]) => `<th class="${n ? 'num' : ''}" data-k="${k}">${l}${sortKey === k ? (sortDir < 0 ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead>
+      <tbody>${list.map(r => `
+        <tr class="row" data-id="${r.ch.id}">
+          <td><img class="icon" src="${P.DDRAGON}/cdn/${DATA.patch}/img/champion/${r.ch.id}.png" alt="">${esc(r.ch.name)}</td>
+          <td>${esc(r.ch.tags[0])}</td><td class="num"><b>${fmt(r.total)}</b></td>
+          <td class="num ph">${fmt(r.by.physical)}</td><td class="num mg">${fmt(r.by.magic)}</td><td class="num tr">${fmt(r.by.true)}</td>
+          <td>${r.flags.map(f => `<span class="pill ${FLAG_INFO[f][0]}">${FLAG_INFO[f][1]}</span>`).join('')}</td>
+        </tr>${open.has(r.ch.id) ? `<tr class="detail"><td colspan="7">${champDetail(r)}</td></tr>` : ''}`).join('')}
+      </tbody></table></div>`;
+  $('#q').oninput = e => { query = e.target.value.toLowerCase(); renderChamps(); $('#q').focus(); $('#q').setSelectionRange(query.length, query.length); };
+  $('#rerun').onclick = async () => { champRows = null; draw(); };
+  document.querySelectorAll('.chip').forEach(b => b.onclick = () => { filter = b.dataset.f; renderChamps(); });
+  document.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => {
+    const k = th.dataset.k; if (k === 'flags') return;
+    sortDir = sortKey === k ? -sortDir : (k === 'name' || k === 'class' ? 1 : -1); sortKey = k; renderChamps();
+  });
+  document.querySelectorAll('tr.row').forEach(tr => tr.onclick = () => { const id = tr.dataset.id; open.has(id) ? open.delete(id) : open.add(id); renderChamps(); });
+}
+function champDetail(r) {
+  const s = r.stats;
+  return `<div class="note">AD ${fmt(s.ad)} · AP ${fmt(s.ap)} · ${s.as.toFixed(2)} attacks/s · ${fmt(s.hp)} HP${r.stack != null ? ` · stacks assumed ${r.stack}` : ''}
+      · passive: <b>${esc(r.passive ? r.passive.name : 'none')}</b>${r.passive && r.passive.note ? ` (${esc(r.passive.note)})` : ''}${r.realKit ? '' : ' · <b>no real kit data: abilities estimated</b>'}</div>
+    ${r.slots.length ? `<table class="sub"><thead><tr><th>Slot</th><th>Ability</th><th class="num">Rank</th><th class="num">Cooldown</th><th>Modeled as</th>
+      <th class="num">Casts</th><th>Cast times (s)</th><th class="num">Damage</th><th>Status</th></tr></thead><tbody>
+      ${r.slots.map(x => `<tr><td>${x.slot}</td><td>${esc(x.name)}</td><td class="num">${x.rank}</td><td class="num">${x.cd ? x.cd.toFixed(1) + 's' : '–'}</td>
+        <td>${esc(x.mech)}${x.type && x.mech !== 'none' ? ` · <span class="${x.type === 'physical' ? 'ph' : x.type === 'magic' ? 'mg' : 'tr'}">${x.type}</span>` : ''}</td>
+        <td class="num">${x.casts}</td><td class="muted">${x.times || '–'}</td><td class="num">${fmt(x.dmg)}</td>
+        <td><span class="pill s-${x.status}">${x.status}</span> <span class="muted">${esc(x.note)}</span></td></tr>`).join('')}
+      </tbody></table>` : ''}
+    <ul class="sources">${r.sources.map(([k, v]) => `<li><span>${esc(k)}</span><b>${fmt(v)}</b></li>`).join('')}</ul>`;
+}
+
+// ---------- Items, one per run ----------
+const DEFAULT_PICKS = ['Jax', 'Ahri', 'Malphite'];
+async function runItems(champId) {
+  const ch = DATA.champions.find(c => c.id === champId);
+  const k = await loadKit(ch);
+  const base = run(ch, [], k);
+  const rows = DATA.items.map(it => {
+    const r = run(ch, [it], k);
+    const own = Object.entries(r.bySource).filter(([src]) => src.startsWith(it.name)).reduce((a, [, v]) => a + v, 0);
+    const p = P.PASSIVES[it.name.toLowerCase()];
+    return { it, total: r.total, delta: r.total - base.total, own, tip: p ? p.tip : '', modeled: !!p, stats: (it.lines || []).join(' · '),
+      sources: Object.entries(r.bySource).sort((a, b) => b[1] - a[1]) };
+  });
+  return { ch, base: base.total, rows };
+}
+let iSort = 'delta', iDir = -1, iOpen = new Set(), iFilter = 'all';
+function renderItems() {
+  const R = itemRun;
+  const champOpts = DATA.champions.slice().sort((a, b) => a.name.localeCompare(b.name))
+    .map(c => `<option value="${c.id}" ${R && R.ch.id === c.id ? 'selected' : ''}>${esc(c.name)} (${c.tags[0]})</option>`).join('');
+  if (!R) { $('#main').innerHTML = `<p class="muted">Running…</p>`; return; }
+  const list = R.rows.filter(r => iFilter === 'all' || (iFilter === 'modeled' ? r.modeled : !r.modeled))
+    .sort((a, b) => { const x = iSort === 'name' ? a.it.name : a[iSort], y = iSort === 'name' ? b.it.name : b[iSort]; return (typeof x === 'string' ? x.localeCompare(y) : x - y) * iDir; });
+  $('#main').innerHTML = `
+    <div class="bar"><label>Champion <select id="champSel">${champOpts}</select></label>
+      ${DEFAULT_PICKS.map(id => `<button class="btn" data-pick="${id}">${id}</button>`).join('')}
+      <span class="muted">No items: <b>${fmt(R.base)}</b> · ${R.rows.length} items, each run alone</span></div>
+    <div class="summary">${[['all', 'All'], ['modeled', 'Has a modeled passive'], ['stats', 'Stats only']]
+      .map(([k, l]) => `<button class="chip ${iFilter === k ? 'on' : ''}" data-f="${k}">${l} <b>${R.rows.filter(r => k === 'all' || (k === 'modeled' ? r.modeled : !r.modeled)).length}</b></button>`).join('')}</div>
+    <div class="tablewrap"><table><thead><tr>${[['name', 'Item'], ['total', 'Total', 1], ['delta', 'Gain vs no items', 1], ['own', "Item's own line", 1], ['tip', 'How it\'s modeled']]
+      .map(([k, l, n]) => `<th class="${n ? 'num' : ''}" data-k="${k}">${l}${iSort === k ? (iDir < 0 ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead>
+    <tbody>${list.map(r => `<tr class="row" data-id="${r.it.id}">
+      <td><img class="icon" src="${P.DDRAGON}/cdn/${DATA.patch}/img/item/${r.it.id}.png" alt="">${esc(r.it.name)}</td>
+      <td class="num">${fmt(r.total)}</td><td class="num"><b>${r.delta >= 0 ? '+' : ''}${fmt(r.delta)}</b></td><td class="num">${r.own ? fmt(r.own) : '–'}</td>
+      <td class="muted" style="white-space:normal">${r.modeled ? esc(r.tip || 'modeled') : 'Stats only'}</td></tr>
+      ${iOpen.has(r.it.id) ? `<tr class="detail"><td colspan="5"><div class="note">${esc(r.stats)}</div><ul class="sources">${r.sources.map(([k, v]) => `<li><span>${esc(k)}</span><b>${fmt(v)}</b></li>`).join('')}</ul></td></tr>` : ''}`).join('')}
+    </tbody></table></div>`;
+  $('#champSel').onchange = e => pickChamp(e.target.value);
+  document.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => pickChamp(b.dataset.pick));
+  document.querySelectorAll('.chip').forEach(b => b.onclick = () => { iFilter = b.dataset.f; renderItems(); });
+  document.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => { const k = th.dataset.k; if (k === 'tip') return; iDir = iSort === k ? -iDir : (k === 'name' ? 1 : -1); iSort = k; renderItems(); });
+  document.querySelectorAll('tr.row').forEach(tr => tr.onclick = () => { const id = tr.dataset.id; iOpen.has(id) ? iOpen.delete(id) : iOpen.add(id); renderItems(); });
+}
+async function pickChamp(id) { itemRun = null; iOpen.clear(); renderItems(); itemRun = await runItems(id); renderItems(); }
+
+async function draw() {
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  if (tab === 'champs') {
+    if (!champRows) { $('#main').innerHTML = '<p class="muted">Running every champion… (loads each kit once, about 20 seconds)</p>'; champRows = await runChampions(); }
+    if (tab === 'champs') renderChamps();
+  } else {
+    if (!itemRun) await pickChamp(DEFAULT_PICKS[0]); else renderItems();
+  }
+}
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { tab = b.dataset.tab; draw(); });
+
+Promise.all([P.loadPatchData(), fetch('stacks.json').then(r => r.ok ? r.json() : null).catch(() => null)]).then(async ([d, stacks]) => {
+  DATA = d; STACKS = stacks;
+  DD = await fetch(`${P.DDRAGON}/cdn/${d.patch}/data/en_US/championFull.json`).then(r => r.json());
+  window.__TB = { get champRows() { return champRows; }, get itemRun() { return itemRun; } };
+  draw();
+}).catch(e => { $('#main').innerHTML = `<p>Couldn't load patch data: ${esc(e.message)}</p>`; });
+})();
+</script>
+</body>
+</html>

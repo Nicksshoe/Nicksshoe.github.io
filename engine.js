@@ -647,7 +647,7 @@
             first = deal(t, raw, m.type, label, 'ability');
             if (thrHp > 0 && dummyHp > 0 && dummyHp < thrHp) record(t, dummyHp, 'true', label.replace(/ · .*/, ' · Execute'));
             resetNow = !!m.resetOnKill && kills > killsBefore;
-          } else if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : 1), m.type, label, 'ability');
+          } else if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, label, 'ability');
           // Temporary attack speed from a cast (Wukong E); game data stores 60% as 0.6.
           if (m.asBonus) { tempAS = m.asBonus < 5 ? m.asBonus * 100 : m.asBonus; tempASUntil = t + (m.asDur || 5); }
           else if (m.kind === 'multi') for (const p of m.parts) first += deal(t, ev(p.calc), p.type, label, 'ability');

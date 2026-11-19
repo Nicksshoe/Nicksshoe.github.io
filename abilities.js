@@ -37,10 +37,13 @@
   };
   // A few champions list their spells out of Q/W/E/R order in the game data.
   const SLOT_ORDER = { Naafiri: ['Q', 'R', 'E', 'W'] };
+  const effects = sp => (sp.mEffectAmount || []).map(e => e.value || []);
+  // Data value names are matched exactly first, then ignoring case (Lissandra's formula asks for 'Damage', data has 'damage').
+  const dvGet = (dv, name) => dv[name] || (name && dv[Object.keys(dv).find(k => k.toLowerCase() === name.toLowerCase())]);
   const readSpell = obj => {
     const sp = obj.mSpell || {}, dv = {};
     for (const d of sp.DataValues || []) if (d.name && d.values) dv[d.name] = d.values;
-    return { sp, dv, calcs: sp.mSpellCalculations || {} };
+    return { sp, dv, eff: effects(sp), calcs: sp.mSpellCalculations || {} };
   };
 
   function parseKit(bin, champId) {
@@ -62,13 +65,13 @@
       let cds = sp.cooldownTime || [];
       return {
         slot: order[i], name: sp.mAlternateName || name.split('/').pop(),
-        cds, dv, calcs: sp.mSpellCalculations || {},
+        cds, dv, eff: effects(sp), calcs: sp.mSpellCalculations || {},
         bot: bot[BOT_DAMAGE] && (bot[BOT_DAMAGE].mFormulaParts || []).length ? bot[BOT_DAMAGE] : null,
         damageTag: bot.DamageTag, castTime: sp.spellCastTime || 0.25,
         variants: ((VARIANTS[champId] || {})[order[i]] || []).map(([vname, calc]) => {
           const h = find(vname); if (!h) return null;
           const r = readSpell(h[1]);
-          return { name: vname, dv: r.dv, calcs: r.calcs, calc };
+          return { name: vname, dv: r.dv, eff: r.eff, calcs: r.calcs, calc };
         }).filter(Boolean),
       };
     }).filter(Boolean);
@@ -121,7 +124,7 @@
 
   function evalPart(part, sp, ctx, depth) {
     if (!part || depth > 12) return 0;
-    const dvAt = name => { const v = sp.dv[name]; return v ? +(v[ctx.rank] ?? v[v.length - 1]) || 0 : 0; };
+    const dvAt = name => { const v = dvGet(sp.dv, name); return v ? +(v[ctx.rank] ?? v[v.length - 1]) || 0 : 0; };
     const sub = p => evalPart(p, sp, ctx, depth + 1);
     switch (part.__type) {
       case 'NamedDataValueCalculationPart': return dvAt(part.mDataValue);
@@ -164,7 +167,10 @@
         return (+part.mCoefficient || 0) * ctx.stacks;
       case 'AbilityResourceByCoefficientCalculationPart':
         return (+part.mCoefficient || 0) * (ctx.self.mana || 0);
-      case 'EffectValueCalculationPart': return 0;
+      case 'EffectValueCalculationPart': { // older spells keep base values in an effect table (1-based index)
+        const e = sp.eff && sp.eff[(part.mEffectIndex || 1) - 1];
+        return e && e.length ? +(e[ctx.rank] ?? e[e.length - 1]) || 0 : 0;
+      }
       case '{8a96ea3c}': return Math.max(...(part.mSubparts || []).map(sub), 0);  // max of sub-parts
       case '{ba007871}': { const v = (part.mSubparts || []).map(sub); return v.length ? Math.min(...v) : 0; } // min of sub-parts
       case REF: return evalCalc(part.mSpellCalculationKey, sp, ctx, depth + 1);
@@ -314,6 +320,8 @@
       R: { kind: 'channel', type: 'physical', perSec: 'DamagePerSecondTotal', perSecPctMaxHp: 'BasePercentMaxHPDmgPerSec', duration: 'SpinDuration',
         recasts: 2, recastGap: 3, blocksAttacks: true, cloneEcho: true, first: true },
     },
+    // Pantheon W: damage is a share of the target's max health (game data stores 0.08 = 8%).
+    Pantheon: { W: { kind: 'cast', type: 'physical', calc: 'MaxHealthDamageCalc', pctOfMax: true } },
     Naafiri: { Q: { kind: 'multi', parts: [{ calc: 'TotalDamageFirstCast', type: 'physical' }, { calc: 'TotalBleedDamage', type: 'physical' }, { calc: 'TotalMinDamageSecondCast', type: 'physical' }] } },
     Kayle: { E: { kind: 'cast', type: 'magic', calc: 'ActiveTotalExecuteDamage', pctOfMissing: true } }, // formula is a share of missing HP
   };
