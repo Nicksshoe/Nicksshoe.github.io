@@ -303,6 +303,17 @@
       E: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 'Duration', executeCalc: 'CurrentExecutionThreshold', first: true },
       R: { kind: 'cast', type: 'magic', calc: 'R2Damage', first: true },
     },
+    // Wukong: W leaves a clone (4s) that copies his attacks and his R at 60%; Q empowers the next attack (his and the
+    // clone's), shreds 30% armor for 3s and loses 0.5s cooldown per hit; E grants 60% attack speed for 5s; R is two
+    // 2s spins (AD + % max HP per second) and he can't attack while spinning.
+    MonkeyKing: {
+      Q: { kind: 'empowerAuto', type: 'physical', flat: 'BaseDamage', bonusAdRatio: 'ADRatio', resetsAttack: true,
+        shred: 'ArmorShredPercent', shredDur: 'ShredDuration', cdPerHit: 'CooldownDecrease' },
+      W: { kind: 'clone', duration: 'CloneDuration', mult: 'CloneDamageMod', first: true },
+      E: { kind: 'cast', type: 'magic', calc: 'TotalDamage', asBonus: 'AttackSpeed', asDur: 'AttackSpeedDuration' },
+      R: { kind: 'channel', type: 'physical', perSec: 'DamagePerSecondTotal', perSecPctMaxHp: 'BasePercentMaxHPDmgPerSec', duration: 'SpinDuration',
+        recasts: 2, recastGap: 3, blocksAttacks: true, cloneEcho: true, first: true },
+    },
     Naafiri: { Q: { kind: 'multi', parts: [{ calc: 'TotalDamageFirstCast', type: 'physical' }, { calc: 'TotalBleedDamage', type: 'physical' }, { calc: 'TotalMinDamageSecondCast', type: 'physical' }] } },
     Kayle: { E: { kind: 'cast', type: 'magic', calc: 'ActiveTotalExecuteDamage', pctOfMissing: true } }, // formula is a share of missing HP
   };
@@ -310,7 +321,8 @@
   function resolveMechanic(spec, sp, rank) {
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
-    for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+    for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     // Buff stats: a data value name, or [name, multiplier] (e.g. attack speed stored as 0.7 -> 70%), or a number.
     if (spec.stats) m.stats = Object.fromEntries(Object.entries(spec.stats).map(([k, v]) => [k, typeof v === 'number' ? v : Array.isArray(v) ? dv(v[0]) * v[1] : dv(v)]));
     return m;

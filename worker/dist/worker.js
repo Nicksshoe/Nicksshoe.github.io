@@ -132,13 +132,13 @@
     "kraken slayer": { everyN: { n: 3, phys: 150, missingAmp: 0.75, rangedMult: 0.8 }, tip: 'Every 3rd attack (80% ranged)' },
     "statikk shiv": { everyN: { n: 3, magic: 60 }, tip: 'Energized lightning' },
     "rapid firecannon": { everyN: { n: 3, magic: 40 }, tip: 'Energized attack' },
-    "stormrazor": { everyN: { n: 3, magic: 90 }, tip: 'Energized bolt' },
+    "stormrazor": { everyN: { n: 3, magic: 100 }, tip: 'Energized bolt: 100 magic damage' },
     "hullbreaker": { everyN: { n: 5, hull: true }, tip: 'Skipper: every 5th attack, 120% base AD + 5% max HP' },
     "voltaic cyclosword": { everyN: { n: 4, curHp: 0.08, curHpRanged: 0.06 }, tip: 'Energized: 8% current HP (6% ranged)' },
     "trinity force": { spellblade: { baseAd: 2.0, type: 'physical' }, tip: 'Spellblade 200% base AD' },
     "lich bane": { spellblade: { baseAd: 0.75, ap: 0.45, type: 'magic' }, tip: 'Spellblade AP burst' },
     "iceborn gauntlet": { spellblade: { baseAd: 1.5, type: 'physical' }, tip: 'Spellblade 150% base AD' },
-    "essence reaver": { spellblade: { baseAd: 1.25, type: 'physical' }, tip: 'Spellblade 125% base AD' },
+    "essence reaver": { spellblade: { baseAd: 1.25, critFlat: 50, type: 'physical' }, tip: 'Spellblade 125% base AD (+50 x crit chance)' },
     "dusk and dawn": { spellblade: { flat: 40, ap: 0.12, type: 'magic', doubleOnHit: true }, tip: 'Spellblade double on-hit' },
     "infinity edge": { tip: 'Crit damage amp' },
     "the collector": { execute: 0.05, tip: 'Executes below 5% HP' },
@@ -153,7 +153,7 @@
     "bastionbreaker": { bastion: true, tip: 'Shaped Charge: 40 + 150% lethality true damage on an ability hit, 20s cooldown (half for ranged)' },
     "spear of shojin": { ahBonus: 25, abilityRamp: 0.03, tip: 'Focused Will: +12% ability and passive damage (fully stacked)' },
     "actualizer": { ahBonus: 20, abilityAmp: 0.15, tip: 'Empowered ability damage' },
-    "navori flickerblade": { ahBonus: 20, tip: 'Attacks shorten cooldowns' },
+    "navori flickerblade": { navori: true, tip: 'Transcendence: attacks cut remaining Q/W/E cooldowns by 15%' },
     "endless hunger": { ahPerBonusAd: 0.12, tip: 'Haste from bonus AD' },
     "yun tal wildarrows": { critBonus: 25, asBonus: 18, tip: '+25% crit (fully stacked) + Flurry' },
     "experimental hexplate": { hexplate: true, ultHaste: 30, tip: 'Overdrive: +50% AS (25% ranged) for 8s after your ultimate, 30s cooldown; +30 ultimate haste' },
@@ -337,7 +337,7 @@
       if ((type === 'magic' || type === 'true') && hasAny('shadowflame') && dummyHp < 0.4 * DUMMY.hp) amt *= 1.2;
 
       if (type === 'physical') {
-        const armor = Math.max(0, DUMMY.armor * (1 - 0.06 * cleaverStacks) * st.arpenKeep - st.leth);
+        const armor = Math.max(0, DUMMY.armor * (1 - 0.06 * cleaverStacks) * (t < shredUntil ? 1 - shredPct : 1) * st.arpenKeep - st.leth);
         amt *= 100 / (100 + armor);
         if (hasAny('cleaver') && kind !== 'split') cleaverStacks = Math.min(5, cleaverStacks + 1);
       } else if (type === 'magic') {
@@ -403,7 +403,7 @@
 
     // Spellblade: unique, take strongest owned.
     const sbList = has('spellblade').map(f => ({ ...f.spellblade, item: f.item }));
-    const spellbladeValue = sb => (sb.flat || 0) + (sb.baseAd || 0) * st.baseAD + (sb.bonusAd || 0) * st.bonusAD + (sb.ap || 0) * st.ap;
+    const spellbladeValue = sb => (sb.flat || 0) + (sb.critFlat || 0) * st.crit + (sb.baseAd || 0) * st.baseAD + (sb.bonusAd || 0) * st.bonusAD + (sb.ap || 0) * st.ap;
     const spellblade = sbList.sort((x, y) => spellbladeValue(y) - spellbladeValue(x))[0];
     let sbReadyAt = 0, sbArmed = false;
 
@@ -513,10 +513,21 @@
         countHit(t);
       }
       if (trueBonus) deal(t, trueBonus, 'true', 'Fiendhunter Bolts', 'attack');
+      let empRaw = 0;
       if (empowered) {
         const e = empowered; empowered = null;
-        deal(t, (e.adRatio || 0) * st.totalAD + (e.bonusAdRatio || 0) * st.bonusAD + (e.apRatio || 0) * st.ap + (e.flat || 0), e.type, e.label, 'ability');
+        if (e.shred) { shredPct = e.shred; shredUntil = t + (e.shredDur || 3); } // armor shred lands with the hit
+        empRaw = (e.adRatio || 0) * st.totalAD + (e.bonusAdRatio || 0) * st.bonusAD + (e.apRatio || 0) * st.ap + (e.flat || 0);
+        deal(t, empRaw, e.type, e.label, 'ability');
+        if (t <= cloneUntil) deal(t, empRaw * cloneMult, e.type, e.label + ' (clone)', 'ability'); // the clone's next attack is empowered too
       }
+      // Wukong's clone attacks alongside him at reduced damage. It's a separate attacker, so item on-hits aren't repeated.
+      const cloneHit = t <= cloneUntil;
+      if (cloneHit) deal(t, st.totalAD * (1 + st.crit * (st.critMult - 1)) * cloneMult, 'physical', 'W · Clone attacks', 'attack');
+      // Abilities whose cooldown drops on every hit (Wukong Q: 0.5s per hit from him or the clone).
+      for (const sp of castable || []) if (sp.mech && sp.mech.cdPerHit && ready[sp.slot] > t) ready[sp.slot] -= sp.mech.cdPerHit * (cloneHit ? 2 : 1);
+      // Navori Flickerblade: attacks cut the remaining cooldown of Q, W and E by 15%.
+      if (hasAny('navori')) for (const s of ['Q', 'W', 'E']) if (ready[s] > t && ready[s] !== Infinity) ready[s] = t + (ready[s] - t) * 0.85;
       let onHitTimes = 1 + pExtraOnHit;
       // Guinsoo's Rageblade (fully stacked): every 3rd attack applies on-hit effects twice, including on-hit
       // stacks like Vayne's Silver Bolts and Kai'Sa's plasma.
@@ -574,15 +585,18 @@
         baseHp: DUMMY.baseHp, bonusHp: DUMMY.hp - DUMMY.baseHp },
       stacks: stackInfo.counter ?? 0,
     });
-    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute', 'mark']);
+    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute', 'mark', 'clone']);
     let markState = null; // Zed-style mark: stores damage dealt until it pops
     const recastLeft = {}; // recasts still available per slot
     let channelUntil = -1; // a channel that keeps the champion from attacking or casting (Aurelion Sol Q)
+    let cloneUntil = -1, cloneMult = 0; // Wukong's clone copies attacks and his R
+    let tempAS = 0, tempASUntil = -1;    // attack speed from a cast (Wukong E)
+    let shredPct = 0, shredUntil = -1;   // % armor removed by an ability (Wukong Q)
     const spellQueue = []; // scheduled ability hits/ticks: { at, raw(), type, label }
     // Expected share of a hit that gets through the dummy's resists right now (used to time executes).
-    const mitigation = type => type === 'true' ? 1
+    const mitigation = (type, t) => type === 'true' ? 1
       : type === 'magic' ? 100 / (100 + Math.max(0, DUMMY.mr * (1 - 0.075 * bloodStacks) * st.mpenKeep - st.mpenFlat - malignanceShred))
-      : 100 / (100 + Math.max(0, DUMMY.armor * (1 - 0.06 * cleaverStacks) * st.arpenKeep - st.leth));
+      : 100 / (100 + Math.max(0, DUMMY.armor * (1 - 0.06 * cleaverStacks) * (t < shredUntil ? 1 - shredPct : 1) * st.arpenKeep - st.leth));
     let lastUltAt = null; const summons = []; let empLastHits = 0, fiendReady = 0, hexReady = 0, hexUntil = -1;
     const onUltimate = t => {
       lastUltAt = t;
@@ -613,7 +627,8 @@
           const ev = name => { const v = root.Potenshall.Abilities.evalCalc(name, sp.sp, { ...spellCtx(), rank: sp.rank }); return Number.isFinite(v) && v > 0 ? Math.min(v, 6000) : 0; };
           let first = 0;
           let resetNow = false;
-          if (m.kind === 'mark') {
+          if (m.kind === 'clone') { cloneUntil = t + (m.duration || 4); cloneMult = m.mult || 0.5; }
+          else if (m.kind === 'mark') {
             const base = root.Potenshall.Abilities.evalCalc(sp.calc, sp.sp, { ...spellCtx(), rank: sp.rank });
             markState = { until: t + (m.duration || 3), sum: 0, base: Number.isFinite(base) ? base : 0, pct: m.pct || 0, type: m.type, label };
           } else if (m.kind === 'execute') {
@@ -626,7 +641,7 @@
             if (m.missPct) raw += m.missPct * miss;
             if (m.aboveMult && dummyHp > thrHp) raw *= m.aboveMult;
             raw = Number.isFinite(raw) && raw > 0 ? Math.min(raw, 6000) : 0;
-            const est = raw * mitigation(m.type);
+            const est = raw * mitigation(m.type, t);
             const go = m.noHold || t >= (m.latest ?? 0) || (thrHp > 0 && dummyHp - est < thrHp) || (m.holdKill && est >= dummyHp);
             if (!go) continue;
             const killsBefore = kills;
@@ -634,6 +649,8 @@
             if (thrHp > 0 && dummyHp > 0 && dummyHp < thrHp) record(t, dummyHp, 'true', label.replace(/ · .*/, ' · Execute'));
             resetNow = !!m.resetOnKill && kills > killsBefore;
           } else if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : 1), m.type, label, 'ability');
+          // Temporary attack speed from a cast (Wukong E); game data stores 60% as 0.6.
+          if (m.asBonus) { tempAS = m.asBonus < 5 ? m.asBonus * 100 : m.asBonus; tempASUntil = t + (m.asDur || 5); }
           else if (m.kind === 'multi') for (const p of m.parts) first += deal(t, ev(p.calc), p.type, label, 'ability');
           else if (m.kind === 'hits') {
             for (let i = 0; i < m.n; i++) spellQueue.push({ at: t + (m.n > 1 ? i * m.over / (m.n - 1) : 0), label, type: m.type,
@@ -642,14 +659,14 @@
             const dur = Math.min(m.duration || 99, T);
             // Zones that execute (Aurelion Sol E): threshold in % of max HP, checked on every tick.
             const exec = m.executeCalc ? () => { const v = ev(m.executeCalc); return v > 1 ? v / 100 : v; } : null;
-            for (let k = 0.5; k <= dur + 1e-9; k += 0.5) spellQueue.push({ at: t + k, label, type: m.type, exec,
-              raw: () => (m.empCalc && k > m.empAfter ? ev(m.empCalc) : ev(m.perSec)) / 2 });
+            for (let k = 0.5; k <= dur + 1e-9; k += 0.5) spellQueue.push({ at: t + k, label, type: m.type, exec, clone: !!m.cloneEcho,
+              raw: () => ((m.empCalc && k > m.empAfter ? ev(m.empCalc) : ev(m.perSec)) + (m.perSecPctMaxHp || 0) * DUMMY.hp) / 2 });
             // Repeating bursts while channeling (Aurelion Sol Q: every 1s, magic + % max HP true per stack).
             if (m.burstEvery) for (let k = m.burstEvery; k <= dur + 1e-9; k += m.burstEvery) for (const p of m.bursts)
               spellQueue.push({ at: t + k, label, type: p.type, raw: () => ev(p.calc) * (p.pctMaxHp ? DUMMY.hp : 1) });
             if (m.blocksAttacks) channelUntil = t + dur;
           }
-          onAbilityHit(t, t >= bastionReady, { raw: first, type: m.type, label });
+          onAbilityHit(t, t >= bastionReady, { raw: first, type: m.type, label, noDamage: m.kind === 'clone' });
           if (t >= bastionReady) bastionReady = t + 3;
           // Recastable abilities (Ahri R): each recast is its own cast; the cooldown starts after the last one.
           const opening = !m.recasts || !(recastLeft[sp.slot] > 0);
@@ -700,6 +717,7 @@
       let bonus = 0;
       if (lowHp && dummyHp < lowHp.below * DUMMY.hp) bonus += lowHp.as;
       if (t <= hexUntil) bonus += ch.ranged ? 25 : 50;
+      if (t <= tempASUntil) bonus += tempAS;
       if (empoweredAutos > 0) bonus += 50;
       const as = P && P.fixedAS ? st.as : Math.min(2.5, st.as + asRatioNow * bonus / 100);
       return 1 / (as * pr.uptime);
@@ -730,7 +748,9 @@
         const q = spellQueue[i];
         if (q.at > t + 1e-9) continue;
         spellQueue.splice(i, 1);
-        deal(t, q.raw(), q.type, q.label, 'ability');
+        const qv = q.raw();
+        deal(t, qv, q.type, q.label, 'ability');
+        if (q.clone && t <= cloneUntil) deal(t, qv * cloneMult, q.type, 'W · Clone (mimics R)', 'ability'); // Wukong's clone copies his R
         if (q.exec) { const thr = q.exec(); if (dummyHp > 0 && dummyHp < thr * DUMMY.hp) record(t, dummyHp, 'true', q.label.replace(/ · .*/, ' · Execute')); }
         for (const f of has('burn')) burnUntil[f.burn] = t + 3;
       }
@@ -1212,6 +1232,17 @@
       E: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 'Duration', executeCalc: 'CurrentExecutionThreshold', first: true },
       R: { kind: 'cast', type: 'magic', calc: 'R2Damage', first: true },
     },
+    // Wukong: W leaves a clone (4s) that copies his attacks and his R at 60%; Q empowers the next attack (his and the
+    // clone's), shreds 30% armor for 3s and loses 0.5s cooldown per hit; E grants 60% attack speed for 5s; R is two
+    // 2s spins (AD + % max HP per second) and he can't attack while spinning.
+    MonkeyKing: {
+      Q: { kind: 'empowerAuto', type: 'physical', flat: 'BaseDamage', bonusAdRatio: 'ADRatio', resetsAttack: true,
+        shred: 'ArmorShredPercent', shredDur: 'ShredDuration', cdPerHit: 'CooldownDecrease' },
+      W: { kind: 'clone', duration: 'CloneDuration', mult: 'CloneDamageMod', first: true },
+      E: { kind: 'cast', type: 'magic', calc: 'TotalDamage', asBonus: 'AttackSpeed', asDur: 'AttackSpeedDuration' },
+      R: { kind: 'channel', type: 'physical', perSec: 'DamagePerSecondTotal', perSecPctMaxHp: 'BasePercentMaxHPDmgPerSec', duration: 'SpinDuration',
+        recasts: 2, recastGap: 3, blocksAttacks: true, cloneEcho: true, first: true },
+    },
     Naafiri: { Q: { kind: 'multi', parts: [{ calc: 'TotalDamageFirstCast', type: 'physical' }, { calc: 'TotalBleedDamage', type: 'physical' }, { calc: 'TotalMinDamageSecondCast', type: 'physical' }] } },
     Kayle: { E: { kind: 'cast', type: 'magic', calc: 'ActiveTotalExecuteDamage', pctOfMissing: true } }, // formula is a share of missing HP
   };
@@ -1219,7 +1250,8 @@
   function resolveMechanic(spec, sp, rank) {
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
-    for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+    for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     // Buff stats: a data value name, or [name, multiplier] (e.g. attack speed stored as 0.7 -> 70%), or a number.
     if (spec.stats) m.stats = Object.fromEntries(Object.entries(spec.stats).map(([k, v]) => [k, typeof v === 'number' ? v : Array.isArray(v) ? dv(v[0]) * v[1] : dv(v)]));
     return m;
