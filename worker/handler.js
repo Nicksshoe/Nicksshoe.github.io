@@ -103,8 +103,8 @@ async function submit(req, env, origin) {
     if (!used.meta.changes) return fail('This run was already submitted.', 409, origin);
   }
   const ins = await env.DB.prepare(
-    'INSERT OR IGNORE INTO scores (mode, period, client, name, champ, items, score, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(mode, period, client, name.trim(), champ.id, draft.items.map(i => i.id).join(','), score, new Date().toISOString()).run();
+    'INSERT OR IGNORE INTO scores (mode, period, client, name, champ, items, score, created, patch) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(mode, period, client, name.trim(), champ.id, draft.items.map(i => i.id).join(','), score, new Date().toISOString(), shortPatch(patch)).run();
   if (!ins.meta.changes) return fail("You've already submitted today's daily.", 409, origin);
 
   const better = await env.DB.prepare(
@@ -121,6 +121,7 @@ async function submit(req, env, origin) {
 async function board(url, env, origin) {
   const mode = url.searchParams.get('mode'), period = url.searchParams.get('period') || '', me = url.searchParams.get('client') || '';
   const low = url.searchParams.get('order') === 'low'; // least-damage board: each player's lowest score, ascending
+  if (mode === 'all') return allTime(env, origin, me, low);
   if (!['daily', 'free'].includes(mode) || !/^[\d.\-]{3,12}$/.test(period)) return fail('Bad request', 400, origin);
   const { results } = await env.DB.prepare(
     `SELECT name, champ, items, score, client FROM scores s
@@ -132,6 +133,25 @@ async function board(url, env, origin) {
   return new Response(JSON.stringify({ rows }), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=15', ...cors(origin) } });
 }
 
+// All-time board: each player's best (or lowest) score ever, across Daily and Free Play, with the patch it was set on.
+async function allTime(env, origin, me, low) {
+  const { results } = await env.DB.prepare(
+    `SELECT name, champ, items, score, client, mode, period, patch FROM scores s
+     WHERE score = (SELECT ${low ? 'MIN' : 'MAX'}(score) FROM scores WHERE client = s.client)
+     GROUP BY client ORDER BY score ${low ? 'ASC' : 'DESC'} LIMIT 50`
+  ).all();
+  const rows = results.map(r => ({ name: r.name, champ: r.champ, items: r.items, score: r.score, mode: r.mode,
+    patch: r.patch || (r.mode === 'free' ? r.period : ''), mine: !!me && r.client === me }));
+  return new Response(JSON.stringify({ rows }), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=15', ...cors(origin) } });
+}
+
+// Patches that have Free Play scores, newest first (for the past-patch picker).
+async function periods(url, env, origin) {
+  const { results } = await env.DB.prepare("SELECT DISTINCT period FROM scores WHERE mode = 'free'").all();
+  const list = results.map(r => r.period).sort((a, b) => b.split('.').map(Number).reduce((x, v, i) => x || v - (+a.split('.')[i] || 0), 0));
+  return json({ periods: list }, 200, origin);
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -141,6 +161,7 @@ export default {
       if (req.method === 'POST' && url.pathname === '/start') return await start(req, env, origin);
       if (req.method === 'POST' && url.pathname === '/submit') return await submit(req, env, origin);
       if (req.method === 'GET' && url.pathname === '/board') return await board(url, env, origin);
+      if (req.method === 'GET' && url.pathname === '/periods') return await periods(url, env, origin);
       if (url.pathname === '/') return json({ ok: true, service: 'Potential Damage leaderboard' }, 200, origin);
       return fail('Not found', 404, origin);
     } catch (e) {

@@ -317,39 +317,56 @@ const rankHtml = s => `<h3>Leaderboard</h3><div style="display:flex;align-items:
   <div class="spacer"></div><button class="btn sm" id="lbView">View board</button></div>`;
 const bindViewBoard = () => { const b = $('#lbView'); if (b) b.onclick = () => showBoard(S.mode === 'daily' ? 'daily' : 'free'); };
 
-async function showBoard(mode, order){
+// Boards: Daily (today), Free Play (current patch, or a past patch from the picker) and All-time (each player's
+// best ever, with the patch it was set on). Each can be ranked by most or least damage.
+async function showBoard(mode, order, freePeriod){
   order = order === 'low' ? 'low' : 'high';
   if (animHandle) cancelAnimationFrame(animHandle);
   const patchShort = DATA.patch.split('.').slice(0, 2).join('.');
-  const period = mode === 'daily' ? today() : patchShort;
+  const period = mode === 'daily' ? today() : mode === 'free' ? (freePeriod || patchShort) : '';
   const st = $('#stage');
-  const tabs = `<div class="modes" style="width:max-content;margin-bottom:14px">
+  const tabs = `<div class="modes" style="width:max-content;max-width:100%;flex-wrap:wrap;margin-bottom:14px">
       <button data-b="daily" class="${mode==='daily'?'on':''}">Daily ${today()}</button>
-      <button data-b="free" class="${mode==='free'?'on':''}">Free Play · patch ${patchShort}</button></div>
-    <div class="modes" style="width:max-content;margin-bottom:14px">
-      <button data-o="high" class="${order==='high'?'on':''}">Most damage</button>
-      <button data-o="low" class="${order==='low'?'on':''}">Least damage</button></div>`;
-  st.innerHTML = `<div class="stage-head"><div><h2>${order === 'low' ? 'Least Damage' : 'Leaderboard'}</h2><p>${order === 'low' ? "The 50 weakest builds: each player's lowest verified score." : 'Top 50, every score verified by the server.'}</p></div><div class="spacer"></div>
+      <button data-b="free" class="${mode==='free'?'on':''}">Free Play</button>
+      <button data-b="all" class="${mode==='all'?'on':''}">All-time</button></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+      <div class="modes" style="width:max-content">
+        <button data-o="high" class="${order==='high'?'on':''}">Most damage</button>
+        <button data-o="low" class="${order==='low'?'on':''}">Least damage</button></div>
+      ${mode === 'free' ? `<label class="muted" style="font-size:13px">Patch <select id="lbPatch" style="background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit">
+        <option>${esc(period)}</option></select></label>` : ''}</div>`;
+  const title = mode === 'all' ? (order === 'low' ? 'All-time Least Damage' : 'All-time Leaderboard') : order === 'low' ? 'Least Damage' : 'Leaderboard';
+  const sub = mode === 'all' ? "Each player's best score ever, across Daily and Free Play, with the patch it was set on."
+    : order === 'low' ? "The 50 weakest builds: each player's lowest verified score." : 'Top 50, every score verified by the server.';
+  st.innerHTML = `<div class="stage-head"><div><h2>${title}</h2><p>${sub}</p></div><div class="spacer"></div>
     <button class="btn sm" id="lbBack">◂ Back to game</button></div>${tabs}<div id="boardBody"><div class="loading" style="min-height:160px"><div class="spinner"></div></div></div>`;
   st.querySelectorAll('[data-b]').forEach(b => b.onclick = () => showBoard(b.dataset.b, order));
-  st.querySelectorAll('[data-o]').forEach(b => b.onclick = () => showBoard(mode, b.dataset.o));
+  st.querySelectorAll('[data-o]').forEach(b => b.onclick = () => showBoard(mode, b.dataset.o, freePeriod));
   $('#lbBack').onclick = () => newGame(S && S.mode === 'free' ? 'free' : 'daily');
+  if (mode === 'free') {
+    LB.call('/periods').then(({ periods }) => {
+      const sel = $('#lbPatch'); if (!sel) return;
+      const list = [...new Set([patchShort, ...(periods || [])])];
+      sel.innerHTML = list.map(p => `<option value="${esc(p)}" ${p === period ? 'selected' : ''}>${esc(p)}${p === patchShort ? ' (current)' : ''}</option>`).join('');
+      sel.onchange = () => showBoard('free', order, sel.value);
+    }).catch(() => {});
+  }
   try {
     const { rows } = await LB.board(mode, period, order);
     const champName = id => (DATA.champions.find(c => c.id === id) || { name: id }).name;
+    const tag = r => mode !== 'all' ? '' : `<span class="tag" style="margin-left:6px">${r.mode === 'daily' ? 'Daily' : 'Free'} · ${esc(r.patch || '?')}</span>`;
     $('#boardBody').innerHTML = rows.length ? `<div style="display:grid;gap:6px">${rows.map((r, i) => `
       <div style="display:grid;grid-template-columns:36px 36px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;
         background:${r.mine ? '#c8aa6e22' : 'var(--panel2)'};border:1px solid ${r.mine ? 'var(--gold-dim)' : 'var(--line)'}">
         <b style="color:${i < 3 ? 'var(--gold2)' : 'var(--muted)'};text-align:center">${i + 1}</b>
         <img src="${img.champ(r.champ)}" alt="" style="width:36px;height:36px;border-radius:6px">
-        <div style="min-width:0"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.name)}</div>
-          <div style="display:flex;gap:3px;margin-top:3px">${String(r.items).split(',').map(id => `<img src="${img.item(id)}" alt="" style="width:20px;height:20px;border-radius:3px">`).join('')}
+        <div style="min-width:0"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.name)}${tag(r)}</div>
+          <div style="display:flex;gap:3px;margin-top:3px;flex-wrap:wrap">${String(r.items).split(',').map(id => `<img src="${img.item(id)}" alt="" style="width:20px;height:20px;border-radius:3px">`).join('')}
           <span class="muted" style="font-size:12px;margin-left:6px">${esc(champName(r.champ))}</span></div></div>
         <b style="font-variant-numeric:tabular-nums">${fmt(r.score)}</b></div>`).join('')}</div>`
       : `<p class="muted">No scores yet. Be the first!</p>`;
   } catch (e) { $('#boardBody').innerHTML = `<p class="muted">Couldn't load the leaderboard (${esc(e.message)}).</p>`; }
 }
-
 const img = {
   champ: id => `${P.DDRAGON}/cdn/${DATA.patch}/img/champion/${id}.png`,
   tile: id => `${P.DDRAGON}/cdn/img/champion/tiles/${id}_0.jpg`,

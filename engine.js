@@ -148,15 +148,15 @@
     "luden's echo": { luden: true, tip: 'Echo: 75 + 5% AP, extra bolts at 20%, every 12s' },
     "stormsurge": { stormsurge: true, tip: 'Squall after big burst' },
     "hextech rocketbelt": { rocketbelt: true, tip: 'Opening missile volley' },
-    "malignance": { malignance: true, tip: 'Hatefog burn on ult' },
+    "malignance": { malignance: true, ultHaste: 20, tip: 'Hatefog burn on ult; +20 ultimate haste' },
     "bastionbreaker": { bastion: true, tip: 'Shaped Charge: 40 + 150% lethality true damage on an ability hit, 20s cooldown (half for ranged)' },
     "spear of shojin": { ahBonus: 25, abilityRamp: 0.03, tip: 'Ability dmg ramps to +12%' },
     "actualizer": { ahBonus: 20, abilityAmp: 0.15, tip: 'Empowered ability damage' },
     "navori flickerblade": { ahBonus: 20, tip: 'Attacks shorten cooldowns' },
     "endless hunger": { ahPerBonusAd: 0.12, tip: 'Haste from bonus AD' },
     "yun tal wildarrows": { critBonus: 20, asBonus: 18, tip: 'Builds crit + Flurry' },
-    "experimental hexplate": { asBonus: 24, tip: 'Overdrive attack speed' },
-    "fiendhunter bolts": { fiendhunter: true, tip: 'Post-ult crit barrage' },
+    "experimental hexplate": { asBonus: 24, ultHaste: 30, tip: 'Overdrive attack speed; +30 ultimate haste' },
+    "fiendhunter bolts": { fiendhunter: true, ultHaste: 30, tip: 'After your ultimate: 3 attacks +50% AS, crit at 75% (real crits +10% true); +30 ultimate haste' },
     "hexoptics c44": { attackAmpRanged: 0.10, attackAmpMelee: 0.04, tip: 'Long-range attack amp' },
     "swiftmarch": { adaptive: 21, tip: 'Noxian Fervor: 5% of move speed as adaptive force' },
     "sundered sky": { sundered: true, tip: 'Guaranteed crit every 10s' },
@@ -468,9 +468,11 @@
       if (pN && pN.crit) mult = Math.max(st.critMult, pN.minCrit || 0); // e.g. Jhin's 4th shot always crits
       else if (hasAny('sundered') && t >= sunderedReady) { sunderedReady = t + 10; sunderedShare = 1 - mult / st.critMult; mult = st.critMult; }
       else if (empoweredAutos > 0) {
+        // Fiendhunter Bolts Opening Barrage (game data): attacks that wouldn't crit crit for 75% of crit damage; ones that
+        // would crit deal full crit damage plus 10% bonus true damage. Expected value over your crit chance:
         empoweredAutos--;
-        mult = Math.max(mult, 1 + 0.8 * (st.critMult - 1));
-        trueBonus = 0.15 * st.totalAD * st.critMult * st.crit;
+        mult = (1 - st.crit) * (1 + 0.75 * (st.critMult - 1)) + st.crit * st.critMult;
+        trueBonus = st.crit * 0.1 * st.totalAD * st.critMult;
       }
       let autoDmg = st.totalAD * mult * pr.autoAmp;
       if (P && P.autoMult != null) autoDmg *= typeof P.autoMult === 'function' ? P.autoMult(pctx(t)) : P.autoMult;
@@ -616,7 +618,7 @@
           onAbilityHit(t, t >= bastionReady, { raw: first, type: m.type, label });
           if (t >= bastionReady) bastionReady = t + 3;
           if (sp.slot === 'R') onUltimate(t);
-          ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : t + sp.cooldown * 100 / (100 + st.ah);
+          ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : t + sp.cooldown * 100 / (100 + st.ah + (sp.slot === 'R' ? sum('ultHaste') : 0));
           castLock = t + sp.castTime;
           return;
         }
@@ -639,7 +641,7 @@
         onAbilityHit(t, t >= bastionReady, { raw: dmg, type: sp.type, label });
         if (t >= bastionReady) bastionReady = t + 3;
         if (sp.slot === 'R') onUltimate(t);
-        ready[sp.slot] = t + sp.cooldown * 100 / (100 + st.ah);
+        ready[sp.slot] = t + sp.cooldown * 100 / (100 + st.ah + (sp.slot === 'R' ? sum('ultHaste') : 0));
         castLock = t + sp.castTime;
         return;
       }
@@ -657,9 +659,14 @@
     if (hasAny('rocketbelt')) deal(0, 135 + 0.15 * st.ap, 'magic', 'Hextech Rocketbelt', 'item');
     const actives = has('active').map(f => ({ ...f.active, item: f.item, at: f.active.delay || 0 }));
     if (spells || (P && P.ownKit)) nextCombo = Infinity;
+    // Ultimates that are pure buffs or utility are never 'cast' for damage; they're used at the start of the fight,
+    // so post-ultimate item effects (Fiendhunter Bolts, Malignance, Zeke's) still trigger.
+    const ultCast = castOrder.some(s => s.slot === 'R' && (s.damaging || (s.mech && SPELL_MECHS.has(s.mech.kind))));
+    let ultFromStart = !!spells && !(P && P.ownKit) && !ultCast;
 
     for (let t = 0; t < T - 1e-9; t = +(t + DT).toFixed(4)) {
       if (markState && t >= markState.until) { const mk = markState; markState = null; deal(t, mk.base + mk.pct * mk.sum, mk.type, mk.label, 'ability'); }
+      if (ultFromStart && t >= 0.1) { ultFromStart = false; onUltimate(t); }
       if (spells) tryCastRealSpell(t);
       // Channels and multi-hit abilities: each tick is real ability damage (item amps apply, burns stay lit).
       for (let i = spellQueue.length - 1; i >= 0; i--) {

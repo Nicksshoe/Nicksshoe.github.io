@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS scores (
   champ TEXT NOT NULL,
   items TEXT NOT NULL,         -- comma-separated item ids
   score INTEGER NOT NULL,      -- computed by the server
-  created TEXT NOT NULL
+  created TEXT NOT NULL,
+  patch TEXT                   -- short patch the score was set on, e.g. 16.23 (added later; see README)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS one_daily_per_client ON scores (mode, period, client) WHERE mode = 'daily';
 CREATE INDEX IF NOT EXISTS board_lookup ON scores (mode, period, score DESC);
