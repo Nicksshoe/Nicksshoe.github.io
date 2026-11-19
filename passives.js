@@ -254,8 +254,8 @@
       periodic: [
         { every: 6, start: 0.3, ability: true, label: 'Q · Wilding Claw', kind: 'ability', type: 'physical', dmg: c => 2 * (30 + 0.2 * c.bad) + 2 * (0.035 + 0.0002 * c.bad) * c.tmax }, // 2 claws: 7% (+4% per 100 bonus AD) max HP in total
         { every: 12, start: 0.3, label: 'Q · Awakened lightning', kind: 'ability', type: 'magic', dmg: c => c.ap > c.bad ? 0 : 6 * 0.03 * c.tmax },
-        { every: 6, start: 1.8, ability: true, label: 'E · Blazing Stampede', kind: 'ability', dmg: () => 0 },
-        { every: 6, start: 3.3, ability: true, label: 'W · Iron Mantle', kind: 'ability', dmg: () => 0 },
+        { every: 6, start: 1.8, ability: true, noDamage: true, label: 'E · Blazing Stampede', kind: 'ability', dmg: () => 0 },
+        { every: 6, start: 3.3, ability: true, noDamage: true, label: 'W · Iron Mantle', kind: 'ability', dmg: () => 0 },
         { every: 6, start: 4.8, ability: true, key: 'udR', dot: 4, label: 'R · Wingborne Storm', kind: 'ability', type: 'magic', dmg: c => 4 * (68 + 0.35 * c.ap) },
         { every: 12, start: 4.8, key: 'udR2', dot: 4, label: 'R · Awakened storm', kind: 'ability', type: 'magic', dmg: c => c.ap > c.bad ? 4 * (68 + 0.35 * c.ap) : 0 },
       ] },

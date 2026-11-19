@@ -149,7 +149,7 @@
     "stormsurge": { stormsurge: true, tip: 'Squall after big burst' },
     "hextech rocketbelt": { rocketbelt: true, tip: 'Opening missile volley' },
     "malignance": { malignance: true, tip: 'Hatefog burn on ult' },
-    "bastionbreaker": { bastion: true, tip: 'True damage on abilities' },
+    "bastionbreaker": { bastion: true, tip: 'Shaped Charge: 40 + 150% lethality true damage on every ability (half for ranged)' },
     "spear of shojin": { ahBonus: 25, abilityRamp: 0.03, tip: 'Ability dmg ramps to +12%' },
     "actualizer": { ahBonus: 20, abilityAmp: 0.15, tip: 'Empowered ability damage' },
     "navori flickerblade": { ahBonus: 20, tip: 'Attacks shorten cooldowns' },
@@ -432,7 +432,8 @@
       if (hasAny('abilityRamp')) shojinStacks = Math.min(4, shojinStacks + 1);
       if (hasAny('luden') && t >= ludenReady) { ludenReady = t + 12; deal(t, (75 + 0.05 * st.ap) * 2, 'magic', "Luden's Echo", 'item'); } // 1 bolt + 5 repeats at 20%
       eclipseHit(t);
-      if (first && hasAny('bastion')) deal(t, 60 + 0.05 * st.bonusAD, 'true', 'Bastionbreaker', 'item');
+      // Shaped Charge (game data): every damaging ability adds 40 + 150% lethality true damage; ranged deal 50%.
+      if (hasAny('bastion') && !(cast && cast.noDamage)) deal(t, (40 + 1.5 * st.leth) * (ch.ranged ? 0.5 : 1), 'true', 'Bastionbreaker', 'item');
       if (first && st.muramana) deal(t, 0.035 * st.maxMana, 'physical', 'Manamune', 'item');
     };
 
@@ -671,7 +672,7 @@
         x.at = t + (x.pe.every || Infinity) * (x.pe.ability ? 100 / (100 + st.ah) : 1); // ability cooldowns shrink with haste
         if (!x.pe.cond || x.pe.cond(pctx(t))) {
           fireP(t, x.pe);
-          if (x.pe.ability) { onAbilityHit(t, true, null); if (x.pe.ult) onUltimate(t); }
+          if (x.pe.ability) { onAbilityHit(t, true, x.pe.noDamage ? { noDamage: true } : null); if (x.pe.ult) onUltimate(t); }
         }
       }
       if (t >= nextAuto) {
