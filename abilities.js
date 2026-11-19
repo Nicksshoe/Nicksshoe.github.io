@@ -249,9 +249,21 @@
       W: { kind: 'everyN', n: 3, type: 'true', pctTargetMaxHp: 'MaxHealthRatio', floor: 'DamageFloor' },
       R: { kind: 'buff', stats: { ad: 'BonusAttackDamage' } },
     },
+    // Self-buffs (attack speed steroids, armor pen): applied for their duration's share of the 10s fight.
+    Darius: { E: { kind: 'buff', stats: { arpen: 'PassivePercentArmorPen' } }, R: { kind: 'execute', type: 'true', calc: 'MaximumDamage', holdKill: true, resetOnKill: true, latest: 9.5 } },
+    Blitzcrank: { W: { kind: 'buff', stats: { as: ['AttackSpeedMod', 100] }, duration: 5 } },
+    Draven: { W: { kind: 'buff', stats: { as: ['AttackSpeed', 100] }, duration: 10 } }, // refreshed by catching axes
+    Lulu: { W: { kind: 'buff', stats: { as: ['ASBonus', 100] }, duration: 4 } },
+    MasterYi: { R: { kind: 'buff', stats: { as: 'RASBonus' }, duration: 7 } },
+    Olaf: { W: { kind: 'buff', stats: { as: ['Attackspeed', 100] }, duration: 4 } },
+    Quinn: { W: { kind: 'buff', stats: { as: ['AttackSpeedBonus', 100] }, duration: 3.3 } }, // after each Harrier proc
+    Tristana: { Q: { kind: 'buff', stats: { as: ['AttackSpeedMod', 100] }, duration: 7 } },
+    Viego: { E: { kind: 'buff', stats: { as: ['AttackSpeed', 100] }, duration: 8 } },
+    Xayah: { W: { kind: 'buff', stats: { as: 'WAttackSpeedAmount' }, duration: 'WAttackSpeedDuration' } },
     Samira: { R: { kind: 'hits', type: 'physical', calc: 'DamageCalc', critCalc: 'CriticalDamageCalc', n: 10, over: 2 } },
     Twitch: { E: { kind: 'multi', parts: [{ calc: 'MaxPhysicalDamage', type: 'physical' }, { calc: 'MaxMagicDamage', type: 'magic' }] }, // 6 stacks
-      R: { kind: 'buff', stats: { ad: 'BonusAD' }, duration: 'Duration' } }, // Spray and Pray: +AD for 6s
+      R: { kind: 'buff', stats: { ad: 'BonusAD' }, duration: 'Duration' }, // Spray and Pray: +AD for 6s
+      Q: { kind: 'buff', stats: { as: ['AttackSpeedMod', 100] }, duration: 'AttackSpeedDuration' } }, // Ambush: +AS for 6s
     Anivia: { R: { kind: 'channel', type: 'magic', perSec: 'TotalDamagePerSecond', empCalc: 'EmpoweredDamagePerSecondTooltipOnly', empAfter: 1.5, duration: 99, once: true } },
     Renekton: { R: { kind: 'channel', type: 'magic', perSec: 'TotalDamagePerSecond', duration: 'BuffDuration' } },
     Rumble: { R: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 'TrailDuration' } },
@@ -268,7 +280,6 @@
     Urgot: { R: { kind: 'execute', type: 'physical', threshold: 'RHealthThreshold', latest: 9.5 } },
     Syndra: { R: { kind: 'execute', type: 'magic', calc: 'MaxDamageCalc', threshold: 'UpgradeExecuteThreshold', latest: 9.5 } }, // all 7 spheres
     Pyke: { R: { kind: 'execute', type: 'physical', thresholdCalc: 'RDamage', calc: 'RDamage', aboveMult: 0.5, resetOnKill: true, latest: 9.5 } },
-    Darius: { R: { kind: 'execute', type: 'true', calc: 'MaximumDamage', holdKill: true, resetOnKill: true, latest: 9.5 } },
     Garen: { R: { kind: 'execute', type: 'true', flat: 'BaseDamage', missPct: 0.35, holdKill: true, latest: 9.5 } },
     Fiddlesticks: { W: { kind: 'execute', type: 'magic', flat: 'DamagePerSecond', flatMult: 2, missPct: 0.22, noHold: true } }, // 2s drain + 22% missing HP
     Veigar: { R: { kind: 'execute', type: 'magic', calc: 'MinDamage', missAmp: { max: 1, at: 0.667 }, holdKill: true, latest: 9.5 } },
@@ -284,7 +295,8 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
-    if (spec.stats) m.stats = Object.fromEntries(Object.entries(spec.stats).map(([k, name]) => [k, dv(name)]));
+    // Buff stats: a data value name, or [name, multiplier] (e.g. attack speed stored as 0.7 -> 70%), or a number.
+    if (spec.stats) m.stats = Object.fromEntries(Object.entries(spec.stats).map(([k, v]) => [k, typeof v === 'number' ? v : Array.isArray(v) ? dv(v[0]) * v[1] : dv(v)]));
     return m;
   }
 

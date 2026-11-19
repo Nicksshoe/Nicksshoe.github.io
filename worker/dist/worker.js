@@ -1090,9 +1090,21 @@
       W: { kind: 'everyN', n: 3, type: 'true', pctTargetMaxHp: 'MaxHealthRatio', floor: 'DamageFloor' },
       R: { kind: 'buff', stats: { ad: 'BonusAttackDamage' } },
     },
+    // Self-buffs (attack speed steroids, armor pen): applied for their duration's share of the 10s fight.
+    Darius: { E: { kind: 'buff', stats: { arpen: 'PassivePercentArmorPen' } }, R: { kind: 'execute', type: 'true', calc: 'MaximumDamage', holdKill: true, resetOnKill: true, latest: 9.5 } },
+    Blitzcrank: { W: { kind: 'buff', stats: { as: ['AttackSpeedMod', 100] }, duration: 5 } },
+    Draven: { W: { kind: 'buff', stats: { as: ['AttackSpeed', 100] }, duration: 10 } }, // refreshed by catching axes
+    Lulu: { W: { kind: 'buff', stats: { as: ['ASBonus', 100] }, duration: 4 } },
+    MasterYi: { R: { kind: 'buff', stats: { as: 'RASBonus' }, duration: 7 } },
+    Olaf: { W: { kind: 'buff', stats: { as: ['Attackspeed', 100] }, duration: 4 } },
+    Quinn: { W: { kind: 'buff', stats: { as: ['AttackSpeedBonus', 100] }, duration: 3.3 } }, // after each Harrier proc
+    Tristana: { Q: { kind: 'buff', stats: { as: ['AttackSpeedMod', 100] }, duration: 7 } },
+    Viego: { E: { kind: 'buff', stats: { as: ['AttackSpeed', 100] }, duration: 8 } },
+    Xayah: { W: { kind: 'buff', stats: { as: 'WAttackSpeedAmount' }, duration: 'WAttackSpeedDuration' } },
     Samira: { R: { kind: 'hits', type: 'physical', calc: 'DamageCalc', critCalc: 'CriticalDamageCalc', n: 10, over: 2 } },
     Twitch: { E: { kind: 'multi', parts: [{ calc: 'MaxPhysicalDamage', type: 'physical' }, { calc: 'MaxMagicDamage', type: 'magic' }] }, // 6 stacks
-      R: { kind: 'buff', stats: { ad: 'BonusAD' }, duration: 'Duration' } }, // Spray and Pray: +AD for 6s
+      R: { kind: 'buff', stats: { ad: 'BonusAD' }, duration: 'Duration' }, // Spray and Pray: +AD for 6s
+      Q: { kind: 'buff', stats: { as: ['AttackSpeedMod', 100] }, duration: 'AttackSpeedDuration' } }, // Ambush: +AS for 6s
     Anivia: { R: { kind: 'channel', type: 'magic', perSec: 'TotalDamagePerSecond', empCalc: 'EmpoweredDamagePerSecondTooltipOnly', empAfter: 1.5, duration: 99, once: true } },
     Renekton: { R: { kind: 'channel', type: 'magic', perSec: 'TotalDamagePerSecond', duration: 'BuffDuration' } },
     Rumble: { R: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 'TrailDuration' } },
@@ -1109,7 +1121,6 @@
     Urgot: { R: { kind: 'execute', type: 'physical', threshold: 'RHealthThreshold', latest: 9.5 } },
     Syndra: { R: { kind: 'execute', type: 'magic', calc: 'MaxDamageCalc', threshold: 'UpgradeExecuteThreshold', latest: 9.5 } }, // all 7 spheres
     Pyke: { R: { kind: 'execute', type: 'physical', thresholdCalc: 'RDamage', calc: 'RDamage', aboveMult: 0.5, resetOnKill: true, latest: 9.5 } },
-    Darius: { R: { kind: 'execute', type: 'true', calc: 'MaximumDamage', holdKill: true, resetOnKill: true, latest: 9.5 } },
     Garen: { R: { kind: 'execute', type: 'true', flat: 'BaseDamage', missPct: 0.35, holdKill: true, latest: 9.5 } },
     Fiddlesticks: { W: { kind: 'execute', type: 'magic', flat: 'DamagePerSecond', flatMult: 2, missPct: 0.22, noHold: true } }, // 2s drain + 22% missing HP
     Veigar: { R: { kind: 'execute', type: 'magic', calc: 'MinDamage', missAmp: { max: 1, at: 0.667 }, holdKill: true, latest: 9.5 } },
@@ -1125,7 +1136,8 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
-    if (spec.stats) m.stats = Object.fromEntries(Object.entries(spec.stats).map(([k, name]) => [k, dv(name)]));
+    // Buff stats: a data value name, or [name, multiplier] (e.g. attack speed stored as 0.7 -> 70%), or a number.
+    if (spec.stats) m.stats = Object.fromEntries(Object.entries(spec.stats).map(([k, v]) => [k, typeof v === 'number' ? v : Array.isArray(v) ? dv(v[0]) * v[1] : dv(v)]));
     return m;
   }
 
@@ -1327,7 +1339,7 @@
     Kayle: { name: 'Divine Ascent', note: 'Exalted at 16: attack waves + attack speed', stats: () => ({ as: 30 }), onHit: { type: 'magic', dmg: c => 50 + 0.25 * c.ap + 0.1 * c.bad } },
     Kayn: none('The Darkin Scythe'),
     Kennen: none('Mark of the Storm'),
-    Khazix: { name: 'Unseen Threat', note: 'Attack out of stealth', timedAuto: { every: 10, type: 'magic', dmg: c => 150 + 0.4 * c.bad } },
+    Khazix: { name: 'Unseen Threat', note: 'Attack out of stealth', timedAuto: { every: 10, type: 'magic', dmg: c => 150 + 0.5 * c.bad } }, // game data: 50% bonus AD
     Kindred: none('Mark of the Kindred', 'Marks are counted in her abilities'),
     Kled: none('Skaarl the Cowardly Lizard'),
     KogMaw: { name: 'Bio-Arcane Barrage (W)', note: 'W on-hit % max HP (8s of the fight) + Q attack speed; W is modeled here', disable: ['W'],
@@ -1337,7 +1349,7 @@
     Leblanc: none('Mirror Image'),
     LeeSin: { name: 'Flurry', note: 'Attack speed after abilities', stats: () => ({ as: 25 }) },
     Leona: none('Sunlight', 'Procs for allies'),
-    Lillia: { name: 'Dream-Laden Bough', note: 'Abilities burn % max HP', onAbility: { type: 'magic', dot: 3, dmg: c => (0.05 + 0.015 * c.ap / 100) * c.tmax } },
+    Lillia: { name: 'Dream-Laden Bough', note: 'Abilities burn % max HP', onAbility: { type: 'magic', dot: 3, dmg: c => (0.05 + 0.012 * c.ap / 100) * c.tmax } }, // game data: 5% + 1.2% per 100 AP over 3s
     Lissandra: none('Iceborn Subjugation'),
     Locke: { name: 'Silver Stake', note: 'On-hit, more vs low HP', onHit: { type: 'magic', dmg: c => (30 + 0.2 * c.bad + 0.1 * c.ap) * (1 + c.tmiss / c.tmax) } },
     Lucian: { name: 'Lightslinger', note: 'Double shot after abilities', afterAbility: { extraAttack: 1.0 } },
@@ -1357,7 +1369,7 @@
     Nami: none('Surging Tides'),
     Nasus: { name: 'Soul Eater', note: 'Q stacks are counted in his Q; R burns % max HP every second', periodic: { every: 1, start: 0.5, label: 'R · Fury of the Sands', kind: 'ability', type: 'magic', dmg: c => (0.05 + 0.01 * c.ap / 100) * c.tmax } },
     Nautilus: { name: 'Staggering Blow', note: 'First attack on a target', timedAuto: { every: 10, type: 'physical', dmg: () => 122 } },
-    Neeko: none('Inherent Glamour'),
+    Neeko: { name: 'Inherent Glamour', note: '20% magic pen for 4s after her disguise breaks (opening)', stats: () => ({ mpen: 20 * 4 / 10 }) },
     // Form champions: both forms are used every rotation (cast, swap, cast again), from game-file formulas at 18.
     Nidalee: { name: 'Prowl + Aspect of the Cougar', note: 'Javelin at max range, then Cougar Takedown, Pounce (reset on hunted) and Swipe', ownKit: true,
       periodic: [
@@ -1369,7 +1381,7 @@
       ] },
     Nilah: none('Joy Unending'),
     Nocturne: { name: 'Umbra Blades', note: 'Empowered cleave', timedAuto: { every: 8, type: 'physical', dmg: c => 0.2 * c.ad } },
-    Nunu: none('Call of the Freljord'),
+    Nunu: { name: 'Call of the Freljord', note: '+20% attack speed (game data)', stats: () => ({ as: 20 }) },
     Olaf: { name: 'Berserker Rage', note: 'Attack speed from missing health (maxes at 30% health)', stats: c => ({ as: 100 * Math.min(1, c.smiss / 0.7) }) },
     Orianna: { name: 'Clockwork Windup', note: 'On-hit, stacking on repeated attacks', onHit: { type: 'magic', dmg: c => (59 + 0.15 * c.ap) * 1.4 } },
     Ornn: none('Living Forge'),

@@ -153,7 +153,7 @@
     Kayle: { name: 'Divine Ascent', note: 'Exalted at 16: attack waves + attack speed', stats: () => ({ as: 30 }), onHit: { type: 'magic', dmg: c => 50 + 0.25 * c.ap + 0.1 * c.bad } },
     Kayn: none('The Darkin Scythe'),
     Kennen: none('Mark of the Storm'),
-    Khazix: { name: 'Unseen Threat', note: 'Attack out of stealth', timedAuto: { every: 10, type: 'magic', dmg: c => 150 + 0.4 * c.bad } },
+    Khazix: { name: 'Unseen Threat', note: 'Attack out of stealth', timedAuto: { every: 10, type: 'magic', dmg: c => 150 + 0.5 * c.bad } }, // game data: 50% bonus AD
     Kindred: none('Mark of the Kindred', 'Marks are counted in her abilities'),
     Kled: none('Skaarl the Cowardly Lizard'),
     KogMaw: { name: 'Bio-Arcane Barrage (W)', note: 'W on-hit % max HP (8s of the fight) + Q attack speed; W is modeled here', disable: ['W'],
@@ -163,7 +163,7 @@
     Leblanc: none('Mirror Image'),
     LeeSin: { name: 'Flurry', note: 'Attack speed after abilities', stats: () => ({ as: 25 }) },
     Leona: none('Sunlight', 'Procs for allies'),
-    Lillia: { name: 'Dream-Laden Bough', note: 'Abilities burn % max HP', onAbility: { type: 'magic', dot: 3, dmg: c => (0.05 + 0.015 * c.ap / 100) * c.tmax } },
+    Lillia: { name: 'Dream-Laden Bough', note: 'Abilities burn % max HP', onAbility: { type: 'magic', dot: 3, dmg: c => (0.05 + 0.012 * c.ap / 100) * c.tmax } }, // game data: 5% + 1.2% per 100 AP over 3s
     Lissandra: none('Iceborn Subjugation'),
     Locke: { name: 'Silver Stake', note: 'On-hit, more vs low HP', onHit: { type: 'magic', dmg: c => (30 + 0.2 * c.bad + 0.1 * c.ap) * (1 + c.tmiss / c.tmax) } },
     Lucian: { name: 'Lightslinger', note: 'Double shot after abilities', afterAbility: { extraAttack: 1.0 } },
@@ -183,7 +183,7 @@
     Nami: none('Surging Tides'),
     Nasus: { name: 'Soul Eater', note: 'Q stacks are counted in his Q; R burns % max HP every second', periodic: { every: 1, start: 0.5, label: 'R · Fury of the Sands', kind: 'ability', type: 'magic', dmg: c => (0.05 + 0.01 * c.ap / 100) * c.tmax } },
     Nautilus: { name: 'Staggering Blow', note: 'First attack on a target', timedAuto: { every: 10, type: 'physical', dmg: () => 122 } },
-    Neeko: none('Inherent Glamour'),
+    Neeko: { name: 'Inherent Glamour', note: '20% magic pen for 4s after her disguise breaks (opening)', stats: () => ({ mpen: 20 * 4 / 10 }) },
     // Form champions: both forms are used every rotation (cast, swap, cast again), from game-file formulas at 18.
     Nidalee: { name: 'Prowl + Aspect of the Cougar', note: 'Javelin at max range, then Cougar Takedown, Pounce (reset on hunted) and Swipe', ownKit: true,
       periodic: [
@@ -195,7 +195,7 @@
       ] },
     Nilah: none('Joy Unending'),
     Nocturne: { name: 'Umbra Blades', note: 'Empowered cleave', timedAuto: { every: 8, type: 'physical', dmg: c => 0.2 * c.ad } },
-    Nunu: none('Call of the Freljord'),
+    Nunu: { name: 'Call of the Freljord', note: '+20% attack speed (game data)', stats: () => ({ as: 20 }) },
     Olaf: { name: 'Berserker Rage', note: 'Attack speed from missing health (maxes at 30% health)', stats: c => ({ as: 100 * Math.min(1, c.smiss / 0.7) }) },
     Orianna: { name: 'Clockwork Windup', note: 'On-hit, stacking on repeated attacks', onHit: { type: 'magic', dmg: c => (59 + 0.15 * c.ap) * 1.4 } },
     Ornn: none('Living Forge'),
