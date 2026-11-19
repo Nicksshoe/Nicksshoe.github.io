@@ -234,7 +234,8 @@
     Singed: none('Noxious Slipstream'),
     Sion: { ...none('Glory in Death'), castDebuff: { E: { armor: 0.25, dur: 4 } } },
     Sivir: none('Fleet of Foot'),
-    Skarner: { name: 'Threads of Vibration', note: '3 hits: % max HP burn', everyNHits: { n: 3, cd: 4, dot: 4, type: 'magic', dmg: c => 0.04 * c.tmax + 0.02 * c.bhp } },
+    // Quaking: 3 stacks burn 9% max health (at level 18) as magic damage over 4s.
+    Skarner: { name: 'Threads of Vibration', note: '3 hits: 9% max HP burn over 4s', everyNHits: { n: 3, cd: 4, dot: 4, type: 'magic', dmg: c => 0.09 * c.tmax } },
     Smolder: none('Dragon Practice', 'Stacks are counted in his abilities'),
     Sona: { name: 'Power Chord', note: 'Every 3rd ability empowers an attack', everyNAbility: { n: 3, type: 'magic', dmg: c => 220 + 0.2 * c.ap } },
     Soraka: none('Salvation'),

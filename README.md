@@ -46,6 +46,8 @@ Then paste `worker/dist/worker.js` into the Worker's code editor in the Cloudfla
 
 Run `tools/update-itemgroups.ps1` to regenerate `itemgroups.js` (which items can't be owned together, e.g. one Last Whisper item, one Spellblade item, one pair of boots), then rebuild and redeploy the Worker.
 
+Run `tools/update-growth.ps1` each patch to regenerate `growth.js` (attack damage per level from the game files; Data Dragon reports 0 for every champion since 16.1), then rebuild and redeploy the Worker.
+
 
 ## Leaderboard boards
 

@@ -234,7 +234,9 @@
     const has = key => fx.filter(f => f[key] !== undefined && f[key] !== false);
     const sum = key => has(key).reduce((acc, f) => acc + f[key], 0);
 
-    const baseAD = s.attackdamage + s.attackdamageperlevel * L;
+    // Data Dragon reports 0 AD per level for every champion since 16.1; growth.js has the real values from the game files.
+    const adPerLevel = s.attackdamageperlevel || ((root.Potenshall && root.Potenshall.AdGrowth) || {})[ch.id] || 0;
+    const baseAD = s.attackdamage + adPerLevel * L;
     const baseHP = s.hp + s.hpperlevel * L;
     const bonusHP = b.hp;
     const maxHP = baseHP + bonusHP;
@@ -700,7 +702,7 @@
           // Temporary attack speed from a cast (Wukong E); game data stores 60% as 0.6.
           if (m.asBonus) { tempAS = m.asBonus < 5 ? m.asBonus * 100 : m.asBonus; tempASUntil = t + (m.asDur || 5); }
           else if (m.kind === 'multi') for (const p of m.parts) // a part is a formula, a flat data value, or a share of max HP
-            first += deal(t, (p.calc ? ev(p.calc) * (p.pctOfMax ? DUMMY.hp : 1) : 0) + (p.flat || 0), p.type, label, 'ability');
+            first += deal(t, (p.calc ? ev(p.calc) * (p.pctOfMax ? DUMMY.hp : 1) : 0) + (p.flat || 0) + (p.pctMaxHp || 0) * DUMMY.hp, p.type, label, 'ability');
           else if (m.kind === 'hits') {
             for (let i = 0; i < m.n; i++) spellQueue.push({ at: t + (m.n > 1 ? i * m.over / (m.n - 1) : 0), label, type: m.type,
               raw: () => { const b = ev(m.calc); return m.critCalc ? b + st.crit * (ev(m.critCalc) - b) : b; } });
