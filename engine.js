@@ -398,6 +398,7 @@
     // ---- Champion passive helpers ----
     const PSRC = P ? `Passive · ${P.name}` : 'Passive';
     const pState = {}; // per-fight state a passive table keeps (Elise's spiderlings, Frenzy and Rappel windows)
+    let rendSpears = 0, rendReady = 0; // Kalista: spears in the dummy (attacks, Guinsoo's extra hits, Pierce); lost when it dies
     const pctx = t => Object.assign(passiveCtx(st, dummyHp, t, ch), { ps: pState });
     // A passive damage spec returns a number (of spec.type) or { physical, magic, true }.
     const dealP = (t, spec, fn, kind, label) => {
@@ -447,7 +448,7 @@
       dummyHp -= amt;
       const killed = dummyHp <= 0;
       if (killed) {
-        kills++; if (firstKill === null) firstKill = t; dummyHp = DUMMY.hp;
+        kills++; if (firstKill === null) firstKill = t; dummyHp = DUMMY.hp; rendSpears = 0;
         // Takedown resets (Katarina's Voracity): a dummy kill takes seconds off her ability cooldowns.
         // Master Yi's Highlander: a kill cuts the remaining cooldowns by a share (pct) and extends the ultimate's attack speed.
         if (P && P.killReset) for (const s of P.killReset.slots) if (ready[s] > t && ready[s] !== Infinity)
@@ -609,6 +610,7 @@
       // Guinsoo's Rageblade (fully stacked): every 3rd attack applies on-hit effects twice, including on-hit
       // stacks like Vayne's Silver Bolts and Kai'Sa's plasma.
       const phantom = hasAny('guinsoo') && autoCount % 3 === 0 ? 1 : 0;
+      if (P && P.rend) rendSpears += 1 + phantom; // Guinsoo's extra hit lodges a second spear
       onHitTimes += phantom;
       if (sbArmed) {
         sbArmed = false;
@@ -878,6 +880,7 @@
         if (P && P.empowerAfter && sp.slot === P.empowerAfter.slot && pHits - empLastHits >= P.empowerAfter.actions) { dmg *= P.empowerAfter.mult; empLastHits = pHits; empTag = ' (empowered)'; }
         const label = `${sp.slot} · ${sp.lastVariant || labels[sp.slot] || sp.name}${empTag}`;
         deal(t, dmg, sp.type, label, 'ability');
+        if (P && P.rend && P.rend.fromSlot === sp.slot) rendSpears++; // Kalista's Pierce lodges a spear
         // Shadows (Zed): every active shadow repeats this ability on the target with its own formula.
         if (P && P.shadows && sp.slot === P.shadows.slot) {
           const sh = P.shadows, cdW = (sh.w.every || 16) * 100 / (100 + st.ah);
@@ -984,6 +987,22 @@
           // Ability-based empowered attacks: cooldown shrinks with haste, and an attack reset fires it right away.
           pTimedReady = t + (ta.every || Infinity) * (ta.kind === 'ability' ? 100 / (100 + st.ah) : 1);
           if (ta.resetsAttack) nextAuto = Math.min(nextAuto, t + 0.1);
+        }
+      }
+      // Kalista's Rend: rips out every spear (first spear full damage, each extra spear less). Timed for the most damage:
+      // as many Rends as the cooldown allows, each as late as possible (the last one right at the end), and right away
+      // whenever it would kill the dummy (a kill resets its cooldown, and the spears would be lost anyway).
+      if (P && P.rend && rendSpears > 0 && t >= rendReady) {
+        const R = P.rend, c = pctx(t), cd = R.cd * 100 / (100 + st.ah), end = T - 0.1;
+        const raw = R.first(c) + (rendSpears - 1) * R.extra(c);
+        const count = tt => Math.floor(Math.max(0, end - tt) / cd) + 1;
+        const kills = raw * mitigation('physical', t) >= dummyHp;
+        if (kills || t >= end || count(t + DT) < count(t)) {
+          const k0 = kills;
+          deal(t, raw, 'physical', R.label, 'ability');
+          onAbilityHit(t, true, { raw, type: 'physical', label: R.label });
+          rendSpears = 0;
+          rendReady = k0 ? t + 0.25 : t + cd;
         }
       }
       for (const x of pPeriodics) {

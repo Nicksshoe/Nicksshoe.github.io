@@ -165,8 +165,10 @@
     Jinx: { name: 'Get Excited!', note: 'Minigun attack speed stacks (Q)', stats: () => ({ as: 50 }) },
     Kaisa: { name: 'Caustic Wounds', note: 'Plasma on-hit; ruptures at 5 stacks', onHit: { type: 'magic', dmg: c => 46 + 0.18 * c.ap },
       everyNHits: { n: 5, type: 'magic', dmg: c => (0.15 + 0.06 * c.ap / 100) * c.tmiss + 50 } },
-    Kalista: { name: 'Martial Poise + Rend (E)', note: 'Attacks deal 90% AD; Rend pulls every spear out; E is modeled here', autoMult: 0.9, disable: ['E'],
-      periodic: { every: 5, start: 4, type: 'physical', dmg: c => { const spears = Math.max(1, Math.round(c.as * 4)); return 60 + 0.7 * c.ad + (spears - 1) * (24 + 0.406 * c.ad); } } },
+    // Rend (game files, rank 5): first spear 45 + 70% AD + 65% AP, each extra spear 35 + 50% AD + 50% AP; 8s cooldown.
+    // Spears come from every attack, Guinsoo's extra hits and Pierce (Q); the timing is handled in the engine.
+    Kalista: { name: 'Martial Poise + Rend (E)', note: 'Attacks deal 90% AD; Rend rips out every spear, timed for the most damage', autoMult: 0.9, disable: ['E'],
+      rend: { label: 'E · Rend', cd: 8, fromSlot: 'Q', first: c => 45 + 0.7 * c.ad + 0.65 * c.ap, extra: c => 35 + 0.5 * c.ad + 0.5 * c.ap } },
     Karma: none('Gathering Fire'),
     Karthus: { ...none('Death Defied'), castDebuff: { W: { mr: 0.25, dur: 5, auto: true } } },
     Kassadin: none('Void Stone'),
