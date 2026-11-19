@@ -571,10 +571,11 @@
           if (e.cdAfterCharges) ready[e.slot] = t + cdOf(e.slot, e.cd);
         }
         if (e.shred) { shredPct = e.shred; shredUntil = t + (e.shredDur || 3); } // armor shred lands with the hit
-        empRaw = (e.adRatio || 0) * st.totalAD + (e.bonusAdRatio || 0) * st.bonusAD + (e.apRatio || 0) * st.ap + (e.flat || 0)
-          + (e.calcFn ? e.calcFn() : 0) + (e.left <= 0 && e.finalPctMaxHp ? e.finalPctMaxHp * DUMMY.hp : 0);
-        deal(t, empRaw, e.type, e.label, 'ability');
-        if (t <= cloneUntil) deal(t, empRaw * cloneMult, e.type, e.label + ' (clone)', 'ability'); // the clone's next attack is empowered too
+        const firstHit = !e.firstOnly || e.left === (e.charges || 1) - 1; // Rengar Q: only the first attack hits harder
+        empRaw = firstHit ? (e.adRatio || 0) * st.totalAD + (e.bonusAdRatio || 0) * st.bonusAD + (e.apRatio || 0) * st.ap + (e.flat || 0)
+          + (e.calcFn ? e.calcFn() : 0) + (e.left <= 0 && e.finalPctMaxHp ? e.finalPctMaxHp * DUMMY.hp : 0) : 0;
+        if (empRaw > 0) deal(t, empRaw, e.type, e.label, 'ability');
+        if (empRaw > 0 && t <= cloneUntil) deal(t, empRaw * cloneMult, e.type, e.label + ' (clone)', 'ability'); // the clone's next attack is empowered too
       }
       // Wukong's clone attacks alongside him at reduced damage. It's a separate attacker, so item on-hits aren't repeated.
       const cloneHit = t <= cloneUntil;
@@ -665,8 +666,32 @@
     // and abilities flagged 'last' (channels like Aurelion Sol Q) after everything else.
     const castRank = s => s.mech && s.mech.first ? 0 : s.mech && s.mech.last ? 2 : 1;
     const castOrder = castable ? [...castable].sort((a, b) => castRank(a) - castRank(b)) : [];
+    // Rengar's Ferocity: +1 per ability cast; at max his next ability is empowered. He always spends it on empowered Q,
+    // which ignores Q's cooldown: the next attack deals the empowered bonus and he gains attack speed.
+    const FER = P && P.ferocity;
+    let ferocity = FER ? FER.start : 0;
     const tryCastRealSpell = (t) => {
       if (t < castLock || t < channelUntil) return;
+      if (FER && ferocity >= FER.max) {
+        const q = (castable || []).find(s => s.slot === FER.slot);
+        if (q) {
+          if (empowered) return; // hold it until the attack already armed by Q lands
+          const evq = c => { const v = root.Potenshall.Abilities.evalCalc(c, q.sp, { ...spellCtx(), rank: q.rank }); return Number.isFinite(v) && v > 0 ? v : 0; };
+          empowered = { type: 'physical', label: `${q.slot} · ${labels[q.slot] || q.name} (empowered)`, slot: q.slot, left: 1, calcFn: () => evq(FER.calc) };
+          const as = evq(FER.asCalc);
+          tempAS = as < 5 ? as * 100 : as; tempASUntil = t + FER.asDur;
+          ferocity = 0;
+          onAbilityHit(t, false); castDebuff(t, q.slot);
+          castLock = t + q.castTime;
+          nextAuto = Math.min(nextAuto, castLock); // like Q, it resets his attack
+          return;
+        }
+      }
+      const lockBefore = castLock;
+      castOne(t);
+      if (FER && castLock !== lockBefore) ferocity = Math.min(FER.max, ferocity + 1);
+    };
+    const castOne = (t) => {
       for (const sp of castOrder) {
         if ((ready[sp.slot] || 0) > t + 1e-9) continue;
         if (sp.mech && sp.mech.kind === 'empowerAuto') {

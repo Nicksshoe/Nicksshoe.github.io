@@ -217,7 +217,12 @@
     Rell: { name: 'Break the Mold', note: 'E deals % max HP', periodic: { every: 12, start: 0.5, label: 'E · Attract and Repel', kind: 'ability', type: 'magic', dmg: c => 0.03 * c.tmax } },
     Renata: { name: 'Leverage', note: '% max HP on attacks', onHit: { type: 'magic', dmg: c => 0.01 * c.tmax } },
     Renekton: none('Reign of Anger'),
-    Rengar: { ...none('Unseen Predator'), castDebuff: { R: { armorFlat: 25, dur: 4, auto: true } } },
+    // Rengar: Bonetooth Necklace fully stacked (5 trophies = +25% bonus AD). Ferocity: +1 per ability cast, max 4; at max
+    // his next ability is empowered. He opens at max Ferocity (from brush or R) and always spends it on empowered Q,
+    // which ignores Q's cooldown: next attack deals the empowered bonus and grants attack speed for 5s.
+    Rengar: { name: 'Unseen Predator', note: '5 trophies (+25% bonus AD); Ferocity empowers Q', stats: c => ({ ad: 0.25 * c.bad }),
+      ferocity: { max: 4, start: 4, slot: 'Q', calc: '{d4a43abe}', asCalc: 'EmpoweredQAS', asDur: 5 },
+      castDebuff: { R: { armorFlat: 25, dur: 4, auto: true } } },
     Riven: { name: 'Runic Blade', note: 'Charged attacks after abilities', afterAbility: { charges: 1, max: 3, type: 'physical', dmg: c => 0.6 * c.ad } },
     Rumble: { name: 'Junkyard Titan', note: 'Overheated attacks (part-time)', onHit: { type: 'magic', dmg: c => 0.4 * (50 + 0.3 * c.ap + 0.06 * c.tmax) } },
     Ryze: none('Arcane Mastery'),

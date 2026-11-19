@@ -65,7 +65,7 @@
       let cds = sp.cooldownTime || [];
       return {
         slot: order[i], name: sp.mAlternateName || name.split('/').pop(),
-        cds, dv, eff: effects(sp), calcs: sp.mSpellCalculations || {},
+        cds, ammo: sp.mAmmoRechargeTime || [], maxAmmo: sp.mMaxAmmo || [], dv, eff: effects(sp), calcs: sp.mSpellCalculations || {},
         bot: bot[BOT_DAMAGE] && (bot[BOT_DAMAGE].mFormulaParts || []).length ? bot[BOT_DAMAGE] : null,
         damageTag: bot.DamageTag, castTime: sp.spellCastTime || 0.25,
         variants: ((VARIANTS[champId] || {})[order[i]] || []).map(([vname, calc]) => {
@@ -146,11 +146,14 @@
         return a + (b - a) * (ctx.self.level - 1) / 17;
       }
       case 'ByCharLevelBreakpointsCalculationPart': {
-        let v = +part.mLevel1Value || 0, per = 0, lvl = 1;
+        // Level 1 value, +mInitialBonusPerLevel per level; a breakpoint's new per-level rate applies from that level on
+        // (checked against Pyke R: 250 -> 550 at level 18). `lvl` = the last level already counted.
+        let v = +part.mLevel1Value || 0, per = +part.mInitialBonusPerLevel || 0, lvl = 1;
         const bps = (part.mBreakpoints || []).slice().sort((x, y) => (x.mLevel || 0) - (y.mLevel || 0));
         for (const bp of bps) {
           if ((bp.mLevel || 0) > ctx.self.level) break;
-          v += per * ((bp.mLevel || 0) - lvl); lvl = bp.mLevel || lvl;
+          const at = bp.mLevel || lvl + 1;
+          v += per * Math.max(0, at - 1 - lvl); lvl = Math.max(lvl, at - 1);
           if (bp.mAdditionalBonusAtThisLevel) v += +bp.mAdditionalBonusAtThisLevel;
           if (bp['{d5fd07ed}'] !== undefined) per = +bp['{d5fd07ed}'];
           if (bp.mBonusPerLevelAtAndAfter !== undefined) per = +bp.mBonusPerLevelAtAndAfter;
@@ -230,6 +233,9 @@
       const key = Object.keys(sp.dv).find(k => /cooldown|recharge|ammo/i.test(k) && !/refund|reduction|per/i.test(k));
       cd = key ? +(sp.dv[key][rank] || 0) : 0;
     }
+    // Single-charge abilities that store their cooldown as an ammo recharge timer (Rengar Q/W/E). Multi-charge ones
+    // (Caitlyn traps, Gangplank barrels) aren't simple cooldowns, so they keep the fallback below.
+    if (!(cd > 0.5) && +(sp.ammo && sp.ammo[rank]) > 0.5 && +((sp.maxAmmo && sp.maxAmmo[rank]) ?? 1) <= 1) cd = +sp.ammo[rank];
     if (!(cd > 0.5)) cd = sp.slot === 'R' ? 60 : 6;
     // Some kits list ammo/recharge timers as 1s cooldowns; keep the rotation sane.
     return Math.max(cd, sp.slot === 'R' ? 20 : 1.5);
@@ -329,6 +335,10 @@
     // also deals 11% of the target's max health. The cooldown starts once the 3rd attack lands.
     Skarner: { Q: { kind: 'empowerAuto', type: 'physical', calc: 'AbilityDamage', charges: 3, asBonus: 'AttackSpeed',
       finalPctMaxHp: 'MaxHPPercent', cdAfterCharges: true } },
+    // Rengar Q: resets his attack; the next 2 attacks gain attack speed and the first deals bonus damage.
+    // At max Ferocity it's empowered instead (passives.js: ferocity).
+    Rengar: { Q: { kind: 'empowerAuto', type: 'physical', calc: 'QBonusDamage', charges: 2, firstOnly: true, asBonus: 'ASBonus',
+      resetsAttack: true } },
   };
 
   function resolveMechanic(spec, sp, rank) {
