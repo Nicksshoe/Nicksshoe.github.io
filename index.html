@@ -419,13 +419,13 @@ function render(){
   if (!S.champ) {
     st.innerHTML = steps() + `
       <div class="stage-head"><div><h2>Pick your champion</h2><p>${CHAMP_CHOICES} random champions from patch ${DATA.patch}. Choose wisely, or abstractly.</p></div>
-      <div class="spacer"></div>${rerollBtn()}</div>
+      <div class="spacer"></div>${resetBtn()}${rerollBtn()}</div>
       <div class="cards champs">${S.offers.map((c, i) => champCard(c, i)).join('')}</div>`;
     st.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => pickChamp(+b.dataset.pick));
   } else if (S.items.length < ITEM_SLOTS) {
     st.innerHTML = steps() + `
       <div class="stage-head"><div><h2>Item ${S.items.length + 1} of ${ITEM_SLOTS}</h2><p>Pick one item (legendary or boots) for <b>${S.champ.name}</b>.</p></div>
-      <div class="spacer"></div>${rerollBtn()}</div>
+      <div class="spacer"></div>${resetBtn()}${rerollBtn()}</div>
       <div class="cards items">${S.offers.map((it, i) => itemCard(it, i)).join('')}</div>`;
     st.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => pickItem(+b.dataset.pick));
   } else {
@@ -433,8 +433,17 @@ function render(){
     return;
   }
   const rb = st.querySelector('#rerollBtn'); if (rb) rb.onclick = reroll;
+  const sb = st.querySelector('#resetBtn'); if (sb) sb.onclick = startOver;
 }
 
+// Start over: Free Play deals a brand-new draft; Daily restarts today's draft from the champion pick.
+// Daily is the same for everyone, so the button only appears there once something has been picked or rerolled.
+const resetBtn = () => (S.mode === 'daily' && !S.draft.log.length) ? ''
+  : `<button class="btn sm" id="resetBtn" title="Throw away this draft and start again" style="margin-right:8px">↺ Start over</button>`;
+function startOver(){
+  const msg = S.mode === 'daily' ? 'Restart today\'s draft from the champion pick? Your picks and rerolls will be reset.' : 'Start a brand-new draft? Your current picks will be lost.';
+  if (confirm(msg)) newGame(S.mode);
+}
 const rerollBtn = () => `<button class="btn sm" id="rerollBtn" ${S.rerolls ? '' : 'disabled'}>⟳ Reroll (${S.rerolls} left)</button>`;
 
 function champCard(c, i){
