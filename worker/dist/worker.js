@@ -119,7 +119,7 @@
     "statikk shiv": { everyN: { n: 3, magic: 60 }, tip: 'Energized lightning' },
     "rapid firecannon": { everyN: { n: 3, magic: 40 }, tip: 'Energized attack' },
     "stormrazor": { everyN: { n: 3, magic: 90 }, tip: 'Energized bolt' },
-    "hullbreaker": { everyN: { n: 5, phys: 150 }, tip: 'Every 5th attack' },
+    "hullbreaker": { everyN: { n: 5, hull: true }, tip: 'Skipper: every 5th attack, 120% base AD + 5% max HP' },
     "voltaic cyclosword": { everyN: { n: 4, curHp: 0.05 }, tip: 'Energized % current HP' },
     "trinity force": { spellblade: { baseAd: 2.0, type: 'physical' }, tip: 'Spellblade 200% base AD' },
     "lich bane": { spellblade: { baseAd: 0.75, ap: 0.45, type: 'magic' }, tip: 'Spellblade AP burst' },
@@ -474,6 +474,8 @@
         if (e.phys) deal(t, e.phys * (1 + (e.missingAmp || 0) * (1 - dummyHp / DUMMY.hp)), 'physical', f.item, 'onhit');
         if (e.magic) deal(t, e.magic, 'magic', f.item, 'onhit');
         if (e.curHp) deal(t, e.curHp * dummyHp, 'physical', f.item, 'onhit');
+        // Hullbreaker Skipper (game files): 120% base AD + 5% max HP; ranged champions deal 70%.
+        if (e.hull) deal(t, (1.2 * st.baseAD + 0.05 * st.maxHP) * (ch.ranged ? 0.7 : 1), 'physical', f.item, 'onhit');
       }
       if (hasAny('titanic') && t >= titanicReady) { titanicReady = t + 10; deal(t, 0.04 * st.maxHP, 'physical', 'Titanic Hydra', 'onhit'); }
       if (hasAny('heartsteel') && !heartsteelDone && t >= 2.5) { heartsteelDone = true; deal(t, 70 + 0.06 * st.maxHP, 'physical', 'Heartsteel', 'onhit'); }
