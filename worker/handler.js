@@ -59,6 +59,8 @@ function nameBlocked(name) {
 const shownName = n => nameBlocked(n) ? 'Player' : n;
 
 const PE = () => globalThis.Potenshall;
+// Ability data comes from the site's kits/ folder (same files the players' browsers use), else CommunityDragon.
+if (globalThis.Potenshall && globalThis.Potenshall.Abilities) globalThis.Potenshall.Abilities.setKitBase(`${SITE}/kits`);
 let dataCache = null, stacksCache = null;
 
 async function getData() {

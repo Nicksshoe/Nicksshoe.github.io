@@ -5,7 +5,7 @@ A League of Legends mini game inspired by Bausffs-style abstract builds. Draft o
 ## How the damage works
 
 - **Champions and items** load live from Riot's Data Dragon, always on the newest patch.
-- **Abilities** use real formulas from Riot's game files via CommunityDragon: base damage at max rank (5/5/5/3), AP/AD/HP ratios, real cooldowns with ability haste, and each champion's attack speed ratio. A handful of unusual kits (Aphelios, Hwei, Bard, Milio, Taric, Trundle, Tryndamere, Zilean) fall back to a class-based estimate.
+- **Abilities** use real formulas from Riot's game files (via CommunityDragon, saved in `kits/` each patch): base damage at max rank (5/5/5/3), AP/AD/HP ratios, real cooldowns with ability haste, and each champion's attack speed ratio. A handful of unusual kits (Aphelios, Hwei, Bard, Milio, Taric, Trundle, Tryndamere, Zilean) fall back to a class-based estimate.
 - **Item passives** are modeled by hand for about 50 items (Spellblade, on-hit, burns, Heartsteel...). Other items count their stats.
 - **Stacks** (Veigar, Sion, Cho'Gath, Swain, Senna, Thresh) come from `stacks.json`: the median stat gain no item or rune explains, at minute 30 of high-elo ranked games on the previous patch. Stacks the API can't see (Nasus, Smolder, Aurelion Sol, Kindred...) are hand-set estimates.
 
@@ -42,11 +42,16 @@ pwsh -File tools/build-worker.ps1
 Then paste `worker/dist/worker.js` into the Worker's code editor in the Cloudflare dashboard and deploy. Table setup is in `worker/schema.sql`.
 
 
-## Each patch: item limits
+## Each patch: checklist
 
-Run `tools/update-itemgroups.ps1` to regenerate `itemgroups.js` (which items can't be owned together, e.g. one Last Whisper item, one Spellblade item, one pair of boots), then rebuild and redeploy the Worker.
+**Check first:** `pwsh -File tools/check-patch.ps1` compares every data file with the live patch on Data Dragon and prints the commands for anything stale. A GitHub workflow (`.github/workflows/patch-check.yml`) runs the same check every day and opens an issue titled "New League patch: update the game data files" when something is behind. The test bench also shows a red banner when `kits/` is out of date.
 
-Run `tools/update-growth.ps1` each patch to regenerate `growth.js` (attack damage per level from the game files; Data Dragon reports 0 for every champion since 16.1), then rebuild and redeploy the Worker.
+1. `pwsh -File tools/update-kits.ps1`: ability data for every champion, saved to `kits/` (trimmed copies of the game files). The game and the Worker load abilities from here; if `kits/manifest.json` is for an older patch, they fall back to CommunityDragon (slower, but scores still match).
+2. `pwsh -File tools/update-growth.ps1`: `growth.js` (attack damage per level; Data Dragon reports 0 for every champion since 16.1).
+3. `pwsh -File tools/update-cc.ps1`: `cc.js` (which abilities immobilize, for Imperial Mandate).
+4. `pwsh -File tools/update-itemgroups.ps1`: `itemgroups.js` (which items can't be owned together, e.g. one Last Whisper item, one Spellblade item, one pair of boots).
+5. `pwsh -File tools/update-stacks.ps1`: `stacks.json` (needs the Riot API key; see above).
+6. Commit and push, then `pwsh -File tools/build-worker.ps1` and redeploy the Worker. Run `tools/check-patch.ps1` again: it should say everything matches. Close the reminder issue.
 
 
 ## Leaderboard boards

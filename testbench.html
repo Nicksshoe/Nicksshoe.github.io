@@ -237,6 +237,12 @@ document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { tab =
 
 Promise.all([P.loadPatchData(), fetch('stacks.json').then(r => r.ok ? r.json() : null).catch(() => null)]).then(async ([d, stacks]) => {
   DATA = d; STACKS = stacks;
+  // Stale-data warning: hosted ability data (kits/) from an older patch than the live one.
+  P.Abilities.hostedInfo().then(i => {
+    const msg = !i ? 'kits/manifest.json is missing: ability data loads from CommunityDragon. Run tools/update-kits.ps1.'
+      : !i.fresh ? `kits/ is for patch ${i.patch} but the live patch is ${i.current}: run tools/check-patch.ps1 and the update scripts it lists.` : '';
+    if (msg) document.body.insertAdjacentHTML('afterbegin', `<div style="background:#5a1d1d;color:#fff;padding:10px 16px;font-weight:600">⚠ ${esc(msg)}</div>`);
+  });
   DD = await fetch(`${P.DDRAGON}/cdn/${d.patch}/data/en_US/championFull.json`).then(r => r.json());
   window.__TB = { get champRows() { return champRows; }, get itemRun() { return itemRun; } };
   draw();

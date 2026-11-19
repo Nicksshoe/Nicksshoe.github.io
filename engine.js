@@ -16,6 +16,8 @@
   async function loadPatchData() {
     const versions = await (await fetch(`${DDRAGON}/api/versions.json`)).json();
     const patch = versions[0];
+    // Hosted ability data (kits/) is only trusted while it's for this patch.
+    if (root.Potenshall && root.Potenshall.Abilities && root.Potenshall.Abilities.setPatch) root.Potenshall.Abilities.setPatch(patch);
     const [champJson, itemJson] = await Promise.all([
       fetch(`${DDRAGON}/cdn/${patch}/data/en_US/champion.json`).then(r => r.json()),
       fetch(`${DDRAGON}/cdn/${patch}/data/en_US/item.json`).then(r => r.json()),

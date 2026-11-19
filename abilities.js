@@ -11,23 +11,45 @@
   const cache = new Map();
 
   // ---------- Loading ----------
+  // Ability data is hosted with the site in kits/ (tools/update-kits.ps1, once per patch). It's used only while
+  // kits/manifest.json is for the current patch (setPatch); otherwise, or if a file is missing, CommunityDragon is used.
+  // kitBase: 'kits' on the site; the leaderboard Worker sets the site's full address.
+  let kitBase = 'kits', currentPatch = null, manifestP = null;
+  const minor = p => String(p || '').split('.').slice(0, 2).join('.');
+  const getJson = async (url, ms) => {
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = ctl ? setTimeout(() => ctl.abort(), ms) : null;
+    try {
+      const res = await fetch(url, ctl ? { signal: ctl.signal } : {});
+      if (!res.ok) throw new Error(`${res.status} for ${url}`);
+      return await res.json();
+    } finally { if (timer) clearTimeout(timer); }
+  };
+  const hostedManifest = () => manifestP || (manifestP = getJson(`${kitBase}/manifest.json`, 8000).catch(() => null));
+  async function hostedKitUsable(champId) {
+    const m = await hostedManifest();
+    if (!m || !Array.isArray(m.champions) || !m.champions.includes(champId)) return false;
+    if (currentPatch && minor(m.patch) !== minor(currentPatch)) {
+      if (!hostedKitUsable.warned) { hostedKitUsable.warned = true; console.warn(`kits/ is for patch ${m.patch}, game is on ${currentPatch}: using CommunityDragon. Run tools/update-kits.ps1.`); }
+      return false;
+    }
+    return true;
+  }
+
   async function loadKit(champId) {
     if (cache.has(champId)) return cache.get(champId);
     const p = (async () => {
       const id = champId.toLowerCase();
-      // CommunityDragon is sometimes slow or stalls: each try gets a time limit, and a failed try is retried twice.
       let bin = null, lastErr = null;
+      if (await hostedKitUsable(champId)) {
+        try { bin = await getJson(`${kitBase}/${id}.json`, 10000); } catch (e) { lastErr = e; }
+      }
+      // CommunityDragon is sometimes slow or stalls: each try gets a time limit, and a failed try is retried twice.
       for (let attempt = 0; attempt < 3 && !bin; attempt++) {
         if (attempt) await new Promise(r => setTimeout(r, 1000 * attempt));
-        const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        const timer = ctl ? setTimeout(() => ctl.abort(), 12000) : null;
-        try {
-          const res = await fetch(`${CDRAGON}/${id}/${id}.bin.json`, ctl ? { signal: ctl.signal } : {});
-          if (!res.ok) throw new Error(`CommunityDragon ${res.status} for ${champId}`);
-          bin = await res.json();
-        } catch (e) { lastErr = e; } finally { if (timer) clearTimeout(timer); }
+        try { bin = await getJson(`${CDRAGON}/${id}/${id}.bin.json`, 12000); } catch (e) { lastErr = e; }
       }
-      if (!bin) throw lastErr || new Error(`CommunityDragon unavailable for ${champId}`);
+      if (!bin) throw lastErr || new Error(`Ability data unavailable for ${champId}`);
       const kit = parseKit(bin, champId);
       if (kit) kit.id = champId;
       return kit;
@@ -469,7 +491,11 @@
     return Number.isFinite(v) && v > 0 ? Math.min(v, 6000) : 0;
   }
 
-  const api = { loadKit, parseKit, describeKit, evalSpellDamage, evalCalc, damageCalcFor };
+  const setPatch = p => { currentPatch = p; };
+  const setKitBase = b => { kitBase = String(b).replace(/\/+$/, ''); manifestP = null; };
+  const hostedInfo = () => hostedManifest().then(m => m && { patch: m.patch, built: m.built, champions: (m.champions || []).length, current: currentPatch,
+    fresh: !currentPatch || minor(m.patch) === minor(currentPatch) });
+  const api = { loadKit, parseKit, describeKit, evalSpellDamage, evalCalc, damageCalcFor, setPatch, setKitBase, hostedInfo };
   root.Potenshall = root.Potenshall || {};
   root.Potenshall.Abilities = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

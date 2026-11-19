@@ -1,0 +1,37 @@
+# Daily reminder: checks whether the per-patch data files (kits/, growth.js, cc.js, itemgroups.js) are behind the live
+# League patch on Data Dragon, and opens a GitHub issue with the update steps if they are (only one open at a time).
+name: Patch data check
+on:
+  schedule:
+    - cron: '0 15 * * *'   # every day, 15:00 UTC
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  issues: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare data files with the live patch
+        id: check
+        shell: pwsh
+        run: |
+          $out = pwsh -NoProfile -File tools/check-patch.ps1 2>&1 | Out-String
+          $code = $LASTEXITCODE
+          Write-Host $out
+          $out | Set-Content report.txt
+          "stale=$($code -ne 0)" | Out-File $env:GITHUB_OUTPUT -Append
+      - name: Open a reminder issue
+        if: steps.check.outputs.stale == 'True'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $title = 'New League patch: update the game data files'
+          $open = gh issue list --state open --search "in:title $title" --json number --jq 'length'
+          if ([int]$open -gt 0) { Write-Host 'Reminder issue already open.'; exit 0 }
+          $body = "A new patch is live and some data files are behind.`n`n``````n$(Get-Content report.txt -Raw)``````n`n" +
+                  "Until kits/ is updated, players' browsers and the leaderboard fall back to CommunityDragon for ability data (slower, but scores still match).`n`n" +
+                  "Close this issue after updating and redeploying the Worker."
+          gh issue create --title $title --body $body
