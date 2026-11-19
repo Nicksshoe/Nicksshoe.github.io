@@ -6,7 +6,8 @@
    Binding: DB (D1 database). The seed-signing secret is generated on first use and kept in D1. */
 
 const SITE = 'https://nicksshoe.github.io';
-const ALLOWED_ORIGINS = new Set([SITE, 'https://potenshalldamage.io', 'http://localhost:5173', 'http://localhost:5174']);
+// The site is moving to potentialdamage.gg; the github.io address stays allowed (it redirects there once the domain is live).
+const ALLOWED_ORIGINS = new Set([SITE, 'https://potentialdamage.gg', 'https://www.potentialdamage.gg', 'http://localhost:5173', 'http://localhost:5174']);
 const NAME_RE = /^[A-Za-z0-9 _.\-]{1,16}$/;
 const CLIENT_RE = /^[A-Za-z0-9-]{8,64}$/;
 // Small blocklist for display names; substrings, case-insensitive.
