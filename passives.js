@@ -107,7 +107,7 @@
       onAbility: { type: 'magic', dmg: c => (0.01 + 0.006 * c.ap / 100) * c.tmax } },
     Hecarim: { name: 'Warpath', note: 'AD from bonus move speed', stats: () => ({ ad: 17 }) },
     Heimerdinger: none('Hextech Affinity'),
-    Hwei: { name: 'Signature of the Visionary', note: 'Second spell detonates his mark', everyNAbility: { n: 2, type: 'magic', dmg: c => 160 + 0.35 * c.ap } },
+    Hwei: { name: 'Signature of the Visionary', note: 'Second spell detonates his mark', everyNAbility: { n: 2, type: 'magic', dmg: c => 285 + 0.35 * c.ap } }, // game files: 285 + 35% AP at 18
     Illaoi: { name: 'Prophet of an Elder God', note: 'Tentacle slams', onAbility: { cd: 4, type: 'physical', dmg: c => 162 + 1.2 * c.ad },
       periodic: { every: 6, start: 2, type: 'physical', dmg: c => 162 + 1.2 * c.ad } },
     Irelia: { name: 'Ionian Fervor', note: 'Max stacks: attack speed + on-hit', stats: () => ({ as: 40 }), onHit: { type: 'magic', dmg: c => 61 + 0.2 * c.bad } },
@@ -218,8 +218,8 @@
       onHit: { type: 'magic', dmg: c => 50 + 0.3 * c.ap } , everyN: { n: 1, dot: 4, type: 'magic', dmg: c => 96 + 0.4 * c.ap } },
     Thresh: { name: 'Flay (E)', note: 'Charged attack damage + souls', onHit: { type: 'magic', dmg: c => 63 + 0.5 * c.ad } },
     Tristana: none('Draw a Bead'),
-    Trundle: { name: "King's Tribute", note: 'R drains % max HP over 4s', periodic: { start: 0.5, dot: 4, label: 'R · Subjugate', kind: 'ability', type: 'magic', dmg: c => (0.35 + 0.02 * c.ap / 100) * c.tmax } },
-    Tryndamere: { name: 'Battle Fury + Bloodlust (Q)', note: 'Crit chance from fury; Q passive AD from missing health', stats: c => ({ crit: 30, ad: 35 + 55 * c.smiss }) },
+    Trundle: { name: "King's Tribute", note: 'R drains % max HP over 4s; W zone: +110% attack speed for 8s', stats: () => ({ as: 110 * 0.8 }), periodic: { start: 0.5, dot: 4, label: 'R · Subjugate', kind: 'ability', type: 'magic', dmg: c => (0.35 + 0.02 * c.ap / 100) * c.tmax } },
+    Tryndamere: { name: 'Battle Fury + Bloodlust (Q)', note: 'Crit chance from fury; Q passive AD from missing health', stats: c => ({ crit: 30, ad: 80 * c.smiss }) }, // game files: up to 80 AD at rank 5, scaling with missing health
     TwistedFate: { name: 'Stacked Deck (E)', note: 'Every 4th attack; E is passive', disable: ['E'], stats: () => ({ as: 45 }),
       everyN: { n: 4, type: 'magic', dmg: c => 165 + 0.5 * c.ap } },
     Twitch: { name: 'Deadly Venom', note: 'Stacking true-damage poison', stackDot: { max: 6, dur: 6, type: 'true', perStack: c => 6 + 0.03 * c.ap } },

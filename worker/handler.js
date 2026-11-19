@@ -110,17 +110,22 @@ async function submit(req, env, origin) {
   const better = await env.DB.prepare(
     'SELECT COUNT(*) AS n FROM (SELECT client, MAX(score) AS m FROM scores WHERE mode = ? AND period = ? GROUP BY client) WHERE m > ?'
   ).bind(mode, period, score).first();
+  // Reverse board: each player's lowest score; rank 1 = least damage.
+  const lower = await env.DB.prepare(
+    'SELECT COUNT(*) AS n FROM (SELECT client, MIN(score) AS m FROM scores WHERE mode = ? AND period = ? GROUP BY client) WHERE m < ?'
+  ).bind(mode, period, score).first();
   const total = await env.DB.prepare('SELECT COUNT(DISTINCT client) AS n FROM scores WHERE mode = ? AND period = ?').bind(mode, period).first();
-  return json({ score, rank: better.n + 1, of: total.n, period }, 200, origin);
+  return json({ score, rank: better.n + 1, lowRank: lower.n + 1, of: total.n, period }, 200, origin);
 }
 
 async function board(url, env, origin) {
   const mode = url.searchParams.get('mode'), period = url.searchParams.get('period') || '', me = url.searchParams.get('client') || '';
+  const low = url.searchParams.get('order') === 'low'; // least-damage board: each player's lowest score, ascending
   if (!['daily', 'free'].includes(mode) || !/^[\d.\-]{3,12}$/.test(period)) return fail('Bad request', 400, origin);
   const { results } = await env.DB.prepare(
     `SELECT name, champ, items, score, client FROM scores s
-     WHERE mode = ?1 AND period = ?2 AND score = (SELECT MAX(score) FROM scores WHERE mode = ?1 AND period = ?2 AND client = s.client)
-     GROUP BY client ORDER BY score DESC LIMIT 50`
+     WHERE mode = ?1 AND period = ?2 AND score = (SELECT ${low ? 'MIN' : 'MAX'}(score) FROM scores WHERE mode = ?1 AND period = ?2 AND client = s.client)
+     GROUP BY client ORDER BY score ${low ? 'ASC' : 'DESC'} LIMIT 50`
   ).bind(mode, period).all();
   // Never expose other players' client ids; just flag the caller's own row.
   const rows = results.map(r => ({ name: r.name, champ: r.champ, items: r.items, score: r.score, mine: !!me && r.client === me }));

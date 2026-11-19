@@ -17,7 +17,7 @@
       const id = champId.toLowerCase();
       const res = await fetch(`${CDRAGON}/${id}/${id}.bin.json`);
       if (!res.ok) throw new Error(`CommunityDragon ${res.status} for ${champId}`);
-      const kit = parseKit(await res.json());
+      const kit = parseKit(await res.json(), champId);
       if (kit) kit.id = champId;
       return kit;
     })();
@@ -26,7 +26,22 @@
     return p;
   }
 
-  function parseKit(bin) {
+  // Champions whose real spells live outside their four ability slots. Each slot lists the game-file spells it can
+  // cast and which formula is that spell's damage; at cast time the strongest one is used, as a player would.
+  const VARIANTS = {
+    Hwei: {
+      Q: [['HweiQQ', 'Damage'], ['HweiQW', 'Damage'], ['HweiQE', 'Damage']],   // Devastating Fire / Severing Bolt / Molten Fissure
+      W: [['HweiWE', 'TotalOnHitDamage']],                                     // Pulse of Visionary: empowered attacks
+      E: [['HweiEQ', 'Damage'], ['HweiEW', 'Damage'], ['HweiEE', 'Damage']],   // Grim Visage / Gaze of the Abyss / Stirring Torrent
+    },
+  };
+  const readSpell = obj => {
+    const sp = obj.mSpell || {}, dv = {};
+    for (const d of sp.DataValues || []) if (d.name && d.values) dv[d.name] = d.values;
+    return { sp, dv, calcs: sp.mSpellCalculations || {} };
+  };
+
+  function parseKit(bin, champId) {
     const rec = Object.values(bin).find(v => v && v.__type === 'CharacterRecord');
     if (!rec || !rec.spellNames) return null;
     const byPath = {};
@@ -46,6 +61,11 @@
         cds, dv, calcs: sp.mSpellCalculations || {},
         bot: bot[BOT_DAMAGE] && (bot[BOT_DAMAGE].mFormulaParts || []).length ? bot[BOT_DAMAGE] : null,
         damageTag: bot.DamageTag, castTime: sp.spellCastTime || 0.25,
+        variants: ((VARIANTS[champId] || {})[SLOTS[i]] || []).map(([vname, calc]) => {
+          const h = find(vname); if (!h) return null;
+          const r = readSpell(h[1]);
+          return { name: vname, dv: r.dv, calcs: r.calcs, calc };
+        }).filter(Boolean),
       };
     }).filter(Boolean);
 
@@ -253,16 +273,25 @@
       const m = mech[sp.slot] ? resolveMechanic(mech[sp.slot], sp, rank) : null;
       return {
         slot: sp.slot, name: sp.name, rank, calc, sp, mech: m,
-        damaging: !m && Number.isFinite(probe) && probe > 1, type: (m && m.type) || damageTypeFor(sp, calc, rank, kitHint),
+        damaging: !m && ((Number.isFinite(probe) && probe > 1) || sp.variants.length > 0), type: (m && m.type) || damageTypeFor(sp, calc, rank, kitHint),
         cooldown: cooldownFor(sp, rank), castTime: Math.min(0.75, sp.castTime || 0.25),
       };
     });
     spells.passiveCovered = !!mech.passiveCovered;
-    spells.usable = spells.filter(s => s.damaging || s.mech).length >= 2;
+    // One real damaging ability is enough: supports and utility kits (Bard, Taric, Zilean...) really only have one.
+    spells.usable = spells.filter(s => s.damaging || s.mech).length >= 1;
     return spells;
   }
 
   function evalSpellDamage(spell, ctx) {
+    if (spell.sp.variants && spell.sp.variants.length) {
+      let best = 0;
+      for (const v of spell.sp.variants) {
+        const x = evalCalc(v.calc, v, { ...ctx, rank: spell.rank });
+        if (Number.isFinite(x) && x > best) { best = x; spell.lastVariant = v.name; }
+      }
+      return Math.min(best, 6000);
+    }
     if (!spell.calc) return 0;
     const v = evalCalc(spell.calc, spell.sp, { ...ctx, rank: spell.rank });
     // Safety cap against data glitches: no single cast deals more than 6,000 before resistances.

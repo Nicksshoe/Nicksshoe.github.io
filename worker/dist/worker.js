@@ -571,7 +571,7 @@
         }
         if (!sp.damaging) continue;
         const dmg = root.Potenshall.Abilities.evalSpellDamage(sp, spellCtx());
-        const label = `${sp.slot} · ${labels[sp.slot] || sp.name}`;
+        const label = `${sp.slot} · ${sp.lastVariant || labels[sp.slot] || sp.name}`;
         deal(t, dmg, sp.type, label, 'ability');
         onAbilityHit(t, t >= bastionReady, { raw: dmg, type: sp.type, label });
         if (t >= bastionReady) bastionReady = t + 3;
@@ -773,7 +773,7 @@
       const id = champId.toLowerCase();
       const res = await fetch(`${CDRAGON}/${id}/${id}.bin.json`);
       if (!res.ok) throw new Error(`CommunityDragon ${res.status} for ${champId}`);
-      const kit = parseKit(await res.json());
+      const kit = parseKit(await res.json(), champId);
       if (kit) kit.id = champId;
       return kit;
     })();
@@ -782,7 +782,22 @@
     return p;
   }
 
-  function parseKit(bin) {
+  // Champions whose real spells live outside their four ability slots. Each slot lists the game-file spells it can
+  // cast and which formula is that spell's damage; at cast time the strongest one is used, as a player would.
+  const VARIANTS = {
+    Hwei: {
+      Q: [['HweiQQ', 'Damage'], ['HweiQW', 'Damage'], ['HweiQE', 'Damage']],   // Devastating Fire / Severing Bolt / Molten Fissure
+      W: [['HweiWE', 'TotalOnHitDamage']],                                     // Pulse of Visionary: empowered attacks
+      E: [['HweiEQ', 'Damage'], ['HweiEW', 'Damage'], ['HweiEE', 'Damage']],   // Grim Visage / Gaze of the Abyss / Stirring Torrent
+    },
+  };
+  const readSpell = obj => {
+    const sp = obj.mSpell || {}, dv = {};
+    for (const d of sp.DataValues || []) if (d.name && d.values) dv[d.name] = d.values;
+    return { sp, dv, calcs: sp.mSpellCalculations || {} };
+  };
+
+  function parseKit(bin, champId) {
     const rec = Object.values(bin).find(v => v && v.__type === 'CharacterRecord');
     if (!rec || !rec.spellNames) return null;
     const byPath = {};
@@ -802,6 +817,11 @@
         cds, dv, calcs: sp.mSpellCalculations || {},
         bot: bot[BOT_DAMAGE] && (bot[BOT_DAMAGE].mFormulaParts || []).length ? bot[BOT_DAMAGE] : null,
         damageTag: bot.DamageTag, castTime: sp.spellCastTime || 0.25,
+        variants: ((VARIANTS[champId] || {})[SLOTS[i]] || []).map(([vname, calc]) => {
+          const h = find(vname); if (!h) return null;
+          const r = readSpell(h[1]);
+          return { name: vname, dv: r.dv, calcs: r.calcs, calc };
+        }).filter(Boolean),
       };
     }).filter(Boolean);
 
@@ -1009,16 +1029,25 @@
       const m = mech[sp.slot] ? resolveMechanic(mech[sp.slot], sp, rank) : null;
       return {
         slot: sp.slot, name: sp.name, rank, calc, sp, mech: m,
-        damaging: !m && Number.isFinite(probe) && probe > 1, type: (m && m.type) || damageTypeFor(sp, calc, rank, kitHint),
+        damaging: !m && ((Number.isFinite(probe) && probe > 1) || sp.variants.length > 0), type: (m && m.type) || damageTypeFor(sp, calc, rank, kitHint),
         cooldown: cooldownFor(sp, rank), castTime: Math.min(0.75, sp.castTime || 0.25),
       };
     });
     spells.passiveCovered = !!mech.passiveCovered;
-    spells.usable = spells.filter(s => s.damaging || s.mech).length >= 2;
+    // One real damaging ability is enough: supports and utility kits (Bard, Taric, Zilean...) really only have one.
+    spells.usable = spells.filter(s => s.damaging || s.mech).length >= 1;
     return spells;
   }
 
   function evalSpellDamage(spell, ctx) {
+    if (spell.sp.variants && spell.sp.variants.length) {
+      let best = 0;
+      for (const v of spell.sp.variants) {
+        const x = evalCalc(v.calc, v, { ...ctx, rank: spell.rank });
+        if (Number.isFinite(x) && x > best) { best = x; spell.lastVariant = v.name; }
+      }
+      return Math.min(best, 6000);
+    }
     if (!spell.calc) return 0;
     const v = evalCalc(spell.calc, spell.sp, { ...ctx, rank: spell.rank });
     // Safety cap against data glitches: no single cast deals more than 6,000 before resistances.
@@ -1141,7 +1170,7 @@
       onAbility: { type: 'magic', dmg: c => (0.01 + 0.006 * c.ap / 100) * c.tmax } },
     Hecarim: { name: 'Warpath', note: 'AD from bonus move speed', stats: () => ({ ad: 17 }) },
     Heimerdinger: none('Hextech Affinity'),
-    Hwei: { name: 'Signature of the Visionary', note: 'Second spell detonates his mark', everyNAbility: { n: 2, type: 'magic', dmg: c => 160 + 0.35 * c.ap } },
+    Hwei: { name: 'Signature of the Visionary', note: 'Second spell detonates his mark', everyNAbility: { n: 2, type: 'magic', dmg: c => 285 + 0.35 * c.ap } }, // game files: 285 + 35% AP at 18
     Illaoi: { name: 'Prophet of an Elder God', note: 'Tentacle slams', onAbility: { cd: 4, type: 'physical', dmg: c => 162 + 1.2 * c.ad },
       periodic: { every: 6, start: 2, type: 'physical', dmg: c => 162 + 1.2 * c.ad } },
     Irelia: { name: 'Ionian Fervor', note: 'Max stacks: attack speed + on-hit', stats: () => ({ as: 40 }), onHit: { type: 'magic', dmg: c => 61 + 0.2 * c.bad } },
@@ -1252,8 +1281,8 @@
       onHit: { type: 'magic', dmg: c => 50 + 0.3 * c.ap } , everyN: { n: 1, dot: 4, type: 'magic', dmg: c => 96 + 0.4 * c.ap } },
     Thresh: { name: 'Flay (E)', note: 'Charged attack damage + souls', onHit: { type: 'magic', dmg: c => 63 + 0.5 * c.ad } },
     Tristana: none('Draw a Bead'),
-    Trundle: { name: "King's Tribute", note: 'R drains % max HP over 4s', periodic: { start: 0.5, dot: 4, label: 'R · Subjugate', kind: 'ability', type: 'magic', dmg: c => (0.35 + 0.02 * c.ap / 100) * c.tmax } },
-    Tryndamere: { name: 'Battle Fury + Bloodlust (Q)', note: 'Crit chance from fury; Q passive AD from missing health', stats: c => ({ crit: 30, ad: 35 + 55 * c.smiss }) },
+    Trundle: { name: "King's Tribute", note: 'R drains % max HP over 4s; W zone: +110% attack speed for 8s', stats: () => ({ as: 110 * 0.8 }), periodic: { start: 0.5, dot: 4, label: 'R · Subjugate', kind: 'ability', type: 'magic', dmg: c => (0.35 + 0.02 * c.ap / 100) * c.tmax } },
+    Tryndamere: { name: 'Battle Fury + Bloodlust (Q)', note: 'Crit chance from fury; Q passive AD from missing health', stats: c => ({ crit: 30, ad: 80 * c.smiss }) }, // game files: up to 80 AD at rank 5, scaling with missing health
     TwistedFate: { name: 'Stacked Deck (E)', note: 'Every 4th attack; E is passive', disable: ['E'], stats: () => ({ as: 45 }),
       everyN: { n: 4, type: 'magic', dmg: c => 165 + 0.5 * c.ap } },
     Twitch: { name: 'Deadly Venom', note: 'Stacking true-damage poison', stackDot: { max: 6, dur: 6, type: 'true', perStack: c => 6 + 0.03 * c.ap } },
@@ -1411,17 +1440,22 @@ async function submit(req, env, origin) {
   const better = await env.DB.prepare(
     'SELECT COUNT(*) AS n FROM (SELECT client, MAX(score) AS m FROM scores WHERE mode = ? AND period = ? GROUP BY client) WHERE m > ?'
   ).bind(mode, period, score).first();
+  // Reverse board: each player's lowest score; rank 1 = least damage.
+  const lower = await env.DB.prepare(
+    'SELECT COUNT(*) AS n FROM (SELECT client, MIN(score) AS m FROM scores WHERE mode = ? AND period = ? GROUP BY client) WHERE m < ?'
+  ).bind(mode, period, score).first();
   const total = await env.DB.prepare('SELECT COUNT(DISTINCT client) AS n FROM scores WHERE mode = ? AND period = ?').bind(mode, period).first();
-  return json({ score, rank: better.n + 1, of: total.n, period }, 200, origin);
+  return json({ score, rank: better.n + 1, lowRank: lower.n + 1, of: total.n, period }, 200, origin);
 }
 
 async function board(url, env, origin) {
   const mode = url.searchParams.get('mode'), period = url.searchParams.get('period') || '', me = url.searchParams.get('client') || '';
+  const low = url.searchParams.get('order') === 'low'; // least-damage board: each player's lowest score, ascending
   if (!['daily', 'free'].includes(mode) || !/^[\d.\-]{3,12}$/.test(period)) return fail('Bad request', 400, origin);
   const { results } = await env.DB.prepare(
     `SELECT name, champ, items, score, client FROM scores s
-     WHERE mode = ?1 AND period = ?2 AND score = (SELECT MAX(score) FROM scores WHERE mode = ?1 AND period = ?2 AND client = s.client)
-     GROUP BY client ORDER BY score DESC LIMIT 50`
+     WHERE mode = ?1 AND period = ?2 AND score = (SELECT ${low ? 'MIN' : 'MAX'}(score) FROM scores WHERE mode = ?1 AND period = ?2 AND client = s.client)
+     GROUP BY client ORDER BY score ${low ? 'ASC' : 'DESC'} LIMIT 50`
   ).bind(mode, period).all();
   // Never expose other players' client ids; just flag the caller's own row.
   const rows = results.map(r => ({ name: r.name, champ: r.champ, items: r.items, score: r.score, mine: !!me && r.client === me }));

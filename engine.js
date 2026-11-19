@@ -570,7 +570,7 @@
         }
         if (!sp.damaging) continue;
         const dmg = root.Potenshall.Abilities.evalSpellDamage(sp, spellCtx());
-        const label = `${sp.slot} · ${labels[sp.slot] || sp.name}`;
+        const label = `${sp.slot} · ${sp.lastVariant || labels[sp.slot] || sp.name}`;
         deal(t, dmg, sp.type, label, 'ability');
         onAbilityHit(t, t >= bastionReady, { raw: dmg, type: sp.type, label });
         if (t >= bastionReady) bastionReady = t + 3;

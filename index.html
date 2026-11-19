@@ -276,7 +276,7 @@ const LB = {
     try { return await LB.call('/start', { patch: DATA.patch }); } catch { return null; }
   },
   submit: payload => LB.call('/submit', payload),
-  board: (mode, period) => LB.call(`/board?mode=${mode}&period=${encodeURIComponent(period)}&client=${encodeURIComponent(clientId)}`),
+  board: (mode, period, order) => LB.call(`/board?mode=${mode}&period=${encodeURIComponent(period)}&order=${order === 'low' ? 'low' : 'high'}&client=${encodeURIComponent(clientId)}`),
 };
 
 function renderSubmitPanel(snapshot){
@@ -302,7 +302,7 @@ function renderSubmitPanel(snapshot){
     $('#lbSubmit').disabled = true; $('#lbMsg').textContent = 'Verifying your run…';
     try {
       const r = await LB.submit({ mode: S.mode, patch: DATA.patch, date: today(), ticket: S.ticket, log: S.draft.log, name, client: clientId });
-      Object.assign(snapshot, { rank: r.rank, of: r.of, verified: r.score, name });
+      Object.assign(snapshot, { rank: r.rank, lowRank: r.lowRank, of: r.of, verified: r.score, name });
       if (S.mode === 'daily') store.set('daily:'+today(), snapshot);
       panel.innerHTML = rankHtml(snapshot); bindViewBoard();
     } catch (e) { $('#lbSubmit').disabled = false; $('#lbMsg').textContent = e.message; }
@@ -310,24 +310,30 @@ function renderSubmitPanel(snapshot){
 }
 const rankHtml = s => `<h3>Leaderboard</h3><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
   <div class="bignum" style="font-size:34px">#${s.rank}<small>of ${s.of}</small></div>
-  <div class="muted" style="font-size:13px">Verified score <b style="color:var(--text)">${fmt(s.verified)}</b> as ${esc(s.name)}</div>
+  <div class="muted" style="font-size:13px">Verified score <b style="color:var(--text)">${fmt(s.verified)}</b> as ${esc(s.name)}
+    ${s.lowRank ? `<br>Least-damage board: <b style="color:var(--text)">#${s.lowRank}</b> of ${s.of}` : ''}</div>
   <div class="spacer"></div><button class="btn sm" id="lbView">View board</button></div>`;
 const bindViewBoard = () => { const b = $('#lbView'); if (b) b.onclick = () => showBoard(S.mode === 'daily' ? 'daily' : 'free'); };
 
-async function showBoard(mode){
+async function showBoard(mode, order){
+  order = order === 'low' ? 'low' : 'high';
   if (animHandle) cancelAnimationFrame(animHandle);
   const patchShort = DATA.patch.split('.').slice(0, 2).join('.');
   const period = mode === 'daily' ? today() : patchShort;
   const st = $('#stage');
   const tabs = `<div class="modes" style="width:max-content;margin-bottom:14px">
       <button data-b="daily" class="${mode==='daily'?'on':''}">Daily ${today()}</button>
-      <button data-b="free" class="${mode==='free'?'on':''}">Free Play · patch ${patchShort}</button></div>`;
-  st.innerHTML = `<div class="stage-head"><div><h2>Leaderboard</h2><p>Top 50, every score verified by the server.</p></div><div class="spacer"></div>
+      <button data-b="free" class="${mode==='free'?'on':''}">Free Play · patch ${patchShort}</button></div>
+    <div class="modes" style="width:max-content;margin-bottom:14px">
+      <button data-o="high" class="${order==='high'?'on':''}">Most damage</button>
+      <button data-o="low" class="${order==='low'?'on':''}">Least damage</button></div>`;
+  st.innerHTML = `<div class="stage-head"><div><h2>${order === 'low' ? 'Least Damage' : 'Leaderboard'}</h2><p>${order === 'low' ? "The 50 weakest builds: each player's lowest verified score." : 'Top 50, every score verified by the server.'}</p></div><div class="spacer"></div>
     <button class="btn sm" id="lbBack">◂ Back to game</button></div>${tabs}<div id="boardBody"><div class="loading" style="min-height:160px"><div class="spinner"></div></div></div>`;
-  st.querySelectorAll('[data-b]').forEach(b => b.onclick = () => showBoard(b.dataset.b));
+  st.querySelectorAll('[data-b]').forEach(b => b.onclick = () => showBoard(b.dataset.b, order));
+  st.querySelectorAll('[data-o]').forEach(b => b.onclick = () => showBoard(mode, b.dataset.o));
   $('#lbBack').onclick = () => newGame(S && S.mode === 'free' ? 'free' : 'daily');
   try {
-    const { rows } = await LB.board(mode, period);
+    const { rows } = await LB.board(mode, period, order);
     const champName = id => (DATA.champions.find(c => c.id === id) || { name: id }).name;
     $('#boardBody').innerHTML = rows.length ? `<div style="display:grid;gap:6px">${rows.map((r, i) => `
       <div style="display:grid;grid-template-columns:36px 36px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;
