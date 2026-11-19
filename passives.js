@@ -155,7 +155,12 @@
     Karma: none('Gathering Fire'),
     Karthus: { ...none('Death Defied'), castDebuff: { W: { mr: 0.25, dur: 5, auto: true } } },
     Kassadin: none('Void Stone'),
-    Katarina: { name: 'Voracity', note: 'Dagger pickups', everyNAbility: { n: 2, type: 'magic', dmg: c => 308 + 0.6 * c.bad + c.ap } },
+    // Katarina: Q and W drop daggers that she picks up (Q's lands behind the target about 1.1s later, W's about 1.25s).
+    // Voracity at level 18: 240 + 60% bonus AD + 100% AP magic, applies on-hit effects, and cuts E's cooldown by 96% of
+    // its base (8s at rank 5 = 7.68s). Takedowns (dummy kills) take 15s off her ability cooldowns.
+    Katarina: { name: 'Voracity', note: 'Dagger pickups (on-hit) reset Shunpo; kills reset cooldowns',
+      daggers: { from: { Q: 1.1, W: 1.25 }, type: 'magic', dmg: c => 240 + 0.6 * c.bad + c.ap, onHit: true, eReduce: 7.68 },
+      killReset: { cd: 15, slots: ['Q', 'W', 'E'] } },
     Kayle: { castDebuff: { Q: { armor: 0.15, mr: 0.15, dur: 4 } }, name: 'Divine Ascent', note: 'Exalted at 16: attack waves + attack speed', stats: () => ({ as: 30 }), onHit: { type: 'magic', dmg: c => 50 + 0.25 * c.ap + 0.1 * c.bad } },
     Kayn: none('The Darkin Scythe'),
     Kennen: none('Mark of the Storm'),

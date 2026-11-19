@@ -443,7 +443,11 @@
       total += amt; byType[type] += amt; bySource[src] = (bySource[src] || 0) + amt;
       dummyHp -= amt;
       const killed = dummyHp <= 0;
-      if (killed) { kills++; if (firstKill === null) firstKill = t; dummyHp = DUMMY.hp; }
+      if (killed) {
+        kills++; if (firstKill === null) firstKill = t; dummyHp = DUMMY.hp;
+        // Takedown resets (Katarina's Voracity): a dummy kill takes seconds off her ability cooldowns.
+        if (P && P.killReset) for (const s of P.killReset.slots) if (ready[s] > t && ready[s] !== Infinity) ready[s] = Math.max(t, ready[s] - P.killReset.cd);
+      }
       hits.push({ t, amt, type, src, hp: dummyHp, killed });
     }
 
@@ -575,6 +579,8 @@
           if (e.cdAfterCharges) ready[e.slot] = t + cdOf(e.slot, e.cd);
         }
         if (e.shred) { shredPct = e.shred; shredUntil = t + (e.shredDur || 3); } // armor shred lands with the hit
+        // Xin Zhao Q: each empowered attack cuts his other abilities' cooldowns (so E and W come back for a second cast).
+        if (e.cdOthersPerHit) for (const s of ['Q', 'W', 'E', 'R']) if (s !== e.slot && ready[s] > t && ready[s] !== Infinity) ready[s] = Math.max(t, ready[s] - e.cdOthersPerHit);
         const firstHit = !e.firstOnly || e.left === (e.charges || 1) - 1; // Rengar Q: only the first attack hits harder
         empRaw = firstHit ? (e.adRatio || 0) * st.totalAD + (e.bonusAdRatio || 0) * st.bonusAD + (e.apRatio || 0) * st.ap + (e.flat || 0)
           + (e.calcFn ? e.calcFn() : 0) + (e.left <= 0 && e.finalPctMaxHp ? e.finalPctMaxHp * DUMMY.hp : 0) : 0;
@@ -646,7 +652,7 @@
         baseHp: DUMMY.baseHp, bonusHp: DUMMY.hp - DUMMY.baseHp },
       stacks: stackInfo.counter ?? 0,
     });
-    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute', 'mark', 'clone', 'pet', 'afterHits']);
+    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute', 'mark', 'clone', 'pet', 'afterHits', 'knives']);
     let markState = null; // Zed-style mark: stores damage dealt until it pops
     const recastLeft = {}; // recasts still available per slot
     let channelUntil = -1; // a channel that keeps the champion from attacking or casting (Aurelion Sol Q)
@@ -655,6 +661,13 @@
     let zoneUntil = -1, eArm = null;      // Kindred: W's territory, E's armed pounce
     // Multi-charge abilities (Karthus Q, Nilah E...): cast charges back to back, then wait for each recharge.
     const ammoSt = {};
+    // Katarina: Q and W drop a dagger; picking it up slashes (Voracity, applies on-hits) and cuts E's cooldown.
+    const dropDagger = (t, slot) => {
+      const D = P && P.daggers, delay = D && D.from[slot];
+      if (!delay) return;
+      spellQueue.push({ at: t + delay, label: 'Passive · Voracity', type: D.type, raw: () => D.dmg(pctx(t + delay)),
+        after: tt => { if (D.onHit) onHitEffects(tt, 1); if (D.eReduce && ready.E > tt && ready.E !== Infinity) ready.E = Math.max(tt, ready.E - cdOf('E', D.eReduce)); } });
+    };
     const afterCharge = (sp, t, normal) => {
       if (!sp.charges) return normal;
       const s = ammoSt[sp.slot] || (ammoSt[sp.slot] = { n: sp.charges, nextAt: Infinity });
@@ -748,12 +761,18 @@
             first = deal(t, raw, m.type, label, 'ability');
             if (thrHp > 0 && dummyHp > 0 && dummyHp < thrHp) record(t, dummyHp, 'true', label.replace(/ · .*/, ' · Execute'));
             resetNow = !!m.resetOnKill && kills > killsBefore;
-          } else if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, label, 'ability');
+          } else if (m.kind === 'cast' && m.noDamage) first = 0; // utility casts (Katarina W drops a dagger)
+          else if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, label, 'ability');
           // Temporary attack speed from a cast (Wukong E); game data stores 60% as 0.6.
           if (m.asCalc) { const a = ev(m.asCalc); tempAS = a < 5 ? a * 100 : a; tempASUntil = t + (m.asDur || 4); } // Kindred Q
-          if (m.asBonus) { tempAS = m.asBonus < 5 ? m.asBonus * 100 : m.asBonus; tempASUntil = t + (m.asDur || 5); }
+          if (m.asBonus) {
+            tempAS = (m.asBonus < 5 ? m.asBonus * 100 : m.asBonus)
+              + (m.asPerBonusAS ? st.bonusASPct / m.asPerBonusAS : 0) + (m.apToAS ? st.ap * m.apToAS * 100 : 0); // Xin Zhao E
+            tempASUntil = t + (m.asDur || 5);
+          }
           else if (m.kind === 'multi') for (const p of m.parts) // a part is a formula, a flat data value, or a share of max HP
-            first += deal(t, (p.calc ? ev(p.calc) * (p.pctOfMax ? DUMMY.hp : 1) : 0) + (p.flat || 0) + (p.pctMaxHp || 0) * DUMMY.hp, p.type, label, 'ability');
+            first += deal(t, (p.calc ? ev(p.calc) * (p.pctOfMax ? DUMMY.hp : 1) : 0) + (p.flat || 0) + (p.pctMaxHp || 0) * DUMMY.hp
+              + (p.pctCurHp || 0) * dummyHp, p.type, label, 'ability'); // Xin Zhao R: % current health
           else if (m.kind === 'hits') {
             for (let i = 0; i < m.n; i++) spellQueue.push({ at: t + (m.n > 1 ? i * m.over / (m.n - 1) : 0), label, type: m.type,
               raw: () => { const b = ev(m.calc); return m.critCalc ? b + st.crit * (ev(m.critCalc) - b) : b; } });
@@ -774,6 +793,15 @@
             const dur = Math.min(m.duration || 8, T), gap = 1 / wolfAS;
             for (let k = 0.25; k <= dur + 1e-9; k += gap) spellQueue.push({ at: t + k, label, type: m.type, raw: () => ev(m.calc) + ev(m.pctCalc) * dummyHp });
             zoneUntil = t + dur;
+          } else if (m.kind === 'knives') {
+            // Katarina R: a channel of knives, each magic + physical damage and on-hit effects at a reduced ratio
+            // (every 1/ratio knives applies on-hits once). She can't attack or cast while channeling.
+            const dur = Math.min(m.duration || 2.5, T), n = Math.round((m.rate || 6) * dur);
+            let acc = 0;
+            for (let i = 1; i <= n; i++) spellQueue.push({ at: t + i / (m.rate || 6), label, type: m.type, raw: () => ev(m.calc),
+              after: tt => { if (m.physCalc) deal(tt, ev(m.physCalc), 'physical', label, 'ability');
+                acc += m.onHitRatio || 0; if (acc >= 1 - 1e-9) { acc -= 1; onHitEffects(tt, 1); } } });
+            channelUntil = t + dur;
           } else if (m.kind === 'afterHits') {
             // Kindred E: Wolf pounces on her Nth attack within the window: flat + a share of missing health (crit-scaled).
             eArm = { left: m.hits || 3, until: t + (m.window || 4), label, type: m.type, raw: () => ev(m.calc) + ev(m.pctMissingCalc) * (DUMMY.hp - dummyHp) };
@@ -788,6 +816,7 @@
           ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : m.recasts && recastLeft[sp.slot] > 0 ? t + (m.recastGap || 1)
             : afterCharge(sp, t, t + cdOf(sp.slot, m.zoneCd && t < zoneUntil ? m.zoneCd : sp.cooldown)); // Kindred Q: shorter inside her zone
           castLock = t + sp.castTime;
+          dropDagger(t, sp.slot);
           return;
         }
         if (!sp.damaging) continue;
@@ -818,6 +847,7 @@
         castDebuff(t, sp.slot);
         ready[sp.slot] = afterCharge(sp, t, t + cdOf(sp.slot, sp.cooldown));
         castLock = t + sp.castTime;
+        dropDagger(t, sp.slot);
         return;
       }
     };
@@ -873,7 +903,8 @@
         if (q.at > t + 1e-9) continue;
         spellQueue.splice(i, 1);
         const qv = q.raw();
-        deal(t, qv, q.type, q.label, 'ability');
+        if (qv > 0) deal(t, qv, q.type, q.label, 'ability');
+        if (q.after) q.after(t); // follow-ups: on-hits, cooldown cuts (Katarina's daggers and Death Lotus)
         if (q.clone && t <= cloneUntil) deal(t, qv * cloneMult, q.type, 'W · Clone (mimics R)', 'ability'); // Wukong's clone copies his R
         if (q.exec) { const thr = q.exec(); if (dummyHp > 0 && dummyHp < thr * DUMMY.hp) record(t, dummyHp, 'true', q.label.replace(/ · .*/, ' · Execute')); }
         for (const f of has('burn')) burnUntil[f.burn] = t + 3;

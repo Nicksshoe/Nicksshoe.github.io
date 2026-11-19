@@ -354,6 +354,20 @@
       Q: { kind: 'cast', type: 'physical', calc: 'TotalDamage', asCalc: 'TotalQAttackSpeed', asDur: 'BaseASDuration', zoneCd: 'CDNewValue' },
       E: { kind: 'afterHits', type: 'physical', hits: 3, window: 'TotalDuration', calc: 'BaseBiteDamage', pctMissingCalc: 'PercentBiteDamage' },
     },
+    // Katarina: W only drops a dagger (passives.js: daggers). R: Death Lotus, 15 knives over 2.5s, each magic + physical
+    // (bonus AD, grows with bonus attack speed) with on-hit effects at 35% (rank 3).
+    Katarina: {
+      W: { kind: 'cast', noDamage: true, type: 'magic' },
+      R: { kind: 'knives', type: 'magic', calc: 'DamageCalc', physCalc: 'ADDamageCalc', rate: 'TicksPerSecond', duration: 'Duration', onHitRatio: 'OnHitRatio' },
+    },
+    // Xin Zhao Q: next 3 attacks deal bonus damage and each cuts his other cooldowns by 1s; Q's cooldown starts after the
+    // 3rd. E: damage + attack speed (70% at rank 5, +1% per 4% bonus attack speed, +10% per 100 AP) for 5s.
+    // R: flat + 15% of current health.
+    XinZhao: {
+      Q: { kind: 'empowerAuto', type: 'physical', calc: 'BonusDamage', charges: 3, cdAfterCharges: true, cdOthersPerHit: 1, resetsAttack: true },
+      E: { kind: 'cast', type: 'magic', calc: 'ChargeDamage', asBonus: 'ASMod', asPerBonusAS: 'PermanentASToASRatio', apToAS: 'APToASRatio', asDur: 'ASDuration' },
+      R: { kind: 'multi', parts: [{ calc: 'TotalDamage', type: 'physical' }, { pctCurHp: 'PercentCurrentHealthDamage', type: 'physical' }] },
+    },
     // Rengar Q: resets his attack; the next 2 attacks gain attack speed and the first deals bonus damage.
     // At max Ferocity it's empowered instead (passives.js: ferocity).
     Rengar: { Q: { kind: 'empowerAuto', type: 'physical', calc: 'QBonusDamage', charges: 2, firstOnly: true, asBonus: 'ASBonus',
@@ -364,9 +378,10 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
-      ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}) }));
+      ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
+      ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));
     // Buff stats: a data value name, or [name, multiplier] (e.g. attack speed stored as 0.7 -> 70%), or a number.
     if (spec.stats) m.stats = Object.fromEntries(Object.entries(spec.stats).map(([k, v]) => [k, typeof v === 'number' ? v : Array.isArray(v) ? dv(v[0]) * v[1] : dv(v)]));
     return m;
