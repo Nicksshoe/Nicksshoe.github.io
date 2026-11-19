@@ -53,7 +53,8 @@
     return {
       spells,
       asBase: num(rec.attackSpeedModifiable),
-      asRatio: num(rec.attackSpeedRatioModifiable) || num(rec.attackSpeedModifiable),
+      // An explicit 0 ratio is real (bonus attack speed does nothing), so only fall back when it's missing.
+      asRatio: num(rec.attackSpeedRatioModifiable) ?? num(rec.attackSpeedModifiable),
       critMult: rec.critDamageMultiplier,
     };
   }

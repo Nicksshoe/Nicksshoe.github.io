@@ -181,13 +181,13 @@
   }
 
   // ---------- Final level-18 stats ----------
-  function computeStats(ch, items, kit, extra) {
-    extra = extra || {};
+  function computeStats(ch, items, kit, extra, passive) {
+    extra = extra || {}; passive = passive || {};
     const s = ch.stats, L = 17; // stat growth at level 18 is exactly 17x per-level
     const b = { ad: 0, ap: 0, as: 0, crit: 0, critDmg: 0, leth: 0, ah: 0, hp: 0, mana: 0, mpenFlat: 0, armor: 0, mr: 0 };
-    // Average stacks from live games show up as extra stats (e.g. Veigar AP, Sion HP).
-    for (const k of ["ap", "ad", "hp", "armor", "mr"]) b[k] += extra[k] || 0;
-    let arpenKeep = 1, mpenKeep = 1;
+    // Average stacks from live games and champion passives show up as extra stats (e.g. Veigar AP, Sion HP).
+    for (const k of Object.keys(b)) b[k] += extra[k] || 0;
+    let arpenKeep = 1 - (extra.arpen || 0) / 100, mpenKeep = 1 - (extra.mpen || 0) / 100;
     const fx = [];
     for (const it of items) {
       for (const [k, v] of Object.entries(it.stats)) {
@@ -213,19 +213,28 @@
     let ap = b.ap + sum('apPerBonusHp') * bonusHP + sum('apPerBonusMana') * (b.mana + 360);
     ap *= has('apMult').reduce((acc, f) => acc * f.apMult, 1) * (1 + sum('apMultAdd'));
 
-    const crit = Math.min(1, (b.crit + sum('critBonus')) / 100);
-    const critMult = 1.75 + b.critDmg / 100;
+    const crit = Math.min(1, (b.crit + sum('critBonus')) / 100 * (passive.critChanceMult || 1));
+    const critMult = (1.75 + b.critDmg / 100) * (passive.critScale || 1);
     const bonusASPct = s.attackspeedperlevel * L + b.as + sum('asBonus');
     // Real formula: base AS + bonus AS% x the champion's attack speed ratio (from game files when available).
-    const asBase = (kit && kit.asBase) || s.attackspeed, asRatio = (kit && kit.asRatio) || s.attackspeed;
-    const as = Math.min(2.5, asBase + asRatio * bonusASPct / 100);
+    const asBase = (kit && kit.asBase) || s.attackspeed, asRatio = (kit && kit.asRatio) ?? s.attackspeed;
+    // Some champions (Jhin) have a locked attack speed: bonus attack speed is converted by their passive instead.
+    const as = passive.fixedAS ? asBase : Math.min(2.5, asBase + asRatio * bonusASPct / 100);
     const baseArmor = s.armor + s.armorperlevel * L, baseMR = s.spellblock + s.spellblockperlevel * L;
     const ah = b.ah + sum('ahBonus') + sum('ahPerBonusAd') * bonusAD;
     const pen = sum('pen');
     arpenKeep *= 1 - pen; mpenKeep *= 1 - pen;
 
-    return { baseAD, bonusAD, totalAD: baseAD + bonusAD, ap, as, asBase, baseArmor, bonusArmor: b.armor, baseMR, bonusMR: b.mr, champMana, crit, critMult, ah, baseHP, bonusHP, maxHP,
+    return { baseAD, bonusAD, totalAD: baseAD + bonusAD, ap, as, asBase, bonusASPct, baseArmor, bonusArmor: b.armor, baseMR, bonusMR: b.mr, champMana, crit, critMult, ah, baseHP, bonusHP, maxHP,
       maxMana, leth: b.leth, mpenFlat: b.mpenFlat, arpenKeep, mpenKeep, fx, has, sum, muramana };
+  }
+
+  // Values a champion passive formula can read (all level 18). bas = bonus attack speed as a fraction.
+  function passiveCtx(st, dummyHp, t, ch) {
+    return { lvl: 18, t, ad: st.totalAD, bad: st.bonusAD, base: st.baseAD, ap: st.ap, hp: st.maxHP, bhp: st.bonusHP,
+      arm: st.baseArmor + st.bonusArmor, barm: st.bonusArmor, mr: st.baseMR + st.bonusMR, bmr: st.bonusMR,
+      crit: st.crit, cm: st.critMult, as: st.as, bas: st.bonusASPct / 100, mana: st.maxMana, bmana: st.maxMana - st.champMana,
+      leth: st.leth, ranged: ch.ranged, thp: dummyHp, tmax: DUMMY.hp, tmiss: DUMMY.hp - dummyHp };
   }
 
   // ---------- Simulation ----------
@@ -238,13 +247,27 @@
     const extraStats = { ...(stackInfo.stats || {}) };
     const mechOf = kind => spells ? spells.filter(s => s.mech && s.mech.kind === kind) : [];
     for (const s of mechOf('buff')) for (const [k, v] of Object.entries(s.mech.stats)) extraStats[k] = (extraStats[k] || 0) + v;
-    const st = computeStats(ch, items, kit, extraStats);
+    // Champion passive (passives.js). Stat passives are applied in a second pass because many scale with
+    // the champion's own stats (e.g. Jhin turns bonus attack speed and crit into AD).
+    const P = opts.noPassive ? null : ((root.Potenshall.ChampPassives || {})[ch.id] || null);
+    let st = computeStats(ch, items, kit, extraStats, P);
+    if (P && P.stats) {
+      const add = P.stats(passiveCtx(st, DUMMY.hp, 0, ch));
+      const merged = { ...extraStats };
+      for (const [k, v] of Object.entries(add)) merged[k] = (merged[k] || 0) + (v || 0);
+      st = computeStats(ch, items, kit, merged, P);
+    }
     const pr = profile(ch);
     if (spells) {
       pr.uptime = 1;
-      pr.autoAmp = spells.passiveCovered ? 1 : (AUTO_AMP_REAL[pr.arch] || 1);
-      if (spells.passiveCovered) pr.onHitAp = 0; // real passive modeled instead of the generic on-hit stand-in
+      pr.autoAmp = (P || spells.passiveCovered) ? 1 : (AUTO_AMP_REAL[pr.arch] || 1);
+      if (P || spells.passiveCovered) pr.onHitAp = 0; // real passive modeled instead of the generic on-hit stand-in
+    } else if (P) {
+      // Estimated kit: the archetype amp also stands in for abilities, so only half of it is passive.
+      pr.autoAmp = 1 + (pr.autoAmp - 1) / 2; pr.onHitAp = 0;
     }
+    const disabled = new Set((P && P.disable) || []);
+    const castable = spells ? spells.filter(s => !disabled.has(s.slot)) : null;
     const everyN = mechOf('everyN');
     let empowered = null; // armed by an empowerAuto ability, spent on the next attack
     const { has, sum } = st;
@@ -264,8 +287,10 @@
     };
 
     function deal(t, raw, type, src, kind) {
-      if (raw <= 0) return 0;
+      if (!(raw > 0)) return 0;
       let amt = raw;
+      if (P && P.amp) amt *= P.amp(kind, type, pctx(t));
+      if (P && P.magicEcho && type === 'magic') record(t, P.magicEcho * raw, 'true', PSRC);
       const ramp = has('ramp').reduce((acc, f) => acc + Math.min(f.ramp.cap, f.ramp.per * Math.floor(t + 1)), 0);
       amt *= 1 + ramp / 100;
       if (kind === 'ability') amt *= (1 + sum('abilityAmp') * (t < 8 ? 1 : 0)) * (1 + 0.03 * shojinStacks * (hasAny('abilityRamp') ? 1 : 0));
@@ -285,8 +310,43 @@
       record(t, amt, type, src);
       const exec = sum('execute');
       if (exec && dummyHp > 0 && dummyHp < exec * DUMMY.hp) record(t, dummyHp, 'true', 'The Collector');
+      if (P && P.execute && dummyHp > 0 && dummyHp < P.execute * DUMMY.hp) record(t, dummyHp, 'true', PSRC);
       return amt;
     }
+
+    // ---- Champion passive helpers ----
+    const PSRC = P ? `Passive · ${P.name}` : 'Passive';
+    const pctx = t => passiveCtx(st, dummyHp, t, ch);
+    // A passive damage spec returns a number (of spec.type) or { physical, magic, true }.
+    const dealP = (t, spec, fn, kind, label) => {
+      const out = fn(pctx(t));
+      if (typeof out === 'number') deal(t, out, spec.type || 'physical', label || PSRC, kind || 'passive');
+      else if (out) for (const ty of ['physical', 'magic', 'true']) if (out[ty]) deal(t, out[ty], ty, label || PSRC, kind || 'passive');
+    };
+    const dots = []; // { until, perTick, type, key }
+    const addDot = (t, spec, fn) => {
+      const c = pctx(t), out = fn(c), dur = spec.dot;
+      const parts = typeof out === 'number' ? { [spec.type || 'magic']: out } : out;
+      for (const [ty, v] of Object.entries(parts || {})) {
+        if (!v) continue;
+        const key = (spec.key || 'p') + ty;
+        const i = dots.findIndex(d => d.key === key && !spec.stacks);
+        const d = { until: t + dur, perTick: v / (dur * 2), type: ty, key };
+        if (i >= 0) dots[i] = d; else dots.push(d);
+      }
+    };
+    const fireP = (t, spec, kind) => spec.dot ? addDot(t, spec, spec.dmg) : dealP(t, spec, spec.dmg, kind);
+    let pHits = 0, pAbilities = 0, pArmed = 0, pTimedArmed = false, pTimedReady = P && P.timedAuto ? (P.timedAuto.start || 0) : Infinity;
+    let pAbilityReady = 0, pAfterReady = 0, pHitsReady = 0, pNReady = 0, pAutoNReady = 0, pStack = { n: 0, until: -1 };
+    let pAuras = P && P.aura ? -1 : null;
+    const countHit = t => {
+      pHits++;
+      if (P && P.aura && pHits >= (P.aura.hits || 1)) pAuras = t + (P.aura.linger || 4);
+      if (P && P.everyNHits && pHits % P.everyNHits.n === 0 && t >= pHitsReady) {
+        fireP(t, P.everyNHits); pHitsReady = t + (P.everyNHits.cd || 0);
+      }
+      if (P && P.stackDot) { pStack.n = Math.min(P.stackDot.max, pStack.n + 1); pStack.until = t + P.stackDot.dur; }
+    };
 
     function record(t, amt, type, src) {
       total += amt; byType[type] += amt; bySource[src] = (bySource[src] || 0) + amt;
@@ -306,7 +366,22 @@
     let malignanceUntil = -1, empoweredAutos = 0, sunderedUsed = false, autoCount = 0;
     let heartsteelDone = false, stormsurgeAt = null, stormsurgeDone = false, titanicReady = 0;
 
-    const onAbilityHit = (t, first) => {
+    const onAbilityHit = (t, first, cast) => {
+      if (P) {
+        pAbilities++;
+        if (P.afterAbility && t >= pAfterReady) {
+          pArmed = Math.min(P.afterAbility.max || P.afterAbility.charges || 1, pArmed + (P.afterAbility.charges || 1));
+          pAfterReady = t + (P.afterAbility.cd || 0);
+        }
+        if (P.onAbility && t >= pAbilityReady) { fireP(t, P.onAbility); pAbilityReady = t + (P.onAbility.cd || 0); }
+        if (P.everyNAbility && pAbilities % P.everyNAbility.n === 0 && t >= pNReady) {
+          const e = P.everyNAbility; pNReady = t + (e.cd || 0);
+          if (e.echo && cast) deal(t, cast.raw * e.echo, cast.type, `${cast.label} (echo)`, 'ability');
+          if (e.dmg) fireP(t, e);
+        }
+        if (P.timedAuto && P.timedAuto.abilityCdr) pTimedReady -= P.timedAuto.abilityCdr;
+        countHit(t);
+      }
       if (spellblade && t >= sbReadyAt) { sbArmed = true; sbReadyAt = t + 1.5; }
       for (const f of has('burn')) burnUntil[f.burn] = t + 3;
       if (hasAny('abilityRamp')) shojinStacks = Math.min(4, shojinStacks + 1);
@@ -319,7 +394,8 @@
       const d = comboDamage();
       deal(t, d.physical * mult, 'physical', src, 'ability');
       deal(t, d.magic * mult, 'magic', src, 'ability');
-      onAbilityHit(t, first);
+      const big = d.magic > d.physical ? 'magic' : 'physical';
+      onAbilityHit(t, first, { raw: (d.physical + d.magic) * mult, type: big, label: src });
     };
 
     const onHitEffects = (t, times) => {
@@ -331,21 +407,42 @@
           if (o.ownHpMelee) deal(t, st.maxHP * (ch.ranged ? o.ownHpRanged : o.ownHpMelee), 'physical', f.item, 'onhit');
         }
         if (pr.onHitAp) deal(t, pr.onHitAp * st.ap + 20, 'magic', 'Champion on-hit', 'onhit');
+        if (P && P.onHit) { if (P.onHit.dot) addDot(t, P.onHit, P.onHit.dmg); else dealP(t, P.onHit, P.onHit.dmg, 'onhit'); }
         if (st.muramana) deal(t, 0.012 * st.maxMana, 'physical', 'Manamune', 'onhit');
       }
     };
 
     const basicAttack = (t) => {
       autoCount++;
-      let mult = 1 + st.crit * (st.critMult - 1);
+      const pN = P && P.everyN && autoCount % P.everyN.n === 0 && t >= pAutoNReady ? P.everyN : null;
+      let mult = P && P.noCrit ? 1 : 1 + st.crit * (st.critMult - 1);
       let trueBonus = 0;
-      if (hasAny('sundered') && !sunderedUsed) { sunderedUsed = true; mult = st.critMult; }
+      if (pN && pN.crit) mult = Math.max(st.critMult, pN.minCrit || 0); // e.g. Jhin's 4th shot always crits
+      else if (hasAny('sundered') && !sunderedUsed) { sunderedUsed = true; mult = st.critMult; }
       else if (empoweredAutos > 0) {
         empoweredAutos--;
         mult = Math.max(mult, 1 + 0.8 * (st.critMult - 1));
         trueBonus = 0.15 * st.totalAD * st.critMult * st.crit;
       }
-      deal(t, st.totalAD * mult * pr.autoAmp, 'physical', 'Basic Attacks', 'attack');
+      let autoDmg = st.totalAD * mult * pr.autoAmp;
+      if (P && P.autoMult) autoDmg *= typeof P.autoMult === 'function' ? P.autoMult(pctx(t)) : P.autoMult;
+      if (P && P.autoSplit) {
+        for (const [ty, share] of Object.entries(P.autoSplit)) deal(t, autoDmg * share, ty, 'Basic Attacks', 'attack');
+        autoDmg *= 1 - Object.values(P.autoSplit).reduce((a, b) => a + b, 0);
+      }
+      deal(t, autoDmg, 'physical', 'Basic Attacks', 'attack');
+      let pExtraOnHit = 0;
+      if (P) {
+        if (pN) { if (pN.dmg) fireP(t, pN); if (pN.extraOnHit) pExtraOnHit++; pAutoNReady = t + (pN.cd || 0); }
+        if (pArmed > 0) {
+          pArmed--;
+          const a = P.afterAbility;
+          if (a.dmg) fireP(t, a);
+          if (a.extraAttack) { deal(t, st.totalAD * a.extraAttack * (1 + st.crit * (st.critMult - 1)), 'physical', PSRC, 'attack'); pExtraOnHit++; }
+        }
+        if (pTimedArmed) { pTimedArmed = false; fireP(t, P.timedAuto); }
+        countHit(t);
+      }
       if (trueBonus) deal(t, trueBonus, 'true', 'Fiendhunter Bolts', 'attack');
       if (empowered) {
         const e = empowered; empowered = null;
@@ -358,8 +455,8 @@
         deal(t, raw, m.type, `${sp.slot} · ${labels[sp.slot] || sp.name}`, 'onhit');
       }
 
-      let onHitTimes = 1;
-      if (hasAny('guinsoo') && autoCount % 3 === 0) onHitTimes = 2;
+      let onHitTimes = 1 + pExtraOnHit;
+      if (hasAny('guinsoo') && autoCount % 3 === 0) onHitTimes++;
       if (sbArmed) {
         sbArmed = false;
         const v = spellbladeValue(spellblade);
@@ -396,7 +493,7 @@
     });
     const tryCastRealSpell = (t) => {
       if (t < castLock) return;
-      for (const sp of spells) {
+      for (const sp of castable) {
         if ((ready[sp.slot] || 0) > t + 1e-9) continue;
         if (sp.mech && sp.mech.kind === 'empowerAuto') {
           if (empowered) continue; // don't waste it before the armed attack lands
@@ -411,7 +508,7 @@
         const dmg = root.Potenshall.Abilities.evalSpellDamage(sp, spellCtx());
         const label = `${sp.slot} · ${labels[sp.slot] || sp.name}`;
         deal(t, dmg, sp.type, label, 'ability');
-        onAbilityHit(t, t >= bastionReady);
+        onAbilityHit(t, t >= bastionReady, { raw: dmg, type: sp.type, label });
         if (t >= bastionReady) bastionReady = t + 3;
         if (sp.slot === 'R') {
           if (hasAny('malignance')) { malignanceUntil = t + 3; malignanceShred = 10; }
@@ -426,6 +523,7 @@
     // Event schedule
     const attackInterval = 1 / (st.as * pr.uptime);
     let nextAuto = 0.1, nextCombo = 0, comboQueue = [], ultDone = false, nextDespair = 0;
+    let pPeriodicAt = P && P.periodic ? (P.periodic.start || 0) : Infinity, pAuraAt = 0, pTimedOnceDone = false;
     if (hasAny('rocketbelt')) deal(0, 125 + 0.15 * st.ap, 'magic', 'Hextech Rocketbelt', 'item');
     if (spells) nextCombo = Infinity;
 
@@ -447,13 +545,39 @@
         }
         return false;
       });
+      // Passive timers: empowered attack coming off cooldown, periodic effects, auras.
+      if (P && P.timedAuto && !pTimedArmed && t >= pTimedReady && !(P.timedAuto.once && pTimedOnceDone)) {
+        const ta = P.timedAuto;
+        if (!ta.cond || ta.cond(pctx(t))) { pTimedArmed = true; pTimedOnceDone = true; pTimedReady = t + (ta.every || Infinity); }
+      }
+      if (P && P.periodic && t >= pPeriodicAt) {
+        const pe = P.periodic; pPeriodicAt = t + pe.every;
+        if (!pe.cond || pe.cond(pctx(t))) fireP(t, pe);
+      }
       if (t >= nextAuto) {
         basicAttack(t);
-        nextAuto = t + (empoweredAutos > 0 ? attackInterval / 1.5 : attackInterval);
+        let gap = empoweredAutos > 0 ? attackInterval / 1.5 : attackInterval;
+        if (P && P.magazine && autoCount % P.magazine.size === 0) {
+          const rl = typeof P.magazine.reload === 'function' ? P.magazine.reload(pctx(t)) : P.magazine.reload;
+          gap = Math.max(gap, rl);
+        }
+        nextAuto = t + gap;
       }
       // Half-second damage-over-time ticks
       if (Math.floor(t * 2) !== lastBurnTick) {
         lastBurnTick = Math.floor(t * 2);
+        for (let i = dots.length - 1; i >= 0; i--) {
+          const d = dots[i];
+          if (t > d.until) { dots.splice(i, 1); continue; }
+          deal(t, d.perTick, d.type, PSRC, 'dot');
+        }
+        if (P && P.stackDot && pStack.n > 0) {
+          if (t > pStack.until) pStack.n = 0;
+          else deal(t, pStack.n * P.stackDot.perStack(pctx(t)) / 2, P.stackDot.type || 'physical', PSRC, 'dot');
+        }
+        if (P && P.aura && pAuras !== null && t <= pAuras) dealP(t, P.aura, c => {
+          const v = P.aura.dmg(c); return typeof v === 'number' ? v / 2 : Object.fromEntries(Object.entries(v).map(([k, x]) => [k, x / 2]));
+        }, 'dot');
         if (t <= burnUntil.liandry) deal(t, 0.01 * DUMMY.hp, 'magic', "Liandry's Torment", 'dot');
         if (t <= burnUntil.blackfire) deal(t, (20 + 0.04 * st.ap) / 2, 'magic', 'Blackfire Torch', 'dot');
         if (t <= malignanceUntil) deal(t, (20 + 0.05 * st.ap) / 2, 'magic', 'Malignance', 'dot');
@@ -471,7 +595,7 @@
       stats: { ad: st.totalAD, bonusAD: st.bonusAD, ap: st.ap, as: st.as, crit: st.crit, critMult: st.critMult,
         ah: st.ah, hp: st.maxHP, mana: st.maxMana, leth: st.leth,
         armorPen: 1 - st.arpenKeep, magicPen: 1 - st.mpenKeep, mpenFlat: st.mpenFlat },
-      profile: pr, realKit: !!spells,
+      profile: pr, realKit: !!spells, passive: P ? { name: P.name, note: P.note || '' } : null,
     };
   }
 

@@ -214,6 +214,7 @@ footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size
 
 <script src="engine.js"></script>
 <script src="abilities.js"></script>
+<script src="passives.js"></script>
 <script>
 (() => {
 'use strict';
@@ -575,6 +576,7 @@ function showResults(res, isBest){
           <span><b>${(res.total / P.DUMMY.hp).toFixed(2)}×</b> dummies</span>
           <span>First kill <b>${res.firstKill !== null ? res.firstKill.toFixed(2) + 's' : 'never'}</b></span>
           <span title="Real = ability formulas read from Riot's game files. Estimated = class-based approximation.">Abilities <b>${res.realKit ? 'real game data' : 'estimated'}</b></span>
+          ${res.passive ? `<span title="${esc(res.passive.note)}">Passive <b>${esc(res.passive.name)}</b></span>` : ''}
           ${isBest ? '<span style="color:var(--good)"><b style="color:var(--good)">★ New personal best</b></span>' : ''}
         </div>
       </div>
