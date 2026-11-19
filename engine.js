@@ -556,7 +556,7 @@
     const mitigation = type => type === 'true' ? 1
       : type === 'magic' ? 100 / (100 + Math.max(0, DUMMY.mr * (1 - 0.075 * bloodStacks) * st.mpenKeep - st.mpenFlat - malignanceShred))
       : 100 / (100 + Math.max(0, DUMMY.armor * (1 - 0.06 * cleaverStacks) * st.arpenKeep - st.leth));
-    let lastUltAt = null; const summons = [];
+    let lastUltAt = null; const summons = []; let empLastHits = 0;
     const onUltimate = t => {
       lastUltAt = t;
       if (hasAny('malignance')) { malignanceUntil = t + 3; malignanceShred = 10; }
@@ -621,8 +621,11 @@
           return;
         }
         if (!sp.damaging) continue;
-        const dmg = root.Potenshall.Abilities.evalSpellDamage(sp, spellCtx());
-        const label = `${sp.slot} · ${sp.lastVariant || labels[sp.slot] || sp.name}`;
+        let dmg = root.Potenshall.Abilities.evalSpellDamage(sp, spellCtx());
+        // Empowered ability after N actions (Pantheon's Mortal Will).
+        let empTag = '';
+        if (P && P.empowerAfter && sp.slot === P.empowerAfter.slot && pHits - empLastHits >= P.empowerAfter.actions) { dmg *= P.empowerAfter.mult; empLastHits = pHits; empTag = ' (empowered)'; }
+        const label = `${sp.slot} · ${sp.lastVariant || labels[sp.slot] || sp.name}${empTag}`;
         deal(t, dmg, sp.type, label, 'ability');
         // Shadows (Zed): every active shadow repeats this ability on the target with its own formula.
         if (P && P.shadows && sp.slot === P.shadows.slot) {

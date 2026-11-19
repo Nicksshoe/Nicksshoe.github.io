@@ -557,7 +557,7 @@
     const mitigation = type => type === 'true' ? 1
       : type === 'magic' ? 100 / (100 + Math.max(0, DUMMY.mr * (1 - 0.075 * bloodStacks) * st.mpenKeep - st.mpenFlat - malignanceShred))
       : 100 / (100 + Math.max(0, DUMMY.armor * (1 - 0.06 * cleaverStacks) * st.arpenKeep - st.leth));
-    let lastUltAt = null; const summons = [];
+    let lastUltAt = null; const summons = []; let empLastHits = 0;
     const onUltimate = t => {
       lastUltAt = t;
       if (hasAny('malignance')) { malignanceUntil = t + 3; malignanceShred = 10; }
@@ -622,8 +622,11 @@
           return;
         }
         if (!sp.damaging) continue;
-        const dmg = root.Potenshall.Abilities.evalSpellDamage(sp, spellCtx());
-        const label = `${sp.slot} · ${sp.lastVariant || labels[sp.slot] || sp.name}`;
+        let dmg = root.Potenshall.Abilities.evalSpellDamage(sp, spellCtx());
+        // Empowered ability after N actions (Pantheon's Mortal Will).
+        let empTag = '';
+        if (P && P.empowerAfter && sp.slot === P.empowerAfter.slot && pHits - empLastHits >= P.empowerAfter.actions) { dmg *= P.empowerAfter.mult; empLastHits = pHits; empTag = ' (empowered)'; }
+        const label = `${sp.slot} · ${sp.lastVariant || labels[sp.slot] || sp.name}${empTag}`;
         deal(t, dmg, sp.type, label, 'ability');
         // Shadows (Zed): every active shadow repeats this ability on the target with its own formula.
         if (P && P.shadows && sp.slot === P.shadows.slot) {
@@ -1230,7 +1233,9 @@
   };
 
   const P = {
-    Aatrox: { name: 'Deathbringer Stance', note: 'Empowered attack: 12% max HP', timedAuto: { every: 16, abilityCdr: 2, type: 'physical', dmg: c => 0.12 * c.tmax } },
+    // World Ender (R) is cast at the start: +40% total AD for 10s, the whole fight (game data: RTotalADAmp 0.4).
+    Aatrox: { name: 'Deathbringer Stance + World Ender', note: 'Empowered attack: 12% max HP; R: +40% total AD for the whole fight', stats: c => ({ ad: 0.4 * c.ad }),
+      timedAuto: { every: 16, abilityCdr: 2, type: 'physical', dmg: c => 0.12 * c.tmax } },
     Ahri: none('Essence Theft', 'Healing only'),
     Akali: { name: "Assassin's Mark", note: 'Next attack after an ability', afterAbility: { type: 'magic', dmg: c => 144 + 0.6 * c.bad + 0.5 * c.ap } },
     Akshan: { name: 'Dirty Fighting', note: 'Double-shot attacks + every 3rd hit', autoMult: 1.5, everyNHits: { n: 3, type: 'magic', dmg: c => 150 + 0.6 * c.ap } },
@@ -1385,7 +1390,8 @@
     Olaf: { name: 'Berserker Rage', note: 'Attack speed from missing health (maxes at 30% health)', stats: c => ({ as: 100 * Math.min(1, c.smiss / 0.7) }) },
     Orianna: { name: 'Clockwork Windup', note: 'On-hit, stacking on repeated attacks', onHit: { type: 'magic', dmg: c => (59 + 0.15 * c.ap) * 1.4 } },
     Ornn: none('Living Forge'),
-    Pantheon: none('Mortal Will'),
+    // Mortal Will: every 5 actions (attacks and abilities) empower his next Q: +70% on the close-range stab (game data).
+    Pantheon: { name: 'Mortal Will', note: 'After 5 attacks/abilities, the next Q deals +70%', empowerAfter: { actions: 5, slot: 'Q', mult: 1.7 } },
     Poppy: { name: 'Iron Ambassador', note: 'Thrown buckler attack', timedAuto: { every: 7, type: 'magic', dmg: () => 180 } },
     Pyke: { name: 'Gift of the Drowned Ones', note: 'Bonus HP turns into AD', stats: c => ({ ad: c.bhp / 14, hp: -c.bhp }) },
     Qiyana: { name: 'Royal Privilege', note: 'First hit on a new target', timedAuto: { once: true, type: 'physical', dmg: c => 117 + 0.55 * c.bad + 0.45 * c.ap } },
