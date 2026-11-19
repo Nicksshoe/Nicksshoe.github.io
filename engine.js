@@ -149,7 +149,7 @@
     "stormsurge": { stormsurge: true, tip: 'Squall after big burst' },
     "hextech rocketbelt": { rocketbelt: true, tip: 'Opening missile volley' },
     "malignance": { malignance: true, tip: 'Hatefog burn on ult' },
-    "bastionbreaker": { bastion: true, tip: 'Shaped Charge: 40 + 150% lethality true damage on every ability (half for ranged)' },
+    "bastionbreaker": { bastion: true, tip: 'Shaped Charge: 40 + 150% lethality true damage on an ability hit, 20s cooldown (half for ranged)' },
     "spear of shojin": { ahBonus: 25, abilityRamp: 0.03, tip: 'Ability dmg ramps to +12%' },
     "actualizer": { ahBonus: 20, abilityAmp: 0.15, tip: 'Empowered ability damage' },
     "navori flickerblade": { ahBonus: 20, tip: 'Attacks shorten cooldowns' },
@@ -398,7 +398,7 @@
     let sbReadyAt = 0, sbArmed = false;
 
     let burnUntil = { liandry: -1, blackfire: -1 }, lastBurnTick = -1, ludenReady = 0;
-    let malignanceUntil = -1, empoweredAutos = 0, sunderedReady = 0, sunderedShare = 0, autoCount = 0, zekeUntil = -1;
+    let bastionItemReady = 0, malignanceUntil = -1, empoweredAutos = 0, sunderedReady = 0, sunderedShare = 0, autoCount = 0, zekeUntil = -1;
     // Eclipse: two separate attacks/abilities within 2s deal 8% max HP (ranged 62.5% of that), 6s cooldown.
     let eclipseLast = -Infinity, eclipseReady = 0;
     const eclipseHit = t => {
@@ -432,8 +432,8 @@
       if (hasAny('abilityRamp')) shojinStacks = Math.min(4, shojinStacks + 1);
       if (hasAny('luden') && t >= ludenReady) { ludenReady = t + 12; deal(t, (75 + 0.05 * st.ap) * 2, 'magic', "Luden's Echo", 'item'); } // 1 bolt + 5 repeats at 20%
       eclipseHit(t);
-      // Shaped Charge (game data): every damaging ability adds 40 + 150% lethality true damage; ranged deal 50%.
-      if (hasAny('bastion') && !(cast && cast.noDamage)) deal(t, (40 + 1.5 * st.leth) * (ch.ranged ? 0.5 : 1), 'true', 'Bastionbreaker', 'item');
+      // Shaped Charge (game data): a damaging ability adds 40 + 150% lethality true damage (ranged 50%), 20s cooldown.
+      if (hasAny('bastion') && !(cast && cast.noDamage) && t >= bastionItemReady && (bastionItemReady = t + 20)) deal(t, (40 + 1.5 * st.leth) * (ch.ranged ? 0.5 : 1), 'true', 'Bastionbreaker', 'item');
       if (first && st.muramana) deal(t, 0.035 * st.maxMana, 'physical', 'Manamune', 'item');
     };
 
