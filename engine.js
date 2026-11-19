@@ -563,6 +563,10 @@
       }
       if (trueBonus) deal(t, trueBonus, 'true', 'Fiendhunter Bolts', 'attack');
       let empRaw = 0;
+      if (eArm) { // Kindred E: the pounce lands on the Nth attack after the cast
+        if (t > eArm.until) eArm = null;
+        else if (--eArm.left <= 0) { const e = eArm; eArm = null; deal(t, e.raw(), e.type, e.label, 'ability'); }
+      }
       if (empowered) {
         const e = empowered;
         e.left--;
@@ -642,12 +646,24 @@
         baseHp: DUMMY.baseHp, bonusHp: DUMMY.hp - DUMMY.baseHp },
       stacks: stackInfo.counter ?? 0,
     });
-    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute', 'mark', 'clone']);
+    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute', 'mark', 'clone', 'pet', 'afterHits']);
     let markState = null; // Zed-style mark: stores damage dealt until it pops
     const recastLeft = {}; // recasts still available per slot
     let channelUntil = -1; // a channel that keeps the champion from attacking or casting (Aurelion Sol Q)
     let cloneUntil = -1, cloneMult = 0; // Wukong's clone copies attacks and his R
-    let tempAS = 0, tempASUntil = -1;    // attack speed from a cast (Wukong E)
+    let tempAS = 0, tempASUntil = -1;    // attack speed from a cast (Wukong E, Kindred Q)
+    let zoneUntil = -1, eArm = null;      // Kindred: W's territory, E's armed pounce
+    // Multi-charge abilities (Karthus Q, Nilah E...): cast charges back to back, then wait for each recharge.
+    const ammoSt = {};
+    const afterCharge = (sp, t, normal) => {
+      if (!sp.charges) return normal;
+      const s = ammoSt[sp.slot] || (ammoSt[sp.slot] = { n: sp.charges, nextAt: Infinity });
+      const rech = cdOf(sp.slot, sp.recharge);
+      while (s.n < sp.charges && t >= s.nextAt - 1e-9) { s.n++; s.nextAt = s.n < sp.charges ? s.nextAt + rech : Infinity; }
+      if (s.n >= sp.charges) s.nextAt = t + rech;
+      s.n--;
+      return s.n > 0 ? t + Math.max(sp.lockout || 0, sp.castTime || 0.25) : s.nextAt;
+    };
     let shredPct = 0, shredUntil = -1;   // % armor removed by an ability (Wukong Q)
     const spellQueue = []; // scheduled ability hits/ticks: { at, raw(), type, label }
     // Expected share of a hit that gets through the dummy's resists right now (used to time executes).
@@ -734,6 +750,7 @@
             resetNow = !!m.resetOnKill && kills > killsBefore;
           } else if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, label, 'ability');
           // Temporary attack speed from a cast (Wukong E); game data stores 60% as 0.6.
+          if (m.asCalc) { const a = ev(m.asCalc); tempAS = a < 5 ? a * 100 : a; tempASUntil = t + (m.asDur || 4); } // Kindred Q
           if (m.asBonus) { tempAS = m.asBonus < 5 ? m.asBonus * 100 : m.asBonus; tempASUntil = t + (m.asDur || 5); }
           else if (m.kind === 'multi') for (const p of m.parts) // a part is a formula, a flat data value, or a share of max HP
             first += deal(t, (p.calc ? ev(p.calc) * (p.pctOfMax ? DUMMY.hp : 1) : 0) + (p.flat || 0) + (p.pctMaxHp || 0) * DUMMY.hp, p.type, label, 'ability');
@@ -750,6 +767,16 @@
             if (m.burstEvery) for (let k = m.burstEvery; k <= dur + 1e-9; k += m.burstEvery) for (const p of m.bursts)
               spellQueue.push({ at: t + k, label, type: p.type, raw: () => ev(p.calc) * (p.pctMaxHp ? DUMMY.hp : 1) });
             if (m.blocksAttacks) channelUntil = t + dur;
+          } else if (m.kind === 'pet') {
+            // Kindred W: Wolf bites for the whole zone at its own attack speed (base + level + a share of her bonus AS);
+            // each bite is flat damage plus a share of the target's current health.
+            const wolfAS = m.petAS * (1 + (m.petASPerLevel * 17 + (m.share || 0) * st.bonusASPct) / 100);
+            const dur = Math.min(m.duration || 8, T), gap = 1 / wolfAS;
+            for (let k = 0.25; k <= dur + 1e-9; k += gap) spellQueue.push({ at: t + k, label, type: m.type, raw: () => ev(m.calc) + ev(m.pctCalc) * dummyHp });
+            zoneUntil = t + dur;
+          } else if (m.kind === 'afterHits') {
+            // Kindred E: Wolf pounces on her Nth attack within the window: flat + a share of missing health (crit-scaled).
+            eArm = { left: m.hits || 3, until: t + (m.window || 4), label, type: m.type, raw: () => ev(m.calc) + ev(m.pctMissingCalc) * (DUMMY.hp - dummyHp) };
           }
           onAbilityHit(t, t >= bastionReady, { raw: first, type: m.type, label, noDamage: m.kind === 'clone' });
           if (t >= bastionReady) bastionReady = t + 3;
@@ -759,7 +786,7 @@
           if (sp.slot === 'R' && opening) onUltimate(t);
           if (opening) castDebuff(t, sp.slot);
           ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : m.recasts && recastLeft[sp.slot] > 0 ? t + (m.recastGap || 1)
-            : t + cdOf(sp.slot, sp.cooldown);
+            : afterCharge(sp, t, t + cdOf(sp.slot, m.zoneCd && t < zoneUntil ? m.zoneCd : sp.cooldown)); // Kindred Q: shorter inside her zone
           castLock = t + sp.castTime;
           return;
         }
@@ -789,7 +816,7 @@
         if (t >= bastionReady) bastionReady = t + 3;
         if (sp.slot === 'R') onUltimate(t);
         castDebuff(t, sp.slot);
-        ready[sp.slot] = t + cdOf(sp.slot, sp.cooldown);
+        ready[sp.slot] = afterCharge(sp, t, t + cdOf(sp.slot, sp.cooldown));
         castLock = t + sp.castTime;
         return;
       }

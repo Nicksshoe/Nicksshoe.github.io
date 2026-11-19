@@ -564,6 +564,10 @@
       }
       if (trueBonus) deal(t, trueBonus, 'true', 'Fiendhunter Bolts', 'attack');
       let empRaw = 0;
+      if (eArm) { // Kindred E: the pounce lands on the Nth attack after the cast
+        if (t > eArm.until) eArm = null;
+        else if (--eArm.left <= 0) { const e = eArm; eArm = null; deal(t, e.raw(), e.type, e.label, 'ability'); }
+      }
       if (empowered) {
         const e = empowered;
         e.left--;
@@ -643,12 +647,24 @@
         baseHp: DUMMY.baseHp, bonusHp: DUMMY.hp - DUMMY.baseHp },
       stacks: stackInfo.counter ?? 0,
     });
-    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute', 'mark', 'clone']);
+    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute', 'mark', 'clone', 'pet', 'afterHits']);
     let markState = null; // Zed-style mark: stores damage dealt until it pops
     const recastLeft = {}; // recasts still available per slot
     let channelUntil = -1; // a channel that keeps the champion from attacking or casting (Aurelion Sol Q)
     let cloneUntil = -1, cloneMult = 0; // Wukong's clone copies attacks and his R
-    let tempAS = 0, tempASUntil = -1;    // attack speed from a cast (Wukong E)
+    let tempAS = 0, tempASUntil = -1;    // attack speed from a cast (Wukong E, Kindred Q)
+    let zoneUntil = -1, eArm = null;      // Kindred: W's territory, E's armed pounce
+    // Multi-charge abilities (Karthus Q, Nilah E...): cast charges back to back, then wait for each recharge.
+    const ammoSt = {};
+    const afterCharge = (sp, t, normal) => {
+      if (!sp.charges) return normal;
+      const s = ammoSt[sp.slot] || (ammoSt[sp.slot] = { n: sp.charges, nextAt: Infinity });
+      const rech = cdOf(sp.slot, sp.recharge);
+      while (s.n < sp.charges && t >= s.nextAt - 1e-9) { s.n++; s.nextAt = s.n < sp.charges ? s.nextAt + rech : Infinity; }
+      if (s.n >= sp.charges) s.nextAt = t + rech;
+      s.n--;
+      return s.n > 0 ? t + Math.max(sp.lockout || 0, sp.castTime || 0.25) : s.nextAt;
+    };
     let shredPct = 0, shredUntil = -1;   // % armor removed by an ability (Wukong Q)
     const spellQueue = []; // scheduled ability hits/ticks: { at, raw(), type, label }
     // Expected share of a hit that gets through the dummy's resists right now (used to time executes).
@@ -735,6 +751,7 @@
             resetNow = !!m.resetOnKill && kills > killsBefore;
           } else if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, label, 'ability');
           // Temporary attack speed from a cast (Wukong E); game data stores 60% as 0.6.
+          if (m.asCalc) { const a = ev(m.asCalc); tempAS = a < 5 ? a * 100 : a; tempASUntil = t + (m.asDur || 4); } // Kindred Q
           if (m.asBonus) { tempAS = m.asBonus < 5 ? m.asBonus * 100 : m.asBonus; tempASUntil = t + (m.asDur || 5); }
           else if (m.kind === 'multi') for (const p of m.parts) // a part is a formula, a flat data value, or a share of max HP
             first += deal(t, (p.calc ? ev(p.calc) * (p.pctOfMax ? DUMMY.hp : 1) : 0) + (p.flat || 0) + (p.pctMaxHp || 0) * DUMMY.hp, p.type, label, 'ability');
@@ -751,6 +768,16 @@
             if (m.burstEvery) for (let k = m.burstEvery; k <= dur + 1e-9; k += m.burstEvery) for (const p of m.bursts)
               spellQueue.push({ at: t + k, label, type: p.type, raw: () => ev(p.calc) * (p.pctMaxHp ? DUMMY.hp : 1) });
             if (m.blocksAttacks) channelUntil = t + dur;
+          } else if (m.kind === 'pet') {
+            // Kindred W: Wolf bites for the whole zone at its own attack speed (base + level + a share of her bonus AS);
+            // each bite is flat damage plus a share of the target's current health.
+            const wolfAS = m.petAS * (1 + (m.petASPerLevel * 17 + (m.share || 0) * st.bonusASPct) / 100);
+            const dur = Math.min(m.duration || 8, T), gap = 1 / wolfAS;
+            for (let k = 0.25; k <= dur + 1e-9; k += gap) spellQueue.push({ at: t + k, label, type: m.type, raw: () => ev(m.calc) + ev(m.pctCalc) * dummyHp });
+            zoneUntil = t + dur;
+          } else if (m.kind === 'afterHits') {
+            // Kindred E: Wolf pounces on her Nth attack within the window: flat + a share of missing health (crit-scaled).
+            eArm = { left: m.hits || 3, until: t + (m.window || 4), label, type: m.type, raw: () => ev(m.calc) + ev(m.pctMissingCalc) * (DUMMY.hp - dummyHp) };
           }
           onAbilityHit(t, t >= bastionReady, { raw: first, type: m.type, label, noDamage: m.kind === 'clone' });
           if (t >= bastionReady) bastionReady = t + 3;
@@ -760,7 +787,7 @@
           if (sp.slot === 'R' && opening) onUltimate(t);
           if (opening) castDebuff(t, sp.slot);
           ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : m.recasts && recastLeft[sp.slot] > 0 ? t + (m.recastGap || 1)
-            : t + cdOf(sp.slot, sp.cooldown);
+            : afterCharge(sp, t, t + cdOf(sp.slot, m.zoneCd && t < zoneUntil ? m.zoneCd : sp.cooldown)); // Kindred Q: shorter inside her zone
           castLock = t + sp.castTime;
           return;
         }
@@ -790,7 +817,7 @@
         if (t >= bastionReady) bastionReady = t + 3;
         if (sp.slot === 'R') onUltimate(t);
         castDebuff(t, sp.slot);
-        ready[sp.slot] = t + cdOf(sp.slot, sp.cooldown);
+        ready[sp.slot] = afterCharge(sp, t, t + cdOf(sp.slot, sp.cooldown));
         castLock = t + sp.castTime;
         return;
       }
@@ -1091,7 +1118,7 @@
       const bot = obj.BotData || {};
       let cds = sp.cooldownTime || [];
       return {
-        slot: order[i], name: sp.mAlternateName || name.split('/').pop(),
+        champ: champId, slot: order[i], name: sp.mAlternateName || name.split('/').pop(),
         cds, ammo: sp.mAmmoRechargeTime || [], maxAmmo: sp.mMaxAmmo || [], dv, eff: effects(sp), calcs: sp.mSpellCalculations || {},
         bot: bot[BOT_DAMAGE] && (bot[BOT_DAMAGE].mFormulaParts || []).length ? bot[BOT_DAMAGE] : null,
         damageTag: bot.DamageTag, castTime: sp.spellCastTime || 0.25,
@@ -1268,6 +1295,15 @@
     return Math.max(cd, sp.slot === 'R' ? 20 : 1.5);
   }
 
+  function chargesFor(sp, rank) {
+    const max = +((sp.maxAmmo && sp.maxAmmo[rank]) || 0), rech = +((sp.ammo && sp.ammo[rank]) || 0);
+    if (!(max > 1 && rech > 0.5) || NO_CHARGES.has(sp.champ + ' ' + sp.slot)) return {};
+    return { charges: max, recharge: rech, lockout: Math.max(+(sp.cds[rank] || 0), 0.25) };
+  }
+  // Charges that can't be stacked on one target: Caitlyn's traps can't re-trap a trapped target, Teemo's shroom
+  // poison refreshes instead of stacking, and a Gangplank barrel chain hits a target only once. These keep a normal cooldown.
+  const NO_CHARGES = new Set(['Caitlyn W', 'Teemo R', 'Gangplank E']);
+
   // ---------- Mechanic overrides ----------
   // Some abilities aren't "cast for damage": passive on-hit procs, empowered next attacks, or
   // stat buffs. The generic reader can't tell, so these entries describe the mechanic while every
@@ -1362,6 +1398,16 @@
     // also deals 11% of the target's max health. The cooldown starts once the 3rd attack lands.
     Skarner: { Q: { kind: 'empowerAuto', type: 'physical', calc: 'AbilityDamage', charges: 3, asBonus: 'AttackSpeed',
       finalPctMaxHp: 'MaxHPPercent', cdAfterCharges: true } },
+    // Kindred W: Wolf bites for the whole zone (stats from the KindredWolf game file: 0.558 attack speed, +2.7% per level,
+    // plus 25% of her bonus attack speed); each bite is flat + (1.5% + 1% per mark) current health. W goes first so Q
+    // gets its shorter cooldown inside the zone. Q: arrow + attack speed (35% + 5% per mark). E: Wolf pounces on her 3rd
+    // attack for flat + (5% + 0.5% per mark) missing health, increased by crit chance.
+    Kindred: {
+      W: { kind: 'pet', type: 'magic', calc: 'BaseWolfDamage', pctCalc: 'PercentWolfDamage', duration: 'ZoneDuration',
+        share: 'LambToWolfAttackSpeedConversionPercent', petAS: 0.558, petASPerLevel: 2.7, first: true },
+      Q: { kind: 'cast', type: 'physical', calc: 'TotalDamage', asCalc: 'TotalQAttackSpeed', asDur: 'BaseASDuration', zoneCd: 'CDNewValue' },
+      E: { kind: 'afterHits', type: 'physical', hits: 3, window: 'TotalDuration', calc: 'BaseBiteDamage', pctMissingCalc: 'PercentBiteDamage' },
+    },
     // Rengar Q: resets his attack; the next 2 attacks gain attack speed and the first deals bonus damage.
     // At max Ferocity it's empowered instead (passives.js: ferocity).
     Rengar: { Q: { kind: 'empowerAuto', type: 'physical', calc: 'QBonusDamage', charges: 2, firstOnly: true, asBonus: 'ASBonus',
@@ -1372,7 +1418,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}) }));
     // Buff stats: a data value name, or [name, multiplier] (e.g. attack speed stored as 0.7 -> 70%), or a number.
@@ -1393,6 +1439,8 @@
         slot: sp.slot, name: sp.name, rank, calc, sp, mech: m,
         damaging: !m && ((Number.isFinite(probe) && probe > 1) || sp.variants.length > 0), type: (m && m.type) || damageTypeFor(sp, calc, rank, kitHint),
         cooldown: cooldownFor(sp, rank), castTime: Math.min(0.75, sp.castTime || 0.25),
+        // Multi-charge abilities: charges, the recharge time per charge, and the short lockout between casts.
+        ...chargesFor(sp, rank),
       };
     });
     spells.passiveCovered = !!mech.passiveCovered;

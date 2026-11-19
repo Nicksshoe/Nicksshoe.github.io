@@ -64,7 +64,7 @@
       const bot = obj.BotData || {};
       let cds = sp.cooldownTime || [];
       return {
-        slot: order[i], name: sp.mAlternateName || name.split('/').pop(),
+        champ: champId, slot: order[i], name: sp.mAlternateName || name.split('/').pop(),
         cds, ammo: sp.mAmmoRechargeTime || [], maxAmmo: sp.mMaxAmmo || [], dv, eff: effects(sp), calcs: sp.mSpellCalculations || {},
         bot: bot[BOT_DAMAGE] && (bot[BOT_DAMAGE].mFormulaParts || []).length ? bot[BOT_DAMAGE] : null,
         damageTag: bot.DamageTag, castTime: sp.spellCastTime || 0.25,
@@ -241,6 +241,15 @@
     return Math.max(cd, sp.slot === 'R' ? 20 : 1.5);
   }
 
+  function chargesFor(sp, rank) {
+    const max = +((sp.maxAmmo && sp.maxAmmo[rank]) || 0), rech = +((sp.ammo && sp.ammo[rank]) || 0);
+    if (!(max > 1 && rech > 0.5) || NO_CHARGES.has(sp.champ + ' ' + sp.slot)) return {};
+    return { charges: max, recharge: rech, lockout: Math.max(+(sp.cds[rank] || 0), 0.25) };
+  }
+  // Charges that can't be stacked on one target: Caitlyn's traps can't re-trap a trapped target, Teemo's shroom
+  // poison refreshes instead of stacking, and a Gangplank barrel chain hits a target only once. These keep a normal cooldown.
+  const NO_CHARGES = new Set(['Caitlyn W', 'Teemo R', 'Gangplank E']);
+
   // ---------- Mechanic overrides ----------
   // Some abilities aren't "cast for damage": passive on-hit procs, empowered next attacks, or
   // stat buffs. The generic reader can't tell, so these entries describe the mechanic while every
@@ -335,6 +344,16 @@
     // also deals 11% of the target's max health. The cooldown starts once the 3rd attack lands.
     Skarner: { Q: { kind: 'empowerAuto', type: 'physical', calc: 'AbilityDamage', charges: 3, asBonus: 'AttackSpeed',
       finalPctMaxHp: 'MaxHPPercent', cdAfterCharges: true } },
+    // Kindred W: Wolf bites for the whole zone (stats from the KindredWolf game file: 0.558 attack speed, +2.7% per level,
+    // plus 25% of her bonus attack speed); each bite is flat + (1.5% + 1% per mark) current health. W goes first so Q
+    // gets its shorter cooldown inside the zone. Q: arrow + attack speed (35% + 5% per mark). E: Wolf pounces on her 3rd
+    // attack for flat + (5% + 0.5% per mark) missing health, increased by crit chance.
+    Kindred: {
+      W: { kind: 'pet', type: 'magic', calc: 'BaseWolfDamage', pctCalc: 'PercentWolfDamage', duration: 'ZoneDuration',
+        share: 'LambToWolfAttackSpeedConversionPercent', petAS: 0.558, petASPerLevel: 2.7, first: true },
+      Q: { kind: 'cast', type: 'physical', calc: 'TotalDamage', asCalc: 'TotalQAttackSpeed', asDur: 'BaseASDuration', zoneCd: 'CDNewValue' },
+      E: { kind: 'afterHits', type: 'physical', hits: 3, window: 'TotalDuration', calc: 'BaseBiteDamage', pctMissingCalc: 'PercentBiteDamage' },
+    },
     // Rengar Q: resets his attack; the next 2 attacks gain attack speed and the first deals bonus damage.
     // At max Ferocity it's empowered instead (passives.js: ferocity).
     Rengar: { Q: { kind: 'empowerAuto', type: 'physical', calc: 'QBonusDamage', charges: 2, firstOnly: true, asBonus: 'ASBonus',
@@ -345,7 +364,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}) }));
     // Buff stats: a data value name, or [name, multiplier] (e.g. attack speed stored as 0.7 -> 70%), or a number.
@@ -366,6 +385,8 @@
         slot: sp.slot, name: sp.name, rank, calc, sp, mech: m,
         damaging: !m && ((Number.isFinite(probe) && probe > 1) || sp.variants.length > 0), type: (m && m.type) || damageTypeFor(sp, calc, rank, kitHint),
         cooldown: cooldownFor(sp, rank), castTime: Math.min(0.75, sp.castTime || 0.25),
+        // Multi-charge abilities: charges, the recharge time per charge, and the short lockout between casts.
+        ...chargesFor(sp, rank),
       };
     });
     spells.passiveCovered = !!mech.passiveCovered;
