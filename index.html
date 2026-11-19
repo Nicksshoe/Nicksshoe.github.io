@@ -165,6 +165,8 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 @keyframes spin{to{transform:rotate(360deg)}}
 footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size:11px;color:var(--muted);line-height:1.6}
 .muted{color:var(--muted)}
+.settings select{background:transparent;color:var(--text);border:0;font:inherit;font-weight:600;cursor:pointer;max-width:150px}
+.settings select option{background:var(--panel);color:var(--text)}
 </style>
 </head>
 <body>
@@ -173,36 +175,39 @@ footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size
     <div class="logo">POTENTIAL DAMAGE</div>
     <div class="spacer"></div>
     <div class="modes" id="modes">
-      <button data-mode="daily" class="on">Daily</button>
-      <button data-mode="free">Free Play</button>
+      <button data-mode="daily" class="on" data-i18n="daily">Daily</button>
+      <button data-mode="free" data-i18n="free">Free Play</button>
     </div>
-    <button class="pill" id="lbBtn" style="cursor:pointer;display:none">🏆 <b>Leaderboard</b></button>
-    <div class="pill">Patch <b id="patch">…</b></div>
-    <div class="pill">Best <b id="best">—</b></div>
+    <button class="pill" id="lbBtn" style="cursor:pointer;display:none">🏆 <b data-i18n="leaderboard">Leaderboard</b></button>
+    <div class="pill"><span data-i18n="patch">Patch</span> <b id="patch">…</b></div>
+    <div class="pill"><span data-i18n="best">Best</span> <b id="best">—</b></div>
+    <!-- Settings: language (20 most spoken languages, English by default) -->
+    <label class="pill settings" id="settings" title="Settings">⚙
+      <select id="langSel" aria-label="Language"></select></label>
   </header>
 
   <div class="game">
     <aside class="panel">
-      <h3>Your Build</h3>
+      <h3 data-i18n="yourBuild">Your Build</h3>
       <div class="champ-slot" id="champSlot"></div>
       <div class="items-grid" id="itemSlots"></div>
-      <div class="rerolls"><span class="muted" style="font-size:13px">Rerolls</span><div id="pips" style="display:flex;gap:8px;margin-left:6px"></div></div>
-      <h3 style="margin-top:20px">Training Dummy</h3>
+      <div class="rerolls"><span class="muted" style="font-size:13px" data-i18n="rerolls">Rerolls</span><div id="pips" style="display:flex;gap:8px;margin-left:6px"></div></div>
+      <h3 style="margin-top:20px" data-i18n="dummy">Training Dummy</h3>
       <div class="dummy-card">
-        <div><b>10,000</b><span>Health</span></div>
-        <div><b>200</b><span>Armor</span></div>
-        <div><b>100</b><span>Magic Res</span></div>
+        <div><b>10,000</b><span data-i18n="health">Health</span></div>
+        <div><b>200</b><span data-i18n="armor">Armor</span></div>
+        <div><b>100</b><span data-i18n="mres">Magic Res</span></div>
       </div>
       <ul class="rules">
-        <li>Pick 1 champion, then 6 items (6 choices each). Legendary items and boots are both in the pool.</li>
-        <li>3 rerolls total, spend them anywhere.</li>
-        <li>Level 18, 10 seconds, all-in, fighting at 40% health. Dummy respawns on death.</li>
-        <li>Score = total damage dealt.</li>
+        <li data-i18n="rule1">Pick 1 champion, then 6 items (6 choices each). Legendary items and boots are both in the pool.</li>
+        <li data-i18n="rule2">3 rerolls total, spend them anywhere.</li>
+        <li data-i18n="rule3">Level 18, 10 seconds, all-in, fighting at 40% health. Dummy respawns on death.</li>
+        <li data-i18n="rule4">Score = total damage dealt.</li>
       </ul>
     </aside>
 
     <main class="panel" id="stage">
-      <div class="loading"><div><div class="spinner"></div>Loading the latest patch from Data Dragon…</div></div>
+      <div class="loading"><div><div class="spinner"></div><span data-i18n="loading">Loading the latest patch from Data Dragon…</span></div></div>
     </main>
   </div>
 
@@ -217,6 +222,7 @@ footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size
 <script src="abilities.js"></script>
 <script src="passives.js"></script>
 <script src="itemgroups.js"></script>
+<script src="i18n.js"></script>
 <script>
 (() => {
 'use strict';
@@ -237,7 +243,7 @@ function getKit(id){
     const hint = champ && champ.info.magic > champ.info.attack ? 'magic' : 'physical';
     const p = Promise.all([
       P.Abilities.loadKit(id),
-      fetch(`${P.DDRAGON}/cdn/${DATA.patch}/data/en_US/champion/${id}.json`).then(r => r.json()).catch(() => null),
+      fetch(`${P.DDRAGON}/cdn/${DATA.patch}/data/${langInfo().dd || 'en_US'}/champion/${id}.json`).then(r => r.json()).catch(() => null),
     ]).then(([kit, dd]) => {
       const spellNames = {};
       if (dd) (dd.data[id].spells || []).forEach((s, i) => spellNames['QWER'[i]] = s.name);
@@ -255,6 +261,71 @@ const store = {
   get(k){try{return JSON.parse(localStorage.getItem('potenshall:'+k))}catch{return null}},
   set(k,v){try{localStorage.setItem('potenshall:'+k,JSON.stringify(v))}catch{}}
 };
+
+// ---------- Language ----------
+// UI text comes from i18n.js; champion, item and ability names come from Data Dragon in the chosen language when
+// Riot publishes it (otherwise English). The game logic always uses the English data, so drafts and leaderboard
+// verification are identical in every language.
+const I18N = window.PD_I18N;
+let LANG = I18N.LANGS.some(l => l.code === store.get('lang')) ? store.get('lang') : 'en';
+const langInfo = () => I18N.LANGS.find(l => l.code === LANG) || I18N.LANGS[0];
+const t = (key, vars) => {
+  const row = I18N.S[key], i = I18N.LANGS.indexOf(langInfo());
+  let s = row ? (row[i] || row[0]) : key;
+  if (vars) for (const [k, v] of Object.entries(vars)) s = s.split('{' + k + '}').join(v);
+  return s;
+};
+const LOC = { champ: {}, item: {} };            // id -> localized { name, title } / { name, lines, passives }
+async function loadLocalizedNames(){
+  LOC.champ = {}; LOC.item = {};
+  const dd = langInfo().dd;
+  if (!dd || dd === 'en_US' || !DATA) return;
+  const [cj, ij] = await Promise.all([
+    fetch(`${P.DDRAGON}/cdn/${DATA.patch}/data/${dd}/champion.json`).then(r => r.json()).catch(() => null),
+    fetch(`${P.DDRAGON}/cdn/${DATA.patch}/data/${dd}/item.json`).then(r => r.json()).catch(() => null),
+  ]);
+  if (cj) for (const c of Object.values(cj.data)) LOC.champ[c.id] = { name: c.name, title: c.title };
+  if (ij) for (const [id, v] of Object.entries(ij.data)) {
+    const desc = v.description || '';
+    const block = (desc.match(/<stats>(.*?)<\/stats>/) || [])[1] || '';
+    const lines = block.split(/<br\s*\/?>/i).map(x => x.replace(/<[^>]+>/g, '').trim()).filter(Boolean);
+    const passives = [...desc.matchAll(/<(passive|active)>(.*?)<\/\1>/g)].map(m => m[2].trim()).filter(Boolean);
+    LOC.item[id] = { name: v.name, lines, passives };
+  }
+}
+const cName = c => (LOC.champ[c.id] || c).name;
+const cTitle = c => (LOC.champ[c.id] || c).title;
+const iName = it => (LOC.item[it.id] || it).name;
+const iLines = it => (LOC.item[it.id] && LOC.item[it.id].lines.length ? LOC.item[it.id].lines : it.statLines);
+const iPassives = it => (LOC.item[it.id] ? LOC.item[it.id].passives : it.passives);
+// Damage-breakdown labels: translate fixed words and English item names.
+function srcLabel(src){
+  const byName = it => DATA.items.find(x => x.name === it);
+  let s = src.replace(/ \(active\)$/, ' (' + t('srcActive') + ')').replace(/ \(empowered\)$/, ' (' + t('srcEmpowered') + ')');
+  const base = s.replace(/ \(.*\)$/, ''), item = byName(base);
+  if (item) s = s.replace(base, iName(item));
+  const fixed = { 'Basic Attacks': 'basicAttacks', 'Plants': 'srcPlants', 'Spiderlings': 'srcSpiderlings' };
+  if (fixed[s]) return t(fixed[s]);
+  return s.replace(/^Passive · /, t('passive') + ' · ').replace(/· Shadow shurikens$/, '· ' + t('srcShadow')).replace(/· Execute$/, '· ' + t('srcExecute'));
+}
+function applyStatic(){
+  const L = langInfo();
+  document.documentElement.lang = L.code;
+  document.documentElement.dir = L.rtl ? 'rtl' : 'ltr';
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  const sel = $('#langSel');
+  sel.innerHTML = I18N.LANGS.map(l => `<option value="${l.code}" ${l.code === LANG ? 'selected' : ''}>${l.name}</option>`).join('');
+  $('#settings').title = t('settings') + ' · ' + t('language');
+  sel.setAttribute('aria-label', t('language'));
+}
+let rerender = null; // redraws the current screen after a language change
+async function setLanguage(code){
+  LANG = code; store.set('lang', code);
+  applyStatic();
+  await loadLocalizedNames();
+  kitCache.clear();               // ability names are fetched per language
+  if (rerender) rerender();
+}
 
 // ---------- Leaderboard client ----------
 // Set to the Cloudflare Worker URL once deployed. Empty = leaderboard hidden.
@@ -285,23 +356,23 @@ function renderSubmitPanel(snapshot){
   const panel = $('#lbPanel'); if (!panel) return;
   if (!LB.enabled) { panel.remove(); return; }
   const verifiable = S.mode === 'daily' || S.ticket;
-  if (!verifiable) { panel.innerHTML = `<h3>Leaderboard</h3><p class="muted" style="margin:0">This run started offline, so it can't be ranked.</p>`; return; }
+  if (!verifiable) { panel.innerHTML = `<h3>${t('leaderboard')}</h3><p class="muted" style="margin:0">${t('offline')}</p>`; return; }
   if (snapshot.rank) { panel.innerHTML = rankHtml(snapshot); bindViewBoard(); return; }
-  panel.innerHTML = `<h3>Leaderboard</h3>
+  panel.innerHTML = `<h3>${t('leaderboard')}</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <input id="lbName" maxlength="16" placeholder="Display name" value="${esc(store.get('name') || '')}"
+      <input id="lbName" maxlength="16" placeholder="${esc(t('displayName'))}" value="${esc(store.get('name') || '')}" dir="ltr"
         style="flex:1;min-width:150px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:var(--text);font:inherit">
-      <button class="btn primary sm" id="lbSubmit">Submit score</button>
-      <button class="btn sm" id="lbView">View board</button>
+      <button class="btn primary sm" id="lbSubmit">${t('submit')}</button>
+      <button class="btn sm" id="lbView">${t('viewBoard')}</button>
     </div>
-    <p class="muted" style="font-size:12px;margin:8px 0 0">The server re-runs your draft and fight to verify the score. Names: letters, numbers, spaces, _ - . (max 16).</p>
+    <p class="muted" style="font-size:12px;margin:8px 0 0">${t('verifyNote')}</p>
     <p id="lbMsg" style="font-size:13px;margin:6px 0 0"></p>`;
   bindViewBoard();
   $('#lbSubmit').onclick = async () => {
     const name = $('#lbName').value.trim();
-    if (!/^[A-Za-z0-9 _.\-]{1,16}$/.test(name)) { $('#lbMsg').textContent = 'Use 1-16 letters, numbers, spaces, _ - or .'; return; }
+    if (!/^[A-Za-z0-9 _.\-]{1,16}$/.test(name)) { $('#lbMsg').textContent = t('nameRule'); return; }
     store.set('name', name);
-    $('#lbSubmit').disabled = true; $('#lbMsg').textContent = 'Verifying your run…';
+    $('#lbSubmit').disabled = true; $('#lbMsg').textContent = t('verifying');
     try {
       const r = await LB.submit({ mode: S.mode, patch: DATA.patch, date: today(), ticket: S.ticket, log: S.draft.log, name, client: clientId });
       Object.assign(snapshot, { rank: r.rank, lowRank: r.lowRank, of: r.of, verified: r.score, name });
@@ -310,11 +381,11 @@ function renderSubmitPanel(snapshot){
     } catch (e) { $('#lbSubmit').disabled = false; $('#lbMsg').textContent = e.message; }
   };
 }
-const rankHtml = s => `<h3>Leaderboard</h3><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-  <div class="bignum" style="font-size:34px">#${s.rank}<small>of ${s.of}</small></div>
-  <div class="muted" style="font-size:13px">Verified score <b style="color:var(--text)">${fmt(s.verified)}</b> as ${esc(s.name)}
-    ${s.lowRank ? `<br>Least-damage board: <b style="color:var(--text)">#${s.lowRank}</b> of ${s.of}` : ''}</div>
-  <div class="spacer"></div><button class="btn sm" id="lbView">View board</button></div>`;
+const rankHtml = s => `<h3>${t('leaderboard')}</h3><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+  <div class="bignum" style="font-size:34px">#${s.rank}<small>${t('rankOf', { n: s.of })}</small></div>
+  <div class="muted" style="font-size:13px">${t('verifiedAs', { score: `<b style="color:var(--text)">${fmt(s.verified)}</b>`, name: esc(s.name) })}
+    ${s.lowRank ? `<br>${t('leastRank', { rank: `<b style="color:var(--text)">${s.lowRank}</b>`, of: s.of })}` : ''}</div>
+  <div class="spacer"></div><button class="btn sm" id="lbView">${t('viewBoard')}</button></div>`;
 const bindViewBoard = () => { const b = $('#lbView'); if (b) b.onclick = () => showBoard(S.mode === 'daily' ? 'daily' : 'free'); };
 
 // Boards: Daily (today), Free Play (current patch, or a past patch from the picker) and All-time (each player's
@@ -325,21 +396,21 @@ async function showBoard(mode, order, freePeriod){
   const patchShort = DATA.patch.split('.').slice(0, 2).join('.');
   const period = mode === 'daily' ? today() : mode === 'free' ? (freePeriod || patchShort) : '';
   const st = $('#stage');
+  rerender = () => showBoard(mode, order, freePeriod);
   const tabs = `<div class="modes" style="width:max-content;max-width:100%;flex-wrap:wrap;margin-bottom:14px">
-      <button data-b="daily" class="${mode==='daily'?'on':''}">Daily ${today()}</button>
-      <button data-b="free" class="${mode==='free'?'on':''}">Free Play</button>
-      <button data-b="all" class="${mode==='all'?'on':''}">All-time</button></div>
+      <button data-b="daily" class="${mode==='daily'?'on':''}">${t('daily')} ${today()}</button>
+      <button data-b="free" class="${mode==='free'?'on':''}">${t('free')}</button>
+      <button data-b="all" class="${mode==='all'?'on':''}">${t('allTime')}</button></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
       <div class="modes" style="width:max-content">
-        <button data-o="high" class="${order==='high'?'on':''}">Most damage</button>
-        <button data-o="low" class="${order==='low'?'on':''}">Least damage</button></div>
-      ${mode === 'free' ? `<label class="muted" style="font-size:13px">Patch <select id="lbPatch" style="background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit">
+        <button data-o="high" class="${order==='high'?'on':''}">${t('mostDmg')}</button>
+        <button data-o="low" class="${order==='low'?'on':''}">${t('leastDmg')}</button></div>
+      ${mode === 'free' ? `<label class="muted" style="font-size:13px">${t('patch')} <select id="lbPatch" style="background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit">
         <option>${esc(period)}</option></select></label>` : ''}</div>`;
-  const title = mode === 'all' ? (order === 'low' ? 'All-time Least Damage' : 'All-time Leaderboard') : order === 'low' ? 'Least Damage' : 'Leaderboard';
-  const sub = mode === 'all' ? "Each player's best score ever, across Daily and Free Play, with the patch it was set on."
-    : order === 'low' ? "The 50 weakest builds: each player's lowest verified score." : 'Top 50, every score verified by the server.';
+  const title = mode === 'all' ? t(order === 'low' ? 'titleAllLeast' : 'titleAll') : t(order === 'low' ? 'titleLeast' : 'leaderboard');
+  const sub = t(mode === 'all' ? 'subAll' : order === 'low' ? 'subLow' : 'subTop');
   st.innerHTML = `<div class="stage-head"><div><h2>${title}</h2><p>${sub}</p></div><div class="spacer"></div>
-    <button class="btn sm" id="lbBack">◂ Back to game</button></div>${tabs}<div id="boardBody"><div class="loading" style="min-height:160px"><div class="spinner"></div></div></div>`;
+    <button class="btn sm" id="lbBack">${t('back')}</button></div>${tabs}<div id="boardBody"><div class="loading" style="min-height:160px"><div class="spinner"></div></div></div>`;
   st.querySelectorAll('[data-b]').forEach(b => b.onclick = () => showBoard(b.dataset.b, order));
   st.querySelectorAll('[data-o]').forEach(b => b.onclick = () => showBoard(mode, b.dataset.o, freePeriod));
   $('#lbBack').onclick = () => newGame(S && S.mode === 'free' ? 'free' : 'daily');
@@ -347,14 +418,14 @@ async function showBoard(mode, order, freePeriod){
     LB.call('/periods').then(({ periods }) => {
       const sel = $('#lbPatch'); if (!sel) return;
       const list = [...new Set([patchShort, ...(periods || [])])];
-      sel.innerHTML = list.map(p => `<option value="${esc(p)}" ${p === period ? 'selected' : ''}>${esc(p)}${p === patchShort ? ' (current)' : ''}</option>`).join('');
+      sel.innerHTML = list.map(p => `<option value="${esc(p)}" ${p === period ? 'selected' : ''}>${esc(p)}${p === patchShort ? ' ' + t('current') : ''}</option>`).join('');
       sel.onchange = () => showBoard('free', order, sel.value);
     }).catch(() => {});
   }
   try {
     const { rows } = await LB.board(mode, period, order);
-    const champName = id => (DATA.champions.find(c => c.id === id) || { name: id }).name;
-    const tag = r => mode !== 'all' ? '' : `<span class="tag" style="margin-left:6px">${r.mode === 'daily' ? 'Daily' : 'Free'} · ${esc(r.patch || '?')}</span>`;
+    const champName = id => { const c = DATA.champions.find(x => x.id === id); return c ? cName(c) : id; };
+    const tag = r => mode !== 'all' ? '' : `<span class="tag" style="margin-inline-start:6px">${r.mode === 'daily' ? t('daily') : t('freeTag')} · ${esc(r.patch || '?')}</span>`;
     $('#boardBody').innerHTML = rows.length ? `<div style="display:grid;gap:6px">${rows.map((r, i) => `
       <div style="display:grid;grid-template-columns:36px 36px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;
         background:${r.mine ? '#c8aa6e22' : 'var(--panel2)'};border:1px solid ${r.mine ? 'var(--gold-dim)' : 'var(--line)'}">
@@ -364,8 +435,8 @@ async function showBoard(mode, order, freePeriod){
           <div style="display:flex;gap:3px;margin-top:3px;flex-wrap:wrap">${String(r.items).split(',').map(id => `<img src="${img.item(id)}" alt="" style="width:20px;height:20px;border-radius:3px">`).join('')}
           <span class="muted" style="font-size:12px;margin-left:6px">${esc(champName(r.champ))}</span></div></div>
         <b style="font-variant-numeric:tabular-nums">${fmt(r.score)}</b></div>`).join('')}</div>`
-      : `<p class="muted">No scores yet. Be the first!</p>`;
-  } catch (e) { $('#boardBody').innerHTML = `<p class="muted">Couldn't load the leaderboard (${esc(e.message)}).</p>`; }
+      : `<p class="muted">${t('noScores')}</p>`;
+  } catch (e) { $('#boardBody').innerHTML = `<p class="muted">${t('lbError', { msg: esc(e.message) })}</p>`; }
 }
 const img = {
   champ: id => `${P.DDRAGON}/cdn/${DATA.patch}/img/champion/${id}.png`,
@@ -413,12 +484,12 @@ function renderSidebar(snapshot){
   const items = snapshot ? snapshot.items.map(id => DATA.items.find(i => i.id === id)).filter(Boolean) : S.items;
   const rerolls = snapshot ? snapshot.rerolls : S.rerolls;
   $('#champSlot').innerHTML = champ
-    ? `<img src="${img.champ(champ.id)}" alt=""><div><div class="nm">${champ.name}</div><div class="tt">${champ.title}</div></div>`
-    : `<div class="ph">?</div><div class="muted">Choose a champion</div>`;
+    ? `<img src="${img.champ(champ.id)}" alt=""><div><div class="nm">${cName(champ)}</div><div class="tt">${cTitle(champ)}</div></div>`
+    : `<div class="ph">?</div><div class="muted">${t('chooseChamp')}</div>`;
   $('#itemSlots').innerHTML = Array.from({length: ITEM_SLOTS}, (_, i) => {
     const it = items[i];
     const cur = !snapshot && champ && i === items.length;
-    return `<div class="item-slot ${cur?'cur':''}" title="${it ? it.name : ''}">${it ? `<img src="${img.item(it.id)}" alt="${it.name}">` : `<div class="ph">${i+1}</div>`}</div>`;
+    return `<div class="item-slot ${cur?'cur':''}" title="${it ? esc(iName(it)) : ''}">${it ? `<img src="${img.item(it.id)}" alt="${esc(iName(it))}">` : `<div class="ph">${i+1}</div>`}</div>`;
   }).join('');
   $('#pips').innerHTML = Array.from({length: REROLLS}, (_, i) => `<div class="pip ${i >= rerolls ? 'used' : ''}"></div>`).join('');
   const best = store.get('best');
@@ -431,17 +502,18 @@ function steps(){
 }
 
 function render(){
+  rerender = render;
   renderSidebar();
   const st = $('#stage');
   if (!S.champ) {
     st.innerHTML = steps() + `
-      <div class="stage-head"><div><h2>Pick your champion</h2><p>${CHAMP_CHOICES} random champions from patch ${DATA.patch}. Choose wisely, or abstractly.</p></div>
+      <div class="stage-head"><div><h2>${t('pickChamp')}</h2><p>${t('pickChampSub', { n: CHAMP_CHOICES, patch: DATA.patch })}</p></div>
       <div class="spacer"></div>${resetBtn()}${rerollBtn()}</div>
       <div class="cards champs">${S.offers.map((c, i) => champCard(c, i)).join('')}</div>`;
     st.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => pickChamp(+b.dataset.pick));
   } else if (S.items.length < ITEM_SLOTS) {
     st.innerHTML = steps() + `
-      <div class="stage-head"><div><h2>Item ${S.items.length + 1} of ${ITEM_SLOTS}</h2><p>Pick one item (legendary or boots) for <b>${S.champ.name}</b>.</p></div>
+      <div class="stage-head"><div><h2>${t('itemOf', { i: S.items.length + 1, n: ITEM_SLOTS })}</h2><p>${t('pickItemSub', { champ: `<b>${cName(S.champ)}</b>` })}</p></div>
       <div class="spacer"></div>${resetBtn()}${rerollBtn()}</div>
       <div class="cards items">${S.offers.map((it, i) => itemCard(it, i)).join('')}</div>`;
     st.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => pickItem(+b.dataset.pick));
@@ -456,31 +528,31 @@ function render(){
 // Start over: Free Play deals a brand-new draft; Daily restarts today's draft from the champion pick.
 // Daily is the same for everyone, so the button only appears there once something has been picked or rerolled.
 const resetBtn = () => (S.mode === 'daily' && !S.draft.log.length) ? ''
-  : `<button class="btn sm" id="resetBtn" title="Throw away this draft and start again" style="margin-right:8px">↺ Start over</button>`;
+  : `<button class="btn sm" id="resetBtn" title="${esc(t('startOverTip'))}" style="margin-inline-end:8px">${t('startOver')}</button>`;
 function startOver(){
-  const msg = S.mode === 'daily' ? 'Restart today\'s draft from the champion pick? Your picks and rerolls will be reset.' : 'Start a brand-new draft? Your current picks will be lost.';
-  if (confirm(msg)) newGame(S.mode);
+  if (confirm(t(S.mode === 'daily' ? 'confirmDaily' : 'confirmFree'))) newGame(S.mode);
 }
-const rerollBtn = () => `<button class="btn sm" id="rerollBtn" ${S.rerolls ? '' : 'disabled'}>⟳ Reroll (${S.rerolls} left)</button>`;
+const rerollBtn = () => `<button class="btn sm" id="rerollBtn" ${S.rerolls ? '' : 'disabled'}>${t('reroll', { n: S.rerolls })}</button>`;
 
 function champCard(c, i){
   const bar = (label, v, color) => `<div class="bar"><span>${label}</span><i style="--w:${v*10}%;--c:${color}"></i></div>`;
   return `<button class="card" data-pick="${i}" style="animation-delay:${i*50}ms">
     <div class="portrait"><img src="${img.tile(c.id)}" alt="" onerror="this.src='${img.champ(c.id)}'"></div>
-    <div class="nm">${c.name}</div><div class="sub">${c.title}</div>
-    <div class="tags">${c.tags.map(t => `<span class="tag">${t}</span>`).join('')}<span class="tag">${c.ranged ? 'Ranged' : 'Melee'}</span></div>
-    <div class="bars">${bar('Attack', c.info.attack, 'var(--phys)')}${bar('Magic', c.info.magic, 'var(--magic)')}${bar('Defense', c.info.defense, 'var(--good)')}</div>
-    ${c.ratingsEstimated ? `<div class="muted" style="font-size:11px;margin-top:6px" title="Riot's data has no ratings for this champion, so these are averaged from champions with the same roles.">Ratings estimated</div>` : ''}
+    <div class="nm">${cName(c)}</div><div class="sub">${cTitle(c)}</div>
+    <div class="tags">${c.tags.map(tg => `<span class="tag">${t('tag_' + tg)}</span>`).join('')}<span class="tag">${t(c.ranged ? 'ranged' : 'melee')}</span></div>
+    <div class="bars">${bar(t('attack'), c.info.attack, 'var(--phys)')}${bar(t('magic'), c.info.magic, 'var(--magic)')}${bar(t('defense'), c.info.defense, 'var(--good)')}</div>
+    ${c.ratingsEstimated ? `<div class="muted" style="font-size:11px;margin-top:6px" title="Riot's data has no ratings for this champion, so these are averaged from champions with the same roles.">${t('ratingsEst')}</div>` : ''}
   </button>`;
 }
 
 function itemCard(it, i){
   const passive = P.PASSIVES[it.name.toLowerCase()];
-  const lines = it.statLines.map(l => l.replace(/^([\d.]+%?)/, '<b>$1</b>'));
+  const lines = iLines(it).map(l => l.replace(/([\d.]+%?)/, '<b>$1</b>'));
+  const pas = iPassives(it);
   return `<button class="card" data-pick="${i}" style="animation-delay:${i*50}ms">
-    <div class="item-top"><img src="${img.item(it.id)}" alt=""><div><div class="nm">${it.name}</div><div class="gold">${fmt(it.gold)}g${it.boots ? ' · <span style="color:var(--gold2)">Boots</span>' : ''}</div></div></div>
+    <div class="item-top"><img src="${img.item(it.id)}" alt=""><div><div class="nm">${iName(it)}</div><div class="gold">${fmt(it.gold)}g${it.boots ? ` · <span style="color:var(--gold2)">${t('boots')}</span>` : ''}</div></div></div>
     <ul class="statlist">${lines.map(l => `<li>${l}</li>`).join('')}</ul>
-    ${it.passives.length || passive ? `<div class="passive">${it.passives.slice(0,2).join(' · ')}${passive && passive.tip ? `<br><em>${passive.tip}</em>` : ''}</div>` : ''}
+    ${pas.length || passive ? `<div class="passive">${pas.slice(0,2).join(' · ')}${passive && passive.tip && LANG === 'en' ? `<br><em>${passive.tip}</em>` : ''}</div>` : ''}
   </button>`;
 }
 
@@ -500,23 +572,24 @@ const DUMMY_SVG = `<svg viewBox="0 0 150 220" xmlns="http://www.w3.org/2000/svg"
 
 let animHandle = null;
 async function runFight(){
-  $("#stage").innerHTML = `<div class="loading"><div><div class="spinner"></div>Loading ${S.champ.name}'s abilities from the game files…</div></div>`;
+  rerender = null; // the fight animation keeps going; results appear in the current language
+  $("#stage").innerHTML = `<div class="loading"><div><div class="spinner"></div>${t('loadingKit', { champ: cName(S.champ) })}</div></div>`;
   const kitInfo = await getKit(S.champ.id);
   const res = P.simulate(S.champ, S.items, { ...kitInfo, stacks: STACKS && STACKS.champions });
   S.result = res;
   const st = $('#stage');
   st.innerHTML = steps().replace(/class=""/g, 'class="done"') + `
-    <div class="stage-head"><div><h2>Fight!</h2><p>${S.champ.name} unloads on the dummy for 10 seconds.</p></div></div>
+    <div class="stage-head"><div><h2>${t('fight')}</h2><p>${t('fightSub', { champ: cName(S.champ) })}</p></div></div>
     <div class="arena" id="arena">
-      <div class="kills">Dummy kills <b id="kc">0</b></div>
+      <div class="kills">${t('dummyKills')} <b id="kc">0</b></div>
       <div class="clock" id="clock">0.00s</div>
       <div class="hpwrap"><div class="hpbar"><div class="fill" id="hpfill"></div><div class="ticks"></div></div>
-        <div class="hpmeta"><span><b id="hptext">10,000</b> / 10,000</span><span>Total <b id="tot">0</b></span></div></div>
+        <div class="hpmeta"><span><b id="hptext">10,000</b> / 10,000</span><span>${t('total')} <b id="tot">0</b></span></div></div>
       <div class="attacker"><img src="${img.champ(S.champ.id)}" alt=""></div>
       <div class="dummy" id="dummy">${DUMMY_SVG}</div>
     </div>
-    <div class="fight-controls"><button class="btn sm" id="skip">Skip ▸▸</button>
-      <div class="legend"><span style="--c:var(--phys)">Physical</span><span style="--c:var(--magic)">Magic</span><span style="--c:var(--true)">True</span></div></div>`;
+    <div class="fight-controls"><button class="btn sm" id="skip">${t('skip')}</button>
+      <div class="legend"><span style="--c:var(--phys)">${t('physical')}</span><span style="--c:var(--magic)">${t('magicDmg')}</span><span style="--c:var(--true)">${t('trueDmg')}</span></div></div>`;
   $('#skip').onclick = () => finish();
 
   const arena = $('#arena'), dummy = $('#dummy');
@@ -527,21 +600,21 @@ async function runFight(){
   const bucket = {physical:0, magic:0, true:0};
 
   function frame(now){
-    const t = Math.min(res.seconds, (now - t0) / 1000 * SPEED);
-    while (idx < hits.length && hits[idx].t <= t) {
+    const now_t = Math.min(res.seconds, (now - t0) / 1000 * SPEED);
+    while (idx < hits.length && hits[idx].t <= now_t) {
       const h = hits[idx++];
       total += h.amt; bucket[h.type] += h.amt;
       $('#hpfill').style.width = (h.hp / P.DUMMY.hp * 100) + '%';
       $('#hptext').textContent = fmt(h.hp);
       if (h.killed) {
         kills++; $('#kc').textContent = kills;
-        const k = document.createElement('div'); k.className = 'killflash'; k.textContent = kills === 1 ? 'DUMMY SLAIN' : `${kills}× SLAIN`;
+        const k = document.createElement('div'); k.className = 'killflash'; k.textContent = kills === 1 ? t('slain') : t('slainN', { n: kills });
         arena.appendChild(k); setTimeout(() => k.remove(), 900);
       }
     }
     // emit grouped floating numbers ~every 120ms of game time
-    if (t - last >= 0.12) {
-      last = t;
+    if (now_t - last >= 0.12) {
+      last = now_t;
       for (const type of ['physical','magic','true']) {
         if (bucket[type] < 1) continue;
         const n = document.createElement('div');
@@ -556,8 +629,8 @@ async function runFight(){
       dummy.classList.remove('hit'); void dummy.offsetWidth; dummy.classList.add('hit');
     }
     $('#tot').textContent = fmt(total);
-    $('#clock').textContent = t.toFixed(2) + 's';
-    if (t < res.seconds) animHandle = requestAnimationFrame(frame);
+    $('#clock').textContent = now_t.toFixed(2) + 's';
+    if (now_t < res.seconds) animHandle = requestAnimationFrame(frame);
     else setTimeout(finish, 500);
   }
   animHandle = requestAnimationFrame(frame);
@@ -577,19 +650,15 @@ function finish(){
   renderSidebar();
   showResults(res, isBest);
   renderSubmitPanel(snapshot);
+  rerender = () => { renderSidebar(); showResults(res, isBest); renderSubmitPanel(snapshot); };
 }
 
-const QUOTES = [
-  [0, "This build is too meta. Where's the vision?"],
-  [2, "Hmm, interesting. Slightly abstract. I respect it."],
-  [4, "Now THIS is a build. Nobody's ever tried this."],
-  [6, "Full abstract. The potential damage is insane."],
-];
+const QUOTES = [[0, 'q0'], [2, 'q1'], [4, 'q2'], [6, 'q3']]; // off-script items needed -> quote key
 
 function showResults(res, isBest){
   const tier = P.tierFor(res.total);
   const abs = P.abstractness(S.champ, S.items);
-  const quote = QUOTES.filter(q => abs >= q[0]).pop()[1];
+  const quote = t(QUOTES.filter(q => abs >= q[0]).pop()[1]);
   const typeColor = {physical:'var(--phys)', magic:'var(--magic)', true:'var(--true)'};
   const srcType = {};
   for (const h of res.hits) srcType[h.src] = srcType[h.src] || {physical:0, magic:0, true:0}, srcType[h.src][h.type] += h.amt;
@@ -601,95 +670,99 @@ function showResults(res, isBest){
 
   $('#stage').innerHTML = `
     <div class="result-hero">
-      <div class="badge" style="--c:${tier.color}">${tier.name.toUpperCase()}</div>
+      <div class="badge" style="--c:${tier.color}">${t('tier_' + tier.name).toUpperCase()}</div>
       <div>
-        <div class="muted" style="font-size:13px;letter-spacing:.12em;text-transform:uppercase">${S.mode === 'daily' ? 'Daily ' + today() : 'Free Play'} · ${S.champ.name}</div>
-        <div class="bignum">${fmt(res.total)}<small>damage in 10s</small></div>
+        <div class="muted" style="font-size:13px;letter-spacing:.12em;text-transform:uppercase">${S.mode === 'daily' ? t('daily') + ' ' + today() : t('free')} · ${cName(S.champ)}</div>
+        <div class="bignum">${fmt(res.total)}<small>${t('dmgIn10')}</small></div>
         <div class="facts">
-          <span><b>${fmt(res.total / res.seconds)}</b> DPS</span>
-          <span><b>${(res.total / P.DUMMY.hp).toFixed(2)}×</b> dummies</span>
-          <span>First kill <b>${res.firstKill !== null ? res.firstKill.toFixed(2) + 's' : 'never'}</b></span>
-          <span title="Real = ability formulas read from Riot's game files. Estimated = class-based approximation.">Abilities <b>${res.realKit ? 'real game data' : 'estimated'}</b></span>
-          ${res.passive ? `<span title="${esc(res.passive.note)}">Passive <b>${esc(res.passive.name)}</b></span>` : ''}
-          ${isBest ? '<span style="color:var(--good)"><b style="color:var(--good)">★ New personal best</b></span>' : ''}
+          <span><b>${fmt(res.total / res.seconds)}</b> ${t('dps')}</span>
+          <span><b>${(res.total / P.DUMMY.hp).toFixed(2)}×</b> ${t('dummies')}</span>
+          <span>${t('firstKill')} <b>${res.firstKill !== null ? res.firstKill.toFixed(2) + 's' : t('never')}</b></span>
+          <span title="Real = ability formulas read from Riot's game files. Estimated = class-based approximation.">${t('abilities')} <b>${t(res.realKit ? 'realData' : 'estimated')}</b></span>
+          ${res.passive ? `<span title="${esc(res.passive.note)}">${t('passive')} <b>${esc(res.passive.name)}</b></span>` : ''}
+          ${isBest ? `<span style="color:var(--good)"><b style="color:var(--good)">${t('newBest')}</b></span>` : ''}
         </div>
       </div>
     </div>
     <div class="res-grid">
       <div class="panel">
-        <h3>Damage Breakdown</h3>
+        <h3>${t('breakdown')}</h3>
         <div class="split">${['physical','magic','true'].map(k => `<div style="width:${pct(k)}%;background:${typeColor[k]}"></div>`).join('')}</div>
-        <div class="legend" style="margin:0 0 10px">${['physical','magic','true'].map(k => `<span style="--c:${typeColor[k]}">${pct(k).toFixed(0)}% ${k}</span>`).join('')}</div>
+        <div class="legend" style="margin:0 0 10px">${['physical','magic','true'].map(k => `<span style="--c:${typeColor[k]}">${pct(k).toFixed(0)}% ${t({ physical: 'physical', magic: 'magicDmg', true: 'trueDmg' }[k])}</span>`).join('')}</div>
         <div class="breakdown">${sources.map(([name, v]) => `
-          <div class="brow"><span>${name}</span><div class="track"><div style="width:${v/max*100}%;background:${typeColor[dominant(name)]}"></div></div><span class="v">${fmt(v)}</span></div>`).join('')}
+          <div class="brow"><span>${esc(srcLabel(name))}</span><div class="track"><div style="width:${v/max*100}%;background:${typeColor[dominant(name)]}"></div></div><span class="v">${fmt(v)}</span></div>`).join('')}
         </div>
       </div>
       <div style="display:grid;gap:16px;align-content:start">
         <div class="panel">
-          <h3>Meta Meter</h3>
+          <h3>${t('metaMeter')}</h3>
           <div class="meter">${Array.from({length:6}, (_, i) => `<i class="${i < abs ? 'on' : ''}"></i>`).join('')}</div>
-          <div class="muted" style="font-size:13px">${abs}/6 off-script items</div>
+          <div class="muted" style="font-size:13px">${t('offScript', { n: abs })}</div>
           <p class="quote">${quote}</p>
         </div>
         <div class="panel">
-          <h3>Level 18 Stats</h3>
+          <h3>${t('stats18')}</h3>
           <div class="statgrid">
-            <div><span>Attack Damage</span>${fmt(s.ad)}</div><div><span>Ability Power</span>${fmt(s.ap)}</div>
-            <div><span>Attack Speed</span>${s.as.toFixed(2)}</div><div><span>Crit Chance</span>${fmt(s.crit*100)}%</div>
-            <div><span>Health</span>${fmt(s.hp)}</div><div><span>Ability Haste</span>${fmt(s.ah)}</div>
-            <div><span>Armor Pen</span>${fmt(s.armorPen*100)}% + ${fmt(s.leth)}</div><div><span>Magic Pen</span>${fmt(s.magicPen*100)}% + ${fmt(s.mpenFlat)}</div>
+            <div><span>${t('st_ad')}</span>${fmt(s.ad)}</div><div><span>${t('st_ap')}</span>${fmt(s.ap)}</div>
+            <div><span>${t('st_as')}</span>${s.as.toFixed(2)}</div><div><span>${t('st_crit')}</span>${fmt(s.crit*100)}%</div>
+            <div><span>${t('health')}</span>${fmt(s.hp)}</div><div><span>${t('st_ah')}</span>${fmt(s.ah)}</div>
+            <div><span>${t('st_apen')}</span>${fmt(s.armorPen*100)}% + ${fmt(s.leth)}</div><div><span>${t('st_mpen')}</span>${fmt(s.magicPen*100)}% + ${fmt(s.mpenFlat)}</div>
           </div>
         </div>
       </div>
     </div>
     <div class="panel" id="lbPanel" style="margin-top:16px"></div>
     <div class="actions">
-      <button class="btn primary" id="again">${S.mode === 'daily' ? 'Free Play' : 'Play Again'}</button>
-      <button class="btn" id="share">Copy result</button>
+      <button class="btn primary" id="again">${S.mode === 'daily' ? t('free') : t('playAgain')}</button>
+      <button class="btn" id="share">${t('copy')}</button>
     </div>`;
   $('#again').onclick = () => newGame('free');
   $('#share').onclick = () => share(res, tier, abs);
 }
 
 function showDailyDone(prev){
+  rerender = () => { showDailyDone(prev); renderSidebar(prev); };
   const champ = DATA.champions.find(c => c.id === prev.champ);
   const tier = P.tierFor(prev.total);
   $('#stage').innerHTML = `
-    <div class="stage-head"><div><h2>Daily complete</h2><p>You already played today's daily. A new one unlocks tomorrow.</p></div></div>
+    <div class="stage-head"><div><h2>${t('dailyDone')}</h2><p>${t('dailyDoneSub')}</p></div></div>
     <div class="result-hero">
-      <div class="badge" style="--c:${tier.color}">${tier.name.toUpperCase()}</div>
-      <div><div class="muted">${champ ? champ.name : prev.champ}</div><div class="bignum">${fmt(prev.total)}<small>damage</small></div></div>
+      <div class="badge" style="--c:${tier.color}">${t('tier_' + tier.name).toUpperCase()}</div>
+      <div><div class="muted">${champ ? cName(champ) : prev.champ}</div><div class="bignum">${fmt(prev.total)}<small>${t('damage')}</small></div></div>
     </div>
-    ${prev.rank ? `<p class="muted">Leaderboard: <b style="color:var(--text)">#${prev.rank}</b> of ${prev.of} as ${esc(prev.name)}</p>` : ''}
-    <div class="actions"><button class="btn primary" id="again">Free Play</button>${LB.enabled ? '<button class="btn" id="lbView">View leaderboard</button>' : ''}</div>`;
+    ${prev.rank ? `<p class="muted">${t('lbRankLine', { rank: prev.rank, of: prev.of, name: esc(prev.name) })}</p>` : ''}
+    <div class="actions"><button class="btn primary" id="again">${t('free')}</button>${LB.enabled ? `<button class="btn" id="lbView">${t('viewLb')}</button>` : ''}</div>`;
   const v = $('#lbView'); if (v) v.onclick = () => showBoard('daily');
   $('#again').onclick = () => newGame('free');
 }
 
 function share(res, tier, abs){
   const lines = [
-    `Potential Damage ${S.mode === 'daily' ? today() : '(free play)'} · Patch ${DATA.patch}`,
-    `${S.champ.name}: ${S.items.map(i => i.name).join(', ')}`,
-    `${fmt(res.total)} damage in 10s · ${tier.name} · Meta Meter ${'🟪'.repeat(abs)}${'⬛'.repeat(6-abs)}`,
+    `Potential Damage ${S.mode === 'daily' ? today() : '(' + t('free') + ')'} · ${t('patch')} ${DATA.patch}`,
+    `${cName(S.champ)}: ${S.items.map(iName).join(', ')}`,
+    `${fmt(res.total)} ${t('dmgIn10')} · ${t('tier_' + tier.name)} · ${t('metaMeter')} ${'🟪'.repeat(abs)}${'⬛'.repeat(6-abs)}`,
   ].join('\n');
-  const done = () => toast('Copied to clipboard');
-  if (navigator.clipboard) navigator.clipboard.writeText(lines).then(done, () => prompt('Copy your result:', lines));
-  else prompt('Copy your result:', lines);
+  const done = () => toast(t('copied'));
+  if (navigator.clipboard) navigator.clipboard.writeText(lines).then(done, () => prompt(t('copyPrompt'), lines));
+  else prompt(t('copyPrompt'), lines);
 }
 
-function toast(msg){ const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 1800); }
+function toast(msg){ const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg; document.body.appendChild(el); setTimeout(() => el.remove(), 1800); }
 
 // ---------- Boot ----------
 document.querySelectorAll('#modes button').forEach(b => b.onclick = () => { if (animHandle) cancelAnimationFrame(animHandle); newGame(b.dataset.mode); });
-Promise.all([P.loadPatchData(), fetch("stacks.json").then(r => r.ok ? r.json() : null).catch(() => null)]).then(([d, stacks]) => {
+applyStatic();
+$('#langSel').onchange = e => setLanguage(e.target.value);
+Promise.all([P.loadPatchData(), fetch("stacks.json").then(r => r.ok ? r.json() : null).catch(() => null)]).then(async ([d, stacks]) => {
   DATA = d; STACKS = stacks;
   $('#patch').textContent = d.patch;
   if (LB.enabled) { $('#lbBtn').style.display = ''; $('#lbBtn').onclick = () => showBoard('daily'); }
   window.__POTENSHALL_DATA = d;
+  await loadLocalizedNames();
   newGame('daily');
 }).catch(err => {
   console.error(err);
-  $('#stage').innerHTML = `<div class="loading"><div><h2 style="font-family:Cinzel">Couldn't reach Data Dragon</h2><p class="muted">Check your connection and reload. (${err.message})</p></div></div>`;
+  $('#stage').innerHTML = `<div class="loading"><div><h2 style="font-family:Cinzel">${t('ddError')}</h2><p class="muted">${t('ddErrorSub')} (${esc(err.message)})</p></div></div>`;
 });
 })();
 </script>

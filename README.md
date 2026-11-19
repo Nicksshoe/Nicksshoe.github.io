@@ -50,3 +50,8 @@ Run `tools/update-itemgroups.ps1` to regenerate `itemgroups.js` (which items can
 ## Leaderboard boards
 
 Daily (per date), Free Play (per patch; past patches stay browsable from the patch picker) and All-time (each player's best ever, with its patch). The `patch` column on `scores` was added with `ALTER TABLE scores ADD COLUMN patch TEXT;` (already applied; `worker/schema.sql` has it for fresh databases).
+
+
+## Languages
+
+The ⚙ menu switches the interface between the 20 most spoken languages (English by default; the choice is remembered per browser). UI text lives in `i18n.js`; champion, item and ability names come from Data Dragon in the chosen language where Riot publishes it (11 of the 20), otherwise English. Game logic always uses the English data, so drafts and leaderboard verification are the same in every language.
