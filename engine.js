@@ -276,7 +276,8 @@
     // Stat-buff abilities (e.g. Vayne R) are cast at the start and last the whole fight.
     const extraStats = { ...(stackInfo.stats || {}) };
     const mechOf = kind => spells ? spells.filter(s => s.mech && s.mech.kind === kind) : [];
-    for (const s of mechOf('buff')) for (const [k, v] of Object.entries(s.mech.stats)) extraStats[k] = (extraStats[k] || 0) + v;
+    // Stat-buff abilities: cast at the start; a buff shorter than the fight counts for its share of the 10s.
+    for (const s of mechOf('buff')) for (const [k, v] of Object.entries(s.mech.stats)) extraStats[k] = (extraStats[k] || 0) + v * Math.min(1, (s.mech.duration || T) / T);
     // Champion passive (passives.js). Stat passives are applied in a second pass because many scale with
     // the champion's own stats (e.g. Jhin turns bonus attack speed and crit into AD).
     const P = opts.noPassive ? null : ((root.Potenshall.ChampPassives || {})[ch.id] || null);
