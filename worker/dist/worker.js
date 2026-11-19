@@ -547,7 +547,7 @@
         baseHp: DUMMY.baseHp, bonusHp: DUMMY.hp - DUMMY.baseHp },
       stacks: stackInfo.counter ?? 0,
     });
-    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi']);
+    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute']);
     const spellQueue = []; // scheduled ability hits/ticks: { at, raw(), type, label }
     const onUltimate = t => {
       if (hasAny('malignance')) { malignanceUntil = t + 3; malignanceShred = 10; }
@@ -571,7 +571,13 @@
           const m = sp.mech, label = `${sp.slot} · ${labels[sp.slot] || sp.name}`;
           const ev = name => { const v = root.Potenshall.Abilities.evalCalc(name, sp.sp, { ...spellCtx(), rank: sp.rank }); return Number.isFinite(v) && v > 0 ? Math.min(v, 6000) : 0; };
           let first = 0;
-          if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : 1), m.type, label, 'ability');
+          if (m.kind === 'execute') {
+            const raw = root.Potenshall.Abilities.evalCalc(sp.calc, sp.sp, { ...spellCtx(), rank: sp.rank });
+            const thr = (m.threshold > 1 ? m.threshold / 100 : m.threshold) * DUMMY.hp;
+            if (dummyHp > thr + raw && t < m.latest) continue; // hold it until it can execute
+            first = deal(t, Math.min(raw, 6000), m.type, label, 'ability');
+            if (dummyHp > 0 && dummyHp < thr) record(t, dummyHp, 'true', label.replace(/ · .*/, ' · Execute'));
+          } else if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : 1), m.type, label, 'ability');
           else if (m.kind === 'multi') for (const p of m.parts) first += deal(t, ev(p.calc), p.type, label, 'ability');
           else if (m.kind === 'hits') {
             for (let i = 0; i < m.n; i++) spellQueue.push({ at: t + (m.n > 1 ? i * m.over / (m.n - 1) : 0), label, type: m.type,
@@ -1027,13 +1033,16 @@
     Rumble: { R: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 'TrailDuration' } },
     Singed: { Q: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 99, once: true } },
     Kennen: { R: { kind: 'hits', type: 'magic', calc: 'PerTickDamageCalculated', n: 6, over: 3 } },
+    // Execute ultimates: held until the hit leaves the target under the threshold, then the execute kills it.
+    // If the dummy never gets that low, it's fired near the end of the fight for its damage.
+    Urgot: { R: { kind: 'execute', type: 'physical', threshold: 'RHealthThreshold', latest: 9.5 } },
     Kayle: { E: { kind: 'cast', type: 'magic', calc: 'ActiveTotalExecuteDamage', pctOfMissing: true } }, // formula is a share of missing HP
   };
 
   function resolveMechanic(spec, sp, rank) {
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
-    for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+    for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.stats) m.stats = Object.fromEntries(Object.entries(spec.stats).map(([k, name]) => [k, dv(name)]));
     return m;
   }

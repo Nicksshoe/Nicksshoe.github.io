@@ -251,13 +251,16 @@
     Rumble: { R: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 'TrailDuration' } },
     Singed: { Q: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 99, once: true } },
     Kennen: { R: { kind: 'hits', type: 'magic', calc: 'PerTickDamageCalculated', n: 6, over: 3 } },
+    // Execute ultimates: held until the hit leaves the target under the threshold, then the execute kills it.
+    // If the dummy never gets that low, it's fired near the end of the fight for its damage.
+    Urgot: { R: { kind: 'execute', type: 'physical', threshold: 'RHealthThreshold', latest: 9.5 } },
     Kayle: { E: { kind: 'cast', type: 'magic', calc: 'ActiveTotalExecuteDamage', pctOfMissing: true } }, // formula is a share of missing HP
   };
 
   function resolveMechanic(spec, sp, rank) {
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
-    for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+    for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.stats) m.stats = Object.fromEntries(Object.entries(spec.stats).map(([k, name]) => [k, dv(name)]));
     return m;
   }
