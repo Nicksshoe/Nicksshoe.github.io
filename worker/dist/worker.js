@@ -1353,7 +1353,7 @@
       onHit: { type: 'magic', dmg: c => 25 + 0.04 * c.ap } },
     Sett: { name: 'Pit Grit', note: 'Every other punch is stronger; Q empowers 2 punches with % max HP', everyN: { n: 2, type: 'physical', dmg: c => 90 + 0.5 * c.bad },
       timedAuto: { every: 5, label: 'Q · Knuckle Down', kind: 'ability', type: 'physical', dmg: c => 2 * (50 + (0.01 + 0.01 * c.ad / 100) * c.tmax) } },
-    Shaco: { name: 'Backstab', note: 'Attacks from behind', timedAuto: { every: 4, type: 'physical', dmg: c => 50 + 0.25 * c.bad } },
+    Shaco: { name: 'Backstab', note: 'Always attacking from behind: 35 + 20% bonus AD bonus damage, once every 3s per target (game data)', timedAuto: { every: 3, type: 'physical', dmg: c => 35 + 0.2 * c.bad } },
     Shen: none('Ki Barrier', 'Shield only'),
     Shyvana: none('Fury of the Dragonborn'),
     Singed: none('Noxious Slipstream'),
