@@ -161,6 +161,7 @@
     lockTitle: ["Today's board is locked","Die heutige Bestenliste ist gesperrt","Таблица на сегодня закрыта","La clasificación de hoy está bloqueada","O placar de hoje está bloqueado","De ranglijst van vandaag is vergrendeld","Le classement du jour est verrouillé"],
     lockSub: ["Finish today's daily to see the scores. No peeking at the best builds first.","Schließe die heutige Tagesrunde ab, um die Ergebnisse zu sehen. Kein Spicken bei den besten Builds vorher.","Пройдите сегодняшнее ежедневное испытание, чтобы увидеть результаты. Никаких подглядываний в лучшие сборки.","Completa el diario de hoy para ver las puntuaciones. Nada de espiar las mejores builds antes.","Conclua o diário de hoje para ver as pontuações. Nada de espiar as melhores builds antes.","Speel eerst de dagelijkse van vandaag om de scores te zien. Niet spieken bij de beste builds.","Terminez le défi quotidien du jour pour voir les scores. Pas question de copier les meilleurs builds avant."],
     playDaily: ["Play today's daily","Tagesrunde spielen","Играть ежедневное испытание","Jugar el diario de hoy","Jogar o diário de hoje","Speel de dagelijkse","Jouer le quotidien du jour"],
+    sponsored: ["Sponsored","Gesponsert","Реклама","Patrocinado","Patrocinado","Gesponsord","Sponsorisé"],
   };
   root.PD_I18N = { LANGS, S };
 })(typeof window !== 'undefined' ? window : globalThis);

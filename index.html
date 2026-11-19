@@ -225,6 +225,8 @@ footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size
         <li data-i18n="rule3">Level 18, 10 seconds, all-in, fighting at 40% health. Dummy respawns on death.</li>
         <li data-i18n="rule4">Score = total damage dealt.</li>
       </ul>
+      <!-- Sponsor slot: hidden unless sponsor.json is active. An ad network's unit would go here too. -->
+      <div id="sponsor" hidden style="margin-top:16px"></div>
     </aside>
 
     <main class="panel" id="stage">
@@ -349,6 +351,7 @@ async function setLanguage(code){
   await loadLocalizedNames();
   kitCache.clear();               // ability names are fetched per language
   if (rerender) rerender();
+  renderSponsor();
 }
 
 // ---------- Leaderboard client ----------
@@ -411,6 +414,23 @@ function renderSubmitPanel(snapshot){
       if (captchaId !== null && window.turnstile) window.turnstile.reset(captchaId); // a token works once
     }
   };
+}
+// Direct sponsor: sponsor.json { "active": true, "image": "sponsors/name.png", "url": "https://...", "alt": "..." }.
+// The image is stored in this repo, so showing it involves no third party and no tracking.
+var sponsorInfo = null; // var: the language switcher can call renderSponsor before this line has run
+async function loadSponsor(){
+  try {
+    const s = await fetch('sponsor.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null);
+    if (!s || !s.active || !/^sponsors\/[\w.\-]+\.(png|jpe?g|webp|gif|svg)$/.test(s.image || '') || !/^https:\/\//.test(s.url || '')) return;
+    sponsorInfo = s; renderSponsor();
+  } catch {}
+}
+function renderSponsor(){
+  const el = $('#sponsor'); if (!el || !sponsorInfo) return;
+  el.innerHTML = `<div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">${t('sponsored')}</div>
+    <a href="${esc(sponsorInfo.url)}" target="_blank" rel="sponsored noopener noreferrer"><img src="${esc(sponsorInfo.image)}" alt="${esc(sponsorInfo.alt || '')}"
+      style="display:block;width:100%;height:auto;border-radius:8px;border:1px solid var(--line)"></a>`;
+  el.hidden = false;
 }
 // Cloudflare Turnstile bot check for score submissions: off while the site key is empty. To turn it on, create a
 // Turnstile widget for the site's domain, put its site key here and its secret in the Worker as TURNSTILE_SECRET.
@@ -832,6 +852,7 @@ Promise.all([P.loadPatchData(), fetch("stacks.json").then(r => r.ok ? r.json() :
   $('#patch').textContent = d.patch;
   if (LB.enabled) { $('#lbBtn').style.display = ''; $('#lbBtn').onclick = () => showBoard('daily'); }
   window.__POTENSHALL_DATA = d;
+  loadSponsor();
   await loadLocalizedNames();
   newGame('daily');
 }).catch(err => {
