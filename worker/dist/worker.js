@@ -836,6 +836,9 @@
           if (opening) castDebuff(t, sp.slot);
           ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : m.recasts && recastLeft[sp.slot] > 0 ? t + (m.recastGap || 1)
             : afterCharge(sp, t, t + cdOf(sp.slot, m.zoneCd && t < zoneUntil ? m.zoneCd : sp.cooldown)); // Kindred Q: shorter inside her zone
+          // Olaf Q: he walks to the axe and picks it up (pickup seconds later); the cooldown drops to pickupCd from the throw.
+          if (m.pickup) { const castAt = t; spellQueue.push({ at: t + m.pickup, label, type: m.type, raw: () => 0,
+            after: tt => { if (ready[sp.slot] > tt && ready[sp.slot] !== Infinity) ready[sp.slot] = Math.max(tt, castAt + cdOf(sp.slot, m.pickupCd || 0)); } }); }
           castLock = t + sp.castTime; payEnergy(sp, t);
           dropDagger(t, sp.slot);
           return;
@@ -1382,7 +1385,14 @@
     Draven: { W: { kind: 'buff', stats: { as: ['AttackSpeed', 100] }, duration: 10 } }, // refreshed by catching axes
     Lulu: { W: { kind: 'buff', stats: { as: ['ASBonus', 100] }, duration: 4 } },
     MasterYi: { R: { kind: 'buff', stats: { as: 'RASBonus' }, duration: 7 } },
-    Olaf: { W: { kind: 'buff', stats: { as: ['Attackspeed', 100] }, duration: 4 } },
+    // Olaf: W attack speed for 5s. Q: he walks about 2s to pick the axe up, which drops its cooldown to 2.5s from the
+    // throw. E: true damage; each attack cuts its cooldown by 1s. (R's attack damage is in passives.js.)
+    Olaf: {
+      W: { kind: 'buff', stats: { as: ['Attackspeed', 100] }, duration: 'Duration' },
+      Q: { kind: 'cast', type: 'physical', calc: 'TotalDamage', pickup: 2, pickupCd: 'MinimumCooldown' },
+      E: { kind: 'cast', type: 'true', calc: 'TotalDamage', cdPerHit: 'ChampionRefresh' },
+      R: { kind: 'cast', noDamage: true, type: 'physical' }, // still cast, so ultimate-triggered items fire
+    },
     Quinn: { W: { kind: 'buff', stats: { as: ['AttackSpeedBonus', 100] }, duration: 3.3 } }, // after each Harrier proc
     Tristana: { Q: { kind: 'buff', stats: { as: ['AttackSpeedMod', 100] }, duration: 7 } },
     Viego: { E: { kind: 'buff', stats: { as: ['AttackSpeed', 100] }, duration: 8 } },
@@ -1491,7 +1501,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));
@@ -1757,7 +1767,10 @@
     Nilah: none('Joy Unending'),
     Nocturne: { name: 'Umbra Blades', note: 'Empowered cleave', timedAuto: { every: 8, type: 'physical', dmg: c => 0.2 * c.ad } },
     Nunu: { name: 'Call of the Freljord', note: '+20% attack speed (game data)', stats: () => ({ as: 20 }) },
-    Olaf: { castDebuff: { Q: { armor: 0.2, dur: 4 } }, name: 'Berserker Rage', note: 'Attack speed from missing health (maxes at 30% health)', stats: c => ({ as: 100 * Math.min(1, c.smiss / 0.7) }) },
+    // Olaf: attack speed from missing health (maxes at 30% health). R (Ragnarok) active: +30 AD + 25% of total AD (rank 3),
+    // kept up all fight because every attack or E on a champion extends it by 2.5s; it deals no damage itself.
+    Olaf: { castDebuff: { Q: { armor: 0.2, dur: 4 } }, name: 'Berserker Rage + Ragnarok', note: 'Attack speed from missing health; R: +30 AD + 25% AD',
+      stats: c => ({ as: 100 * Math.min(1, c.smiss / 0.7), ad: 30 + 0.25 * c.ad }) },
     Orianna: { name: 'Clockwork Windup', note: 'On-hit, stacking on repeated attacks', onHit: { type: 'magic', dmg: c => (59 + 0.15 * c.ap) * 1.4 } },
     Ornn: none('Living Forge'),
     // Mortal Will: every 5 actions (attacks and abilities) empower his next Q: +70% on the close-range stab (game data).

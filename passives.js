@@ -208,7 +208,10 @@
     Nilah: none('Joy Unending'),
     Nocturne: { name: 'Umbra Blades', note: 'Empowered cleave', timedAuto: { every: 8, type: 'physical', dmg: c => 0.2 * c.ad } },
     Nunu: { name: 'Call of the Freljord', note: '+20% attack speed (game data)', stats: () => ({ as: 20 }) },
-    Olaf: { castDebuff: { Q: { armor: 0.2, dur: 4 } }, name: 'Berserker Rage', note: 'Attack speed from missing health (maxes at 30% health)', stats: c => ({ as: 100 * Math.min(1, c.smiss / 0.7) }) },
+    // Olaf: attack speed from missing health (maxes at 30% health). R (Ragnarok) active: +30 AD + 25% of total AD (rank 3),
+    // kept up all fight because every attack or E on a champion extends it by 2.5s; it deals no damage itself.
+    Olaf: { castDebuff: { Q: { armor: 0.2, dur: 4 } }, name: 'Berserker Rage + Ragnarok', note: 'Attack speed from missing health; R: +30 AD + 25% AD',
+      stats: c => ({ as: 100 * Math.min(1, c.smiss / 0.7), ad: 30 + 0.25 * c.ad }) },
     Orianna: { name: 'Clockwork Windup', note: 'On-hit, stacking on repeated attacks', onHit: { type: 'magic', dmg: c => (59 + 0.15 * c.ap) * 1.4 } },
     Ornn: none('Living Forge'),
     // Mortal Will: every 5 actions (attacks and abilities) empower his next Q: +70% on the close-range stab (game data).

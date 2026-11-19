@@ -835,6 +835,9 @@
           if (opening) castDebuff(t, sp.slot);
           ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : m.recasts && recastLeft[sp.slot] > 0 ? t + (m.recastGap || 1)
             : afterCharge(sp, t, t + cdOf(sp.slot, m.zoneCd && t < zoneUntil ? m.zoneCd : sp.cooldown)); // Kindred Q: shorter inside her zone
+          // Olaf Q: he walks to the axe and picks it up (pickup seconds later); the cooldown drops to pickupCd from the throw.
+          if (m.pickup) { const castAt = t; spellQueue.push({ at: t + m.pickup, label, type: m.type, raw: () => 0,
+            after: tt => { if (ready[sp.slot] > tt && ready[sp.slot] !== Infinity) ready[sp.slot] = Math.max(tt, castAt + cdOf(sp.slot, m.pickupCd || 0)); } }); }
           castLock = t + sp.castTime; payEnergy(sp, t);
           dropDagger(t, sp.slot);
           return;

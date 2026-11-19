@@ -277,7 +277,14 @@
     Draven: { W: { kind: 'buff', stats: { as: ['AttackSpeed', 100] }, duration: 10 } }, // refreshed by catching axes
     Lulu: { W: { kind: 'buff', stats: { as: ['ASBonus', 100] }, duration: 4 } },
     MasterYi: { R: { kind: 'buff', stats: { as: 'RASBonus' }, duration: 7 } },
-    Olaf: { W: { kind: 'buff', stats: { as: ['Attackspeed', 100] }, duration: 4 } },
+    // Olaf: W attack speed for 5s. Q: he walks about 2s to pick the axe up, which drops its cooldown to 2.5s from the
+    // throw. E: true damage; each attack cuts its cooldown by 1s. (R's attack damage is in passives.js.)
+    Olaf: {
+      W: { kind: 'buff', stats: { as: ['Attackspeed', 100] }, duration: 'Duration' },
+      Q: { kind: 'cast', type: 'physical', calc: 'TotalDamage', pickup: 2, pickupCd: 'MinimumCooldown' },
+      E: { kind: 'cast', type: 'true', calc: 'TotalDamage', cdPerHit: 'ChampionRefresh' },
+      R: { kind: 'cast', noDamage: true, type: 'physical' }, // still cast, so ultimate-triggered items fire
+    },
     Quinn: { W: { kind: 'buff', stats: { as: ['AttackSpeedBonus', 100] }, duration: 3.3 } }, // after each Harrier proc
     Tristana: { Q: { kind: 'buff', stats: { as: ['AttackSpeedMod', 100] }, duration: 7 } },
     Viego: { E: { kind: 'buff', stats: { as: ['AttackSpeed', 100] }, duration: 8 } },
@@ -386,7 +393,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));
