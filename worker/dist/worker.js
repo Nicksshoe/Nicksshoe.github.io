@@ -122,7 +122,7 @@
     "sunfire aegis": { immolate: { base: 20, bhp: 0.015 }, tip: 'Immolate: 20 + 1.5% bonus HP per second' },
     "hollow radiance": { immolate: { base: 10, bhp: 0.0175 }, tip: 'Immolate: 10 + 1.75% bonus HP per second' },
     "unending despair": { despair: true, tip: 'Anguish pulse every 4s' },
-    "heartsteel": { heartsteel: true, tip: 'Colossal Consumption: 6% max HP hit' },
+    "heartsteel": { heartsteel: true, maxStacks: { hp: 600 }, tip: 'Colossal Consumption: 6% max HP hit; assumes +600 HP from stacks' },
     "nashor's tooth": { onHit: { magic: 15, ap: 0.15 }, tip: 'On-hit 15 + 15% AP' },
     "wit's end": { onHit: { magic: 45 }, tip: 'On-hit magic' },
     "guinsoo's rageblade": { onHit: { magic: 30 }, asBonus: 32, guinsoo: true, tip: 'Fully stacked (+32% AS): every 3rd attack applies on-hit twice' },
