@@ -70,6 +70,9 @@ const UTILITY_OK = new Set(['Aatrox E', 'Alistar R', 'AurelionSol W', 'Braum E',
   'MissFortune W', 'Mordekaiser W', 'Nilah W', 'Rammus E', 'Rell E', 'Ryze R', 'Sivir R', 'Sona W', 'Sona E', 'TahmKench E',
   'Taliyah R', 'Teemo W', 'Tryndamere Q', 'Tryndamere W', 'Warwick E', 'Yuumi E', 'Kalista W', 'Aatrox R']);
 
+// Damage that only happens in a situation a no-items fight may not reach.
+const CONDITIONAL = { 'Ekko W': 'Modeled: on-hit below 30% target HP (not reached here)' };
+
 async function loadKit(ch) {
   try {
     const kit = await P.Abilities.loadKit(ch.id);
@@ -94,8 +97,10 @@ async function runChampions() {
       const mech = s.mech ? s.mech.kind : (s.damaging ? 'formula' : 'none');
       const o = { slot: s.slot, name: (ddS[i] || {}).name || s.name, rank: s.rank, cd: s.cooldown, mech, type: s.type,
         dmg: hs.reduce((a, h) => a + h.amt, 0), casts: times.length, times: times.join(' '), status: 'ok', note: '' };
-      if (dis.has(s.slot)) { o.status = 'passive'; o.note = 'Modeled in the champion passive table'; }
+      if (CONDITIONAL[ch.id + ' ' + s.slot] && !o.dmg) { o.status = 'utility'; o.note = CONDITIONAL[ch.id + ' ' + s.slot]; }
+      else if (dis.has(s.slot)) { o.status = 'passive'; o.note = 'Modeled in the champion passive table'; }
       else if (PS.ownKit) { o.status = 'passive'; o.note = 'Whole kit modeled by hand (forms / rotation)'; }
+      else if (mech === 'none' && o.dmg > 0) { o.status = 'passive'; o.note = 'Damage modeled in the champion passive table'; }
       else if (mech === 'buff') { o.status = 'buff'; o.note = 'Self-buff: its stats apply for its share of the fight'; }
       else if (mech === 'none' && /damage/i.test(tip) && !UTILITY_OK.has(ch.id + ' ' + s.slot)) { o.status = 'missing'; o.note = 'Deals damage in game, not modeled yet'; }
       else if (mech === 'none') { o.status = 'utility'; o.note = 'Utility / defensive: no damage'; }

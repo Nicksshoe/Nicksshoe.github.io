@@ -651,7 +651,8 @@
           } else if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, label, 'ability');
           // Temporary attack speed from a cast (Wukong E); game data stores 60% as 0.6.
           if (m.asBonus) { tempAS = m.asBonus < 5 ? m.asBonus * 100 : m.asBonus; tempASUntil = t + (m.asDur || 5); }
-          else if (m.kind === 'multi') for (const p of m.parts) first += deal(t, ev(p.calc), p.type, label, 'ability');
+          else if (m.kind === 'multi') for (const p of m.parts) // a part is a formula, a flat data value, or a share of max HP
+            first += deal(t, (p.calc ? ev(p.calc) * (p.pctOfMax ? DUMMY.hp : 1) : 0) + (p.flat || 0), p.type, label, 'ability');
           else if (m.kind === 'hits') {
             for (let i = 0; i < m.n; i++) spellQueue.push({ at: t + (m.n > 1 ? i * m.over / (m.n - 1) : 0), label, type: m.type,
               raw: () => { const b = ev(m.calc); return m.critCalc ? b + st.crit * (ev(m.critCalc) - b) : b; } });
@@ -1260,6 +1261,7 @@
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
       'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+    if (spec.parts) m.parts = spec.parts.map(p => typeof p.flat === 'string' ? { ...p, flat: dv(p.flat) } : p);
     // Buff stats: a data value name, or [name, multiplier] (e.g. attack speed stored as 0.7 -> 70%), or a number.
     if (spec.stats) m.stats = Object.fromEntries(Object.entries(spec.stats).map(([k, v]) => [k, typeof v === 'number' ? v : Array.isArray(v) ? dv(v[0]) * v[1] : dv(v)]));
     return m;
@@ -1405,7 +1407,8 @@
       everyN: { n: 1, type: 'physical', dmg: c => (60 + 1.15 * c.bad) * avgCrit(c) } },
     DrMundo: { name: 'Blunt Force Trauma (E)', note: 'E passive: +3.2% max HP as AD; empowered attack every 6s, up to +40% at low health',
       stats: c => ({ ad: 0.032 * c.hp }), timedAuto: { every: 6, resetsAttack: true, label: 'E · Blunt Force Trauma', kind: 'ability', type: 'physical', dmg: c => (45 + 0.05 * c.bhp) * (1 + 0.4 * Math.min(1, c.smiss / 0.7)) } },
-    Ekko: { name: 'Z-Drive Resonance', note: 'Every 3rd hit', everyNHits: { n: 3, cd: 5, type: 'magic', dmg: c => 85 + 0.8 * c.ap } },
+    Ekko: { name: 'Z-Drive Resonance + Parallel Convergence (W)', note: 'Every 3rd hit; W passive: attacks on targets below 30% HP deal 3% (+3% per 100 AP) missing HP', everyNHits: { n: 3, cd: 5, type: 'magic', dmg: c => 85 + 0.8 * c.ap },
+      onHit: { cond: c => c.thp < 0.3 * c.tmax, label: 'W · Parallel Convergence', type: 'magic', dmg: c => (0.03 + 0.03 * c.ap / 100) * c.tmiss } },
     Elise: { name: 'Spider Queen', note: 'Human Neurotoxin and Volatile Spiderling, then Spider form: Venomous Bite, empowered attacks, spiderlings', ownKit: true,
       onHit: { cond: c => c.t >= 1, label: 'Spider form attacks', kind: 'ability', type: 'magic', dmg: c => 44 + 0.15 * c.ap },
       periodic: [
@@ -1414,10 +1417,12 @@
         { every: 6, start: 1.0, ability: true, label: 'Spider Q · Venomous Bite', kind: 'ability', type: 'magic', dmg: c => 170 + (0.08 + 0.03 * c.ap / 100) * c.tmiss },
         { every: 1, start: 1.2, label: 'Spiderlings', kind: 'ability', type: 'magic', dmg: c => 3 * (40 + 0.15 * c.ap) },
       ] },
-    Evelynn: { name: 'Demon Shade', note: 'E deals % max HP', periodic: { every: 7, start: 0.3, label: 'E · Whiplash', kind: 'ability', type: 'magic', dmg: c => 130 + (0.03 + 0.015 * c.ap / 100) * c.tmax } },
+    Evelynn: { name: 'Demon Shade', note: 'E deals % max HP', periodic: { every: 8, start: 0.3, ability: true, label: 'E · Whiplash', kind: 'ability', type: 'magic', dmg: c => 180 + (0.03 + 0.015 * c.ap / 100) * c.tmax } },
     Ezreal: { name: 'Rising Spell Force', note: 'Attack speed from ability hits; Q applies on-hit and Spellblade', stats: () => ({ as: 45 }), onHitAbility: { Q: { spellblade: true } } },
-    Fiddlesticks: { name: 'A Harmless Scarecrow', note: 'Q deals % current HP', periodic: { every: 10, start: 0.5, label: 'Q · Terrify', kind: 'ability', type: 'magic', dmg: c => (0.10 + 0.02 * c.ap / 100) * c.thp } },
-    Fiora: { name: "Duelist's Dance", note: 'Vitals: % max HP true damage', periodic: { every: 4, start: 0.5, type: 'true', dmg: c => (0.03 + 0.045 * c.bad / 100) * c.tmax } },
+    Fiddlesticks: { name: 'A Harmless Scarecrow', note: 'Q deals % current HP (min 120)', periodic: { every: 13, start: 0.5, ability: true, label: 'Q · Terrify', kind: 'ability', type: 'magic', dmg: c => Math.max(120, (0.06 + 0.03 * c.ap / 100) * c.thp) } },
+    // R (Grand Challenge) marks all four vitals at once: four extra vital hits, used right away.
+    Fiora: { name: "Duelist's Dance", note: 'Vitals: % max HP true damage; R reveals 4 more', periodic: [{ every: 4, start: 0.5, type: 'true', dmg: c => (0.03 + 0.045 * c.bad / 100) * c.tmax },
+      ...[1, 1.8, 2.6, 3.4].map(s => ({ start: s, label: 'R · Grand Challenge', kind: 'ability', ult: s === 1, ability: s === 1, type: 'true', dmg: c => (0.03 + 0.045 * c.bad / 100) * c.tmax }))] },
     Fizz: none('Nimble Fighter'),
     Galio: { name: 'Colossal Smash', note: 'Empowered attack every few seconds', timedAuto: { every: 5, type: 'magic', dmg: c => 200 + c.ad + 0.5 * c.ap + 0.6 * c.bmr } },
     Gangplank: { name: 'Trial by Fire', note: 'Burning true-damage attack; Q applies on-hit and Spellblade', onHitAbility: { Q: { spellblade: true } }, timedAuto: { every: 12, type: 'true', dot: 2.5, dmg: c => 310 + c.bad } },
@@ -1471,7 +1476,7 @@
     KogMaw: { name: 'Bio-Arcane Barrage (W)', note: 'W on-hit % max HP (8s of the fight) + Q attack speed; W is modeled here', disable: ['W'],
       stats: () => ({ as: 26 }), onHit: { type: 'magic', dmg: c => 0.8 * (0.06 + 0.01 * c.ap / 100) * c.tmax } },
     KSante: { name: 'Dauntless Instinct', note: 'Abilities mark: next attack % max HP; W deals % max HP', afterAbility: { type: 'physical', dmg: c => (0.01 + 0.01 * (c.barm + c.bmr) / 100) * c.tmax },
-      periodic: { every: 12, start: 0.5, label: 'W · Path Maker', kind: 'ability', type: 'physical', dmg: c => 0.06 * c.tmax } },
+      periodic: { every: 10, start: 0.5, ability: true, label: 'W · Path Maker', kind: 'ability', type: 'physical', dmg: c => 205 + 0.08 * c.tmax } },
     Leblanc: none('Mirror Image'),
     LeeSin: { name: 'Flurry', note: 'Attack speed after abilities', stats: () => ({ as: 25 }) },
     Leona: none('Sunlight', 'Procs for allies'),
@@ -1533,7 +1538,7 @@
     Seraphine: { name: 'Stage Presence', note: 'Every 3rd ability echoes; notes on attacks', everyNAbility: { n: 3, echo: 1 },
       onHit: { type: 'magic', dmg: c => 25 + 0.04 * c.ap } },
     Sett: { name: 'Pit Grit', note: 'Every other punch is stronger; Q empowers 2 punches with % max HP', everyN: { n: 2, type: 'physical', dmg: c => 90 + 0.5 * c.bad },
-      timedAuto: { every: 5, label: 'Q · Knuckle Down', kind: 'ability', type: 'physical', dmg: c => 2 * (50 + (0.01 + 0.01 * c.ad / 100) * c.tmax) } },
+      timedAuto: { every: 5, label: 'Q · Knuckle Down', kind: 'ability', type: 'physical', dmg: c => 2 * (50 + (0.01 + 0.0003 * c.ad) * c.tmax) } },
     Shaco: { name: 'Backstab', note: 'Always attacking from behind: 35 + 20% bonus AD bonus damage, once every 3s per target (game data)', timedAuto: { every: 3, type: 'physical', dmg: c => 35 + 0.2 * c.bad } },
     Shen: none('Ki Barrier', 'Shield only'),
     Shyvana: none('Fury of the Dragonborn'),
@@ -1549,7 +1554,7 @@
     Syndra: none('Transcendent'),
     TahmKench: { name: 'An Acquired Taste', note: 'Bonus damage from bonus HP', onHit: { type: 'magic', dmg: c => 60 + 0.04 * c.bhp },
       onAbility: { type: 'magic', dmg: c => 60 + 0.04 * c.bhp },
-      periodic: { start: 1, label: 'R · Devour', kind: 'ability', type: 'magic', dmg: c => 400 + (0.15 + 0.05 * c.ap / 100) * c.tmax } },
+      periodic: { start: 1, label: 'R · Devour', kind: 'ability', type: 'magic', dmg: c => 400 + (0.15 + 0.07 * c.ap / 100) * c.tmax } },
     Taliyah: none('Rock Surfing'),
     Talon: { name: "Blade's End", note: '3 ability hits: bleed', everyNAbility: { n: 3, cd: 6, dot: 2, type: 'physical', dmg: c => 245 + 2 * c.bad } },
     Taric: { name: 'Bravado', note: 'Two empowered attacks after abilities', afterAbility: { charges: 2, type: 'magic', dmg: c => 100 + 0.15 * c.barm } },
@@ -1557,7 +1562,7 @@
       onHit: { type: 'magic', dmg: c => 50 + 0.3 * c.ap } , everyN: { n: 1, dot: 4, type: 'magic', dmg: c => 96 + 0.4 * c.ap } },
     Thresh: { name: 'Flay (E)', note: 'Charged attack damage + souls', onHit: { type: 'magic', dmg: c => 63 + 0.5 * c.ad } },
     Tristana: none('Draw a Bead'),
-    Trundle: { name: "King's Tribute", note: 'R drains % max HP over 4s; W zone: +110% attack speed for 8s', stats: () => ({ as: 110 * 0.8 }), periodic: { start: 0.5, dot: 4, label: 'R · Subjugate', kind: 'ability', type: 'magic', dmg: c => (0.35 + 0.02 * c.ap / 100) * c.tmax } },
+    Trundle: { name: "King's Tribute", note: 'R drains 30% max HP over 4s; W zone: +110% attack speed for 8s', stats: () => ({ as: 110 * 0.8 }), periodic: { start: 0.5, dot: 4, label: 'R · Subjugate', kind: 'ability', type: 'magic', dmg: c => (0.30 + 0.02 * c.ap / 100) * c.tmax } },
     Tryndamere: { name: 'Battle Fury + Bloodlust (Q)', note: 'Crit chance from fury; Q passive AD from missing health', stats: c => ({ crit: 30, ad: 80 * c.smiss }) }, // game files: up to 80 AD at rank 5, scaling with missing health
     TwistedFate: { name: 'Stacked Deck (E)', note: 'Every 4th attack; E is passive', disable: ['E'], stats: () => ({ as: 45 }),
       everyN: { n: 4, type: 'magic', dmg: c => 165 + 0.5 * c.ap } },
@@ -1577,7 +1582,7 @@
         { every: 12, start: 4.8, key: 'udR2', dot: 4, label: 'R · Awakened storm', kind: 'ability', type: 'magic', dmg: c => c.ap > c.bad ? 4 * (68 + 0.35 * c.ap) : 0 },
       ] },
     Urgot: { name: 'Echoing Flames', note: 'Leg shotguns; W machine gun', periodic: [{ every: 2.5, start: 0.5, type: 'physical', dmg: c => 0.4 * c.ad + 0.06 * c.tmax },
-      { every: 1, start: 1, label: 'W · Purge', kind: 'ability', type: 'physical', dmg: c => 3 * (12 + 0.4 * c.ad) }] },
+      { every: 1, start: 1, label: 'W · Purge', kind: 'ability', type: 'physical', dmg: c => 3 * (12 + 0.34 * c.ad) }] },
     Varus: { name: 'Blighted Quiver (W)', note: 'On-hit + blight detonated by abilities', disable: ['W'],
       onHit: { type: 'magic', dmg: c => 27 + 0.35 * c.ap }, onAbility: { cd: 6, type: 'magic', dmg: c => (0.10 + 0.02 * c.ap / 100) * c.tmax } },
     Vayne: none('Night Hunter', 'Move speed only (Silver Bolts is her W)'),
@@ -1586,7 +1591,7 @@
     Vex: { name: "Doom 'n Gloom", note: 'Empowered ability marks + detonates', onAbility: { cd: 12, type: 'magic', dmg: c => 140 + 0.2 * c.ap } },
     Vi: { name: 'Denting Blows (W)', note: 'Every 3rd attack % max HP; W is passive', disable: ['W'],
       everyN: { n: 3, type: 'physical', dmg: c => (0.08 + c.bad / 3500) * c.tmax },
-      timedAuto: { every: 5, label: 'E · Relentless Force', kind: 'ability', type: 'physical', dmg: c => 90 + 1.2 * c.ad + c.ap } },
+      timedAuto: { every: 5, label: 'E · Relentless Force', kind: 'ability', type: 'physical', dmg: c => 110 + 1.1 * c.ad + c.ap } },
     Viego: { name: 'Blade of the Ruined King (Q)', note: '% current HP on-hit', onHit: { type: 'physical', dmg: c => 0.08 * c.thp } },
     Viktor: none('Glorious Evolution'),
     Vladimir: { name: 'Crimson Pact', note: 'AP from bonus HP and HP from AP', stats: c => ({ ap: 0.033 * c.bhp, hp: 1.6 * c.ap }) },
@@ -1603,7 +1608,7 @@
     Yunara: { name: 'Vow of the First Lands', note: 'Crits deal bonus magic damage', onHit: { type: 'magic', dmg: c => c.crit * 0.3 * c.ad } },
     Yuumi: { name: "Bop 'n' Block", note: 'Empowered attack', timedAuto: { every: 8, type: 'magic', dmg: c => 100 + 0.15 * c.ap } },
     Zaahen: { name: 'Cultivation of War', note: 'Determination stacks: AD', stats: () => ({ ad: 35 }) },
-    Zac: { name: 'Cell Division', note: 'W deals % max HP', periodic: { every: 4, start: 0.3, label: 'W · Unstable Matter', kind: 'ability', type: 'magic', dmg: c => 100 + (0.08 + 0.04 * c.ap / 100) * c.tmax } },
+    Zac: { name: 'Cell Division', note: 'W deals % max HP', periodic: { every: 4, start: 0.3, label: 'W · Unstable Matter', kind: 'ability', type: 'magic', dmg: c => 80 + (0.08 + 0.03 * c.ap / 100) * c.tmax } },
     // Living Shadow: the W shadow (5.25s, 16s cooldown) and the R shadow (7.5s) each throw their own Razor Shuriken at the
     // target for the reduced pass-through amount (game data: 144 + 60% bonus AD). Shadow E slashes don't stack damage.
     Zed: { name: 'Contempt for the Weak + shadows', note: 'Below 50% HP: 10% max HP; W and R shadows repeat Q', shadows: { slot: 'Q', calc: 'PassThroughDamage', w: { start: 0.1, every: 16, dur: 5.25 }, rDur: 7.5 },
