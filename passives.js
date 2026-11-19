@@ -33,6 +33,15 @@
   'use strict';
   const none = (name, note) => ({ name, note: note || 'No damage effect' });
   const avgCrit = c => 1 + c.crit * (c.cm - 1);
+  // Average of Aphelios's five weapon Qs at level 18 (Calibrum, Severum, Gravitum, Infernum, Crescendum).
+  const apheliosQ = c => {
+    const calibrum = 170 + 0.6 * c.bad + c.ap + (15 + 0.15 * c.bad);         // Moonshot + mark detonation
+    const severum = 2.4 * c.ad;                                              // Onslaught
+    const infernum = 110 + 0.21 * c.bad + 0.7 * c.ap + 1.1 * c.ad;           // Duskwave + follow-up attack
+    const crescendum = Math.round(4 * c.as) * (125 + 0.52 * c.bad + 0.5 * c.ap); // Sentry shoots for 4s
+    const gravitum = 140 + 0.5 * c.bad + 0.7 * c.ap;                         // Binding Eclipse (magic)
+    return { physical: (calibrum + severum + infernum + crescendum) / 5, magic: gravitum / 5 };
+  };
 
   const P = {
     Aatrox: { name: 'Deathbringer Stance', note: 'Empowered attack: 12% max HP', timedAuto: { every: 16, abilityCdr: 2, type: 'physical', dmg: c => 0.12 * c.tmax } },
@@ -44,7 +53,17 @@
     Amumu: { name: 'Cursed Touch', note: '10% of magic damage dealt again as true damage', magicEcho: 0.10 },
     Anivia: none('Rebirth'),
     Annie: none('Pyromania', 'Stun only'),
-    Aphelios: { name: 'The Hitman and the Seer', note: 'Level-up stat points', stats: () => ({ ad: 27, as: 18, leth: 12 }) },
+    // Aphelios's real damage lives in five weapon-specific Qs that aren't in his normal ability slots, so his kit is
+    // modeled here from the game files (level-18 formulas). He holds two weapons: each Q is cast at the start and
+    // again off its 9s cooldown, averaged over the five weapons since the pair depends on his rotation.
+    Aphelios: { name: 'The Hitman and the Seer', note: 'Weapon Qs (average of the 5 guns) + Moonlight Vigil, from game data', ownKit: true,
+      stats: () => ({ ad: 24, as: 18, leth: 12 }),
+      periodic: [
+        { every: 9, start: 0.3, ability: true, label: 'Q · Weapon abilities', kind: 'ability', dmg: c => apheliosQ(c) },
+        { every: 9, start: 0.9, ability: true, label: 'Q · Weapon abilities', kind: 'ability', dmg: c => apheliosQ(c) },
+        { start: 1.5, ability: true, ult: true, label: 'R · Moonlight Vigil', kind: 'ability', type: 'physical',
+          dmg: c => 225 + 0.2 * c.bad + c.ap + (150 + 0.25 * c.bad) / 5 },
+      ] },
     Ashe: { name: 'Frost Shot', note: 'Crits become bonus damage on slowed targets', noCrit: true, autoMult: c => 1.1 + c.crit * 0.75 * (c.cm / 1.75) },
     AurelionSol: none('Cosmic Creator', 'Stardust stacks are counted in his abilities'),
     Aurora: { name: 'Spirit Abjuration', note: 'Every 3rd hit, % max HP', everyNHits: { n: 3, cd: 5, type: 'magic', dmg: c => (0.01 + 0.015 * c.ap / 100) * c.tmax } },

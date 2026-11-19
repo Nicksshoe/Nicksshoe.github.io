@@ -276,6 +276,8 @@
       pr.uptime = 1;
       pr.autoAmp = (P || spells.passiveCovered) ? 1 : (AUTO_AMP_REAL[pr.arch] || 1);
       if (P || spells.passiveCovered) pr.onHitAp = 0; // real passive modeled instead of the generic on-hit stand-in
+    } else if (P && P.ownKit) {
+      pr.uptime = 1; pr.autoAmp = 1; pr.onHitAp = 0; // the passive table models this champion's whole kit
     } else if (P) {
       // Estimated kit: the archetype amp also stands in for abilities, so only half of it is passive.
       pr.autoAmp = 1 + (pr.autoAmp - 1) / 2; pr.onHitAp = 0;
@@ -587,7 +589,7 @@
     let pTimedOnceDone = false;
     if (hasAny('rocketbelt')) deal(0, 135 + 0.15 * st.ap, 'magic', 'Hextech Rocketbelt', 'item');
     const actives = has('active').map(f => ({ ...f.active, item: f.item, at: f.active.delay || 0 }));
-    if (spells) nextCombo = Infinity;
+    if (spells || (P && P.ownKit)) nextCombo = Infinity;
 
     for (let t = 0; t < T - 1e-9; t = +(t + DT).toFixed(4)) {
       if (spells) tryCastRealSpell(t);
@@ -620,7 +622,10 @@
       for (const x of pPeriodics) {
         if (t < x.at) continue;
         x.at = t + (x.pe.every || Infinity);
-        if (!x.pe.cond || x.pe.cond(pctx(t))) fireP(t, x.pe);
+        if (!x.pe.cond || x.pe.cond(pctx(t))) {
+          fireP(t, x.pe);
+          if (x.pe.ability) { onAbilityHit(t, true, null); if (x.pe.ult) onUltimate(t); }
+        }
       }
       if (t >= nextAuto) {
         basicAttack(t);
@@ -665,7 +670,7 @@
       stats: { ad: st.totalAD, bonusAD: st.bonusAD, ap: st.ap, as: st.as, crit: st.crit, critMult: st.critMult,
         ah: st.ah, hp: st.maxHP, mana: st.maxMana, leth: st.leth,
         armorPen: 1 - st.arpenKeep, magicPen: 1 - st.mpenKeep, mpenFlat: st.mpenFlat },
-      profile: pr, realKit: !!spells, passive: P ? { name: P.name, note: P.note || '' } : null,
+      profile: pr, realKit: !!spells || !!(P && P.ownKit), passive: P ? { name: P.name, note: P.note || '' } : null,
     };
   }
 
