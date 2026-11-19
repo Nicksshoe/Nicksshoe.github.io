@@ -564,9 +564,15 @@
       if (trueBonus) deal(t, trueBonus, 'true', 'Fiendhunter Bolts', 'attack');
       let empRaw = 0;
       if (empowered) {
-        const e = empowered; empowered = null;
+        const e = empowered;
+        e.left--;
+        if (e.left <= 0) {
+          empowered = null;
+          if (e.cdAfterCharges) ready[e.slot] = t + cdOf(e.slot, e.cd);
+        }
         if (e.shred) { shredPct = e.shred; shredUntil = t + (e.shredDur || 3); } // armor shred lands with the hit
-        empRaw = (e.adRatio || 0) * st.totalAD + (e.bonusAdRatio || 0) * st.bonusAD + (e.apRatio || 0) * st.ap + (e.flat || 0);
+        empRaw = (e.adRatio || 0) * st.totalAD + (e.bonusAdRatio || 0) * st.bonusAD + (e.apRatio || 0) * st.ap + (e.flat || 0)
+          + (e.calcFn ? e.calcFn() : 0) + (e.left <= 0 && e.finalPctMaxHp ? e.finalPctMaxHp * DUMMY.hp : 0);
         deal(t, empRaw, e.type, e.label, 'ability');
         if (t <= cloneUntil) deal(t, empRaw * cloneMult, e.type, e.label + ' (clone)', 'ability'); // the clone's next attack is empowered too
       }
@@ -665,9 +671,12 @@
         if ((ready[sp.slot] || 0) > t + 1e-9) continue;
         if (sp.mech && sp.mech.kind === 'empowerAuto') {
           if (empowered) continue; // don't waste it before the armed attack lands
-          empowered = { ...sp.mech, label: `${sp.slot} · ${labels[sp.slot] || sp.name}` };
+          empowered = { ...sp.mech, label: `${sp.slot} · ${labels[sp.slot] || sp.name}`, slot: sp.slot, cd: sp.cooldown,
+            left: sp.mech.charges || 1,
+            calcFn: sp.mech.calc ? () => root.Potenshall.Abilities.evalCalc(sp.mech.calc, sp.sp, { ...spellCtx(), rank: sp.rank }) || 0 : null };
           onAbilityHit(t, false); castDebuff(t, sp.slot);
-          ready[sp.slot] = t + cdOf(sp.slot, sp.cooldown);
+          // Multi-charge empowers (Skarner Q): the cooldown starts when the last empowered attack lands.
+          ready[sp.slot] = sp.mech.cdAfterCharges ? Infinity : t + cdOf(sp.slot, sp.cooldown);
           castLock = t + sp.castTime;
           if (sp.mech.resetsAttack) nextAuto = Math.min(nextAuto, castLock);
           return;
@@ -772,6 +781,7 @@
       if (t <= hexUntil) bonus += ch.ranged ? 25 : 50;
       if (t <= tempASUntil) bonus += tempAS;
       if (empoweredAutos > 0) bonus += 50;
+      if (empowered && empowered.asBonus) bonus += empowered.asBonus < 5 ? empowered.asBonus * 100 : empowered.asBonus; // Skarner Q
       const as = P && P.fixedAS ? st.as : Math.min(2.5, st.as + asRatioNow * bonus / 100);
       return 1 / (as * pr.uptime);
     };

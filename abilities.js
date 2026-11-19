@@ -240,7 +240,8 @@
   // stat buffs. The generic reader can't tell, so these entries describe the mechanic while every
   // number is still read from the game data by name, so values stay current each patch.
   //   everyN:      every Nth basic attack deals bonus damage (pctTargetMaxHp / flat / floor)
-  //   empowerAuto: casting arms the next attack with bonus damage (adRatio = x total AD, bonusAdRatio, apRatio)
+  //   empowerAuto: casting arms the next attack with bonus damage (adRatio = x total AD, bonusAdRatio, apRatio, or a
+  //                calc); charges: n attacks (asBonus while armed, finalPctMaxHp on the last, cdAfterCharges)
   //   buff:        cast at the start of the fight for bonus stats lasting the whole 10s
   //   cast:        a normal cast, but damage comes from a named formula the generic reader misses (calc)
   //   channel:     damage every tick for a duration (perSec formula; duration in seconds or a data value;
@@ -324,16 +325,17 @@
     Pantheon: { W: { kind: 'cast', type: 'physical', calc: 'MaxHealthDamageCalc', pctOfMax: true } },
     Naafiri: { Q: { kind: 'multi', parts: [{ calc: 'TotalDamageFirstCast', type: 'physical' }, { calc: 'TotalBleedDamage', type: 'physical' }, { calc: 'TotalMinDamageSecondCast', type: 'physical' }] } },
     Kayle: { E: { kind: 'cast', type: 'magic', calc: 'ActiveTotalExecuteDamage', pctOfMissing: true } }, // formula is a share of missing HP
-    // Skarner Q: rip up a boulder and throw it right away (Upheaval): the ability damage plus 11% of the target's max
-    // health, every cooldown. Throwing beats spending the 3 empowered attacks, since the cooldown starts sooner.
-    Skarner: { Q: { kind: 'multi', parts: [{ calc: 'AbilityDamage', type: 'physical' }, { pctMaxHp: 'MaxHPPercent', type: 'physical' }] } },
+    // Skarner Q: rip up a boulder that empowers his next 3 attacks with attack speed and the ability damage; the 3rd
+    // also deals 11% of the target's max health. The cooldown starts once the 3rd attack lands.
+    Skarner: { Q: { kind: 'empowerAuto', type: 'physical', calc: 'AbilityDamage', charges: 3, asBonus: 'AttackSpeed',
+      finalPctMaxHp: 'MaxHPPercent', cdAfterCharges: true } },
   };
 
   function resolveMechanic(spec, sp, rank) {
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}) }));
     // Buff stats: a data value name, or [name, multiplier] (e.g. attack speed stored as 0.7 -> 70%), or a number.
