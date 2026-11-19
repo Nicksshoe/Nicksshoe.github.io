@@ -7,6 +7,7 @@
   const DDRAGON = 'https://ddragon.leagueoflegends.com';
   const DUMMY = { hp: 10000, armor: 200, mr: 100 };
   const FIGHT_SECONDS = 10;
+  const SELF_HP = 0.4; // your champion fights at 40% health (matters for missing-health scaling)
   const DT = 0.05;
 
   // ---------- Data loading ----------
@@ -234,7 +235,7 @@
     return { lvl: 18, t, ad: st.totalAD, bad: st.bonusAD, base: st.baseAD, ap: st.ap, hp: st.maxHP, bhp: st.bonusHP,
       arm: st.baseArmor + st.bonusArmor, barm: st.bonusArmor, mr: st.baseMR + st.bonusMR, bmr: st.bonusMR,
       crit: st.crit, cm: st.critMult, as: st.as, bas: st.bonusASPct / 100, mana: st.maxMana, bmana: st.maxMana - st.champMana,
-      leth: st.leth, ranged: ch.ranged, thp: dummyHp, tmax: DUMMY.hp, tmiss: DUMMY.hp - dummyHp };
+      leth: st.leth, ranged: ch.ranged, shp: SELF_HP, smiss: 1 - SELF_HP, thp: dummyHp, tmax: DUMMY.hp, tmiss: DUMMY.hp - dummyHp };
   }
 
   // ---------- Simulation ----------
@@ -320,8 +321,9 @@
     // A passive damage spec returns a number (of spec.type) or { physical, magic, true }.
     const dealP = (t, spec, fn, kind, label) => {
       const out = fn(pctx(t));
-      if (typeof out === 'number') deal(t, out, spec.type || 'physical', label || PSRC, kind || 'passive');
-      else if (out) for (const ty of ['physical', 'magic', 'true']) if (out[ty]) deal(t, out[ty], ty, label || PSRC, kind || 'passive');
+      const src = label || spec.label || PSRC;
+      if (typeof out === 'number') deal(t, out, spec.type || 'physical', src, kind || 'passive');
+      else if (out) for (const ty of ['physical', 'magic', 'true']) if (out[ty]) deal(t, out[ty], ty, src, kind || 'passive');
     };
     const dots = []; // { until, perTick, type, key }
     const addDot = (t, spec, fn) => {
@@ -331,11 +333,11 @@
         if (!v) continue;
         const key = (spec.key || 'p') + ty;
         const i = dots.findIndex(d => d.key === key && !spec.stacks);
-        const d = { until: t + dur, perTick: v / (dur * 2), type: ty, key };
+        const d = { until: t + dur, perTick: v / (dur * 2), type: ty, key, src: spec.label || PSRC };
         if (i >= 0) dots[i] = d; else dots.push(d);
       }
     };
-    const fireP = (t, spec, kind) => spec.dot ? addDot(t, spec, spec.dmg) : dealP(t, spec, spec.dmg, kind);
+    const fireP = (t, spec, kind) => spec.dot ? addDot(t, spec, spec.dmg) : dealP(t, spec, spec.dmg, kind || spec.kind);
     let pHits = 0, pAbilities = 0, pArmed = 0, pTimedArmed = false, pTimedReady = P && P.timedAuto ? (P.timedAuto.start || 0) : Infinity;
     let pAbilityReady = 0, pAfterReady = 0, pHitsReady = 0, pNReady = 0, pAutoNReady = 0, pStack = { n: 0, until: -1 };
     let pAuras = P && P.aura ? -1 : null;
@@ -484,7 +486,7 @@
         as: st.as, baseAS: st.asBase, bonusAS: st.as - st.asBase,
         armor: st.baseArmor + st.bonusArmor, baseArmor: st.baseArmor, bonusArmor: st.bonusArmor,
         mr: st.baseMR + st.bonusMR, baseMR: st.baseMR, bonusMR: st.bonusMR,
-        maxHp: st.maxHP, baseHp: st.baseHP, bonusHp: st.bonusHP, curHp: st.maxHP, missingHp: 0,
+        maxHp: st.maxHP, baseHp: st.baseHP, bonusHp: st.bonusHP, curHp: SELF_HP * st.maxHP, missingHp: (1 - SELF_HP) * st.maxHP,
         crit: st.crit, critMult: st.critMult, mana: st.maxMana, baseMana: st.champMana, bonusMana: st.maxMana - st.champMana,
         lethality: st.leth, ms: 400 },
       target: { maxHp: DUMMY.hp, curHp: dummyHp, missingHp: DUMMY.hp - dummyHp, armor: DUMMY.armor, mr: DUMMY.mr,
@@ -523,7 +525,9 @@
     // Event schedule
     const attackInterval = 1 / (st.as * pr.uptime);
     let nextAuto = 0.1, nextCombo = 0, comboQueue = [], ultDone = false, nextDespair = 0;
-    let pPeriodicAt = P && P.periodic ? (P.periodic.start || 0) : Infinity, pAuraAt = 0, pTimedOnceDone = false;
+    // periodic may be one timer or a list (e.g. a passive plus an ability modeled as a timer). No 'every' = fires once.
+    const pPeriodics = P ? [].concat(P.periodic || []).map(pe => ({ pe, at: pe.start || 0 })) : [];
+    let pTimedOnceDone = false;
     if (hasAny('rocketbelt')) deal(0, 125 + 0.15 * st.ap, 'magic', 'Hextech Rocketbelt', 'item');
     if (spells) nextCombo = Infinity;
 
@@ -550,9 +554,10 @@
         const ta = P.timedAuto;
         if (!ta.cond || ta.cond(pctx(t))) { pTimedArmed = true; pTimedOnceDone = true; pTimedReady = t + (ta.every || Infinity); }
       }
-      if (P && P.periodic && t >= pPeriodicAt) {
-        const pe = P.periodic; pPeriodicAt = t + pe.every;
-        if (!pe.cond || pe.cond(pctx(t))) fireP(t, pe);
+      for (const x of pPeriodics) {
+        if (t < x.at) continue;
+        x.at = t + (x.pe.every || Infinity);
+        if (!x.pe.cond || x.pe.cond(pctx(t))) fireP(t, x.pe);
       }
       if (t >= nextAuto) {
         basicAttack(t);
@@ -569,7 +574,7 @@
         for (let i = dots.length - 1; i >= 0; i--) {
           const d = dots[i];
           if (t > d.until) { dots.splice(i, 1); continue; }
-          deal(t, d.perTick, d.type, PSRC, 'dot');
+          deal(t, d.perTick, d.type, d.src, 'dot');
         }
         if (P && P.stackDot && pStack.n > 0) {
           if (t > pStack.until) pStack.n = 0;
@@ -671,7 +676,7 @@
     return d;
   }
 
-  const api = { DDRAGON, DUMMY, FIGHT_SECONDS, TIERS, PASSIVES, DRAFT, loadPatchData, buildChampionPool, buildItemPool,
+  const api = { DDRAGON, DUMMY, FIGHT_SECONDS, SELF_HP, TIERS, PASSIVES, DRAFT, loadPatchData, buildChampionPool, buildItemPool,
     parseStats, computeStats, simulate, tierFor, abstractness, itemFlavor, createDraft, replayDraft };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.Potenshall = api;
