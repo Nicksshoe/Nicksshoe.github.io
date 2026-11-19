@@ -344,7 +344,10 @@
     const castDebuff = (t, slot) => {
       if (P && P.castDebuff && P.castDebuff[slot]) addDebuff(t, P.castDebuff[slot], slot);
       if (hasAny('mandate') && immob.has(slot)) mandateUntil = t + 4;
+      // Passive stuns on every Nth ability cast (Annie's Pyromania), whichever ability lands it.
+      if (P && P.ccEveryNAbility && ++ccCasts % P.ccEveryNAbility === 0 && hasAny('mandate')) mandateUntil = t + 4;
     };
+    let ccCasts = 0;
 
     const comboCD = pr.cd * 100 / (100 + st.ah);
     const comboDamage = () => {

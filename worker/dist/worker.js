@@ -345,7 +345,10 @@
     const castDebuff = (t, slot) => {
       if (P && P.castDebuff && P.castDebuff[slot]) addDebuff(t, P.castDebuff[slot], slot);
       if (hasAny('mandate') && immob.has(slot)) mandateUntil = t + 4;
+      // Passive stuns on every Nth ability cast (Annie's Pyromania), whichever ability lands it.
+      if (P && P.ccEveryNAbility && ++ccCasts % P.ccEveryNAbility === 0 && hasAny('mandate')) mandateUntil = t + 4;
     };
+    let ccCasts = 0;
 
     const comboCD = pr.cd * 100 / (100 + st.ah);
     const comboDamage = () => {
@@ -1423,7 +1426,8 @@
     Ambessa: { name: "Drakehound's Step", note: 'Dash-empowered attack after abilities', afterAbility: { type: 'physical', dmg: c => 0.03 * c.tmax + 0.2 * c.bad } },
     Amumu: { name: 'Cursed Touch', note: '10% of magic damage dealt again as true damage', magicEcho: 0.10 },
     Anivia: none('Rebirth'),
-    Annie: none('Pyromania', 'Stun only'),
+    // Pyromania: every 4th ability cast stuns, whichever ability it is (R included), so it counts as crowd control.
+    Annie: { ...none('Pyromania', 'Stun on every 4th ability'), ccEveryNAbility: 4 },
     // Aphelios's real damage lives in five weapon-specific Qs that aren't in his normal ability slots, so his kit is
     // modeled here from the game files (level-18 formulas). He holds two weapons: each Q is cast at the start and
     // again off its 9s cooldown, averaged over the five weapons since the pair depends on his rotation.
