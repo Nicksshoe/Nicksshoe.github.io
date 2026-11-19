@@ -278,7 +278,8 @@
     Vladimir: { name: 'Crimson Pact', note: 'AP from bonus HP and HP from AP', stats: c => ({ ap: 0.033 * c.bhp, hp: 1.6 * c.ap }) },
     Volibear: { name: 'The Relentless Storm', note: 'Attack speed + chain lightning; R slam', stats: () => ({ as: 30 }), onHit: { type: 'magic', dmg: c => 50 + 0.4 * c.ap },
       periodic: { start: 0.5, label: 'R · Stormbringer', kind: 'ability', type: 'physical', dmg: c => 700 + 2.5 * c.bad + 1.25 * c.ap } },
-    Warwick: { name: 'Eternal Hunger', note: 'On-hit magic', onHit: { type: 'magic', dmg: c => 46 + 0.15 * c.bad } },
+    // Eternal Hunger on-hit, plus Blood Hunt (W) passive: +110% attack speed against targets below 50% health (game data, rank 5).
+    Warwick: { name: 'Eternal Hunger + Blood Hunt', note: 'On-hit magic; +110% attack speed while the dummy is below 50% health', lowHpAS: { below: 0.5, as: 110 }, onHit: { type: 'magic', dmg: c => 46 + 0.15 * c.bad } },
     Xayah: none('Clean Cuts', 'Feathers are counted in her E'),
     Xerath: none('Mana Surge'),
     XinZhao: { name: 'Determination', note: 'Every 3rd attack', everyN: { n: 3, type: 'physical', dmg: c => 0.45 * c.ad } },

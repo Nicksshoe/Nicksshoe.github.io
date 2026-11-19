@@ -645,6 +645,9 @@
 
     // Event schedule
     const attackInterval = 1 / (st.as * pr.uptime);
+    // Bonus attack speed against low-health targets (Warwick W: +110% below 50% HP), using the champion's AS ratio.
+    const lowHp = P && P.lowHpAS;
+    const lowHpInterval = lowHp ? 1 / (Math.min(2.5, st.as + ((kit && kit.asRatio) ?? ch.stats.attackspeed) * lowHp.as / 100) * pr.uptime) : null;
     let nextAuto = 0.1, nextCombo = 0, comboQueue = [], ultDone = false, nextDespair = 0;
     // periodic may be one timer or a list (e.g. a passive plus an ability modeled as a timer). No 'every' = fires once.
     const pPeriodics = P ? [].concat(P.periodic || []).map(pe => ({ pe, at: pe.start || 0 })) : [];
@@ -697,7 +700,8 @@
       }
       if (t >= nextAuto) {
         basicAttack(t);
-        let gap = empoweredAutos > 0 ? attackInterval / 1.5 : attackInterval;
+        const baseGap = lowHp && dummyHp < lowHp.below * DUMMY.hp ? lowHpInterval : attackInterval;
+        let gap = empoweredAutos > 0 ? baseGap / 1.5 : baseGap;
         if (P && P.magazine && autoCount % P.magazine.size === 0) {
           const rl = typeof P.magazine.reload === 'function' ? P.magazine.reload(pctx(t)) : P.magazine.reload;
           gap = Math.max(gap, rl);
@@ -1448,7 +1452,8 @@
     Vladimir: { name: 'Crimson Pact', note: 'AP from bonus HP and HP from AP', stats: c => ({ ap: 0.033 * c.bhp, hp: 1.6 * c.ap }) },
     Volibear: { name: 'The Relentless Storm', note: 'Attack speed + chain lightning; R slam', stats: () => ({ as: 30 }), onHit: { type: 'magic', dmg: c => 50 + 0.4 * c.ap },
       periodic: { start: 0.5, label: 'R · Stormbringer', kind: 'ability', type: 'physical', dmg: c => 700 + 2.5 * c.bad + 1.25 * c.ap } },
-    Warwick: { name: 'Eternal Hunger', note: 'On-hit magic', onHit: { type: 'magic', dmg: c => 46 + 0.15 * c.bad } },
+    // Eternal Hunger on-hit, plus Blood Hunt (W) passive: +110% attack speed against targets below 50% health (game data, rank 5).
+    Warwick: { name: 'Eternal Hunger + Blood Hunt', note: 'On-hit magic; +110% attack speed while the dummy is below 50% health', lowHpAS: { below: 0.5, as: 110 }, onHit: { type: 'magic', dmg: c => 46 + 0.15 * c.bad } },
     Xayah: none('Clean Cuts', 'Feathers are counted in her E'),
     Xerath: none('Mana Surge'),
     XinZhao: { name: 'Determination', note: 'Every 3rd attack', everyN: { n: 3, type: 'physical', dmg: c => 0.45 * c.ad } },

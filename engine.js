@@ -644,6 +644,9 @@
 
     // Event schedule
     const attackInterval = 1 / (st.as * pr.uptime);
+    // Bonus attack speed against low-health targets (Warwick W: +110% below 50% HP), using the champion's AS ratio.
+    const lowHp = P && P.lowHpAS;
+    const lowHpInterval = lowHp ? 1 / (Math.min(2.5, st.as + ((kit && kit.asRatio) ?? ch.stats.attackspeed) * lowHp.as / 100) * pr.uptime) : null;
     let nextAuto = 0.1, nextCombo = 0, comboQueue = [], ultDone = false, nextDespair = 0;
     // periodic may be one timer or a list (e.g. a passive plus an ability modeled as a timer). No 'every' = fires once.
     const pPeriodics = P ? [].concat(P.periodic || []).map(pe => ({ pe, at: pe.start || 0 })) : [];
@@ -696,7 +699,8 @@
       }
       if (t >= nextAuto) {
         basicAttack(t);
-        let gap = empoweredAutos > 0 ? attackInterval / 1.5 : attackInterval;
+        const baseGap = lowHp && dummyHp < lowHp.below * DUMMY.hp ? lowHpInterval : attackInterval;
+        let gap = empoweredAutos > 0 ? baseGap / 1.5 : baseGap;
         if (P && P.magazine && autoCount % P.magazine.size === 0) {
           const rl = typeof P.magazine.reload === 'function' ? P.magazine.reload(pctx(t)) : P.magazine.reload;
           gap = Math.max(gap, rl);
