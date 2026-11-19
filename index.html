@@ -3,6 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Content Security Policy: the only places this page may load scripts, styles, images and data from. If an outside
+     script were ever compromised, it still couldn't pull code or send data anywhere else. Ad networks or sponsor
+     images must be added here when they're set up. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self';
+  script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://challenges.cloudflare.com;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;
+  img-src 'self' data: https://ddragon.leagueoflegends.com https://raw.communitydragon.org;
+  connect-src 'self' https://ddragon.leagueoflegends.com https://raw.communitydragon.org https://potenshall-leaderboard.jacob-bc1.workers.dev https://cloudflareinsights.com;
+  frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Potential Damage</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -379,22 +389,39 @@ function renderSubmitPanel(snapshot){
       <button class="btn primary sm" id="lbSubmit">${t('submit')}</button>
       <button class="btn sm" id="lbView">${t('viewBoard')}</button>
     </div>
+    ${TURNSTILE_SITEKEY ? '<div id="lbCaptcha" style="margin-top:8px"></div>' : ''}
     <p class="muted" style="font-size:12px;margin:8px 0 0">${t('verifyNote')}</p>
     <p id="lbMsg" style="font-size:13px;margin:6px 0 0"></p>`;
   bindViewBoard();
+  let captchaId = null;
+  if (TURNSTILE_SITEKEY) loadTurnstile().then(ts => { if ($('#lbCaptcha')) captchaId = ts.render('#lbCaptcha', { sitekey: TURNSTILE_SITEKEY, theme: 'dark', size: 'flexible' }); }).catch(() => {});
   $('#lbSubmit').onclick = async () => {
     const name = $('#lbName').value.trim();
     if (!/^[A-Za-z0-9 _.\-]{1,16}$/.test(name)) { $('#lbMsg').textContent = t('nameRule'); return; }
     store.set('name', name);
+    const captcha = TURNSTILE_SITEKEY && window.turnstile && captchaId !== null ? window.turnstile.getResponse(captchaId) : undefined;
     $('#lbSubmit').disabled = true; $('#lbMsg').textContent = t('verifying');
     try {
-      const r = await LB.submit({ mode: S.mode, patch: DATA.patch, date: today(), ticket: S.ticket, log: S.draft.log, name, client: clientId });
+      const r = await LB.submit({ mode: S.mode, patch: DATA.patch, date: today(), ticket: S.ticket, log: S.draft.log, name, client: clientId, captcha });
       Object.assign(snapshot, { rank: r.rank, lowRank: r.lowRank, of: r.of, verified: r.score, name });
       if (S.mode === 'daily') store.set('daily:'+today(), snapshot);
       panel.innerHTML = rankHtml(snapshot); bindViewBoard();
-    } catch (e) { $('#lbSubmit').disabled = false; $('#lbMsg').textContent = e.message; }
+    } catch (e) {
+      $('#lbSubmit').disabled = false; $('#lbMsg').textContent = e.message;
+      if (captchaId !== null && window.turnstile) window.turnstile.reset(captchaId); // a token works once
+    }
   };
 }
+// Cloudflare Turnstile bot check for score submissions: off while the site key is empty. To turn it on, create a
+// Turnstile widget for the site's domain, put its site key here and its secret in the Worker as TURNSTILE_SECRET.
+const TURNSTILE_SITEKEY = '';
+let turnstileLoading = null;
+const loadTurnstile = () => turnstileLoading || (turnstileLoading = new Promise((ok, no) => {
+  const s = document.createElement('script');
+  s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+  s.onload = () => window.turnstile ? ok(window.turnstile) : no(new Error('Turnstile')); s.onerror = no;
+  document.head.appendChild(s);
+}));
 const rankHtml = s => `<h3>${t('leaderboard')}</h3><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
   <div class="bignum" style="font-size:34px">#${s.rank}<small>${t('rankOf', { n: s.of })}</small></div>
   <div class="muted" style="font-size:13px">${t('verifiedAs', { score: `<b style="color:var(--text)">${fmt(s.verified)}</b>`, name: esc(s.name) })}
@@ -812,6 +839,16 @@ Promise.all([P.loadPatchData(), fetch("stacks.json").then(r => r.ok ? r.json() :
   $('#stage').innerHTML = `<div class="loading"><div><h2 style="font-family:Cinzel">${t('ddError')}</h2><p class="muted">${t('ddErrorSub')} (${esc(err.message)})</p></div></div>`;
 });
 })();
+</script>
+<script>
+// Cloudflare Web Analytics: cookieless page-view counts (no personal data, no consent banner needed).
+// Only on the live site, so local testing doesn't count as traffic.
+if (/(^|\.)potentialdamage\.gg$|^nicksshoe\.github\.io$/.test(location.hostname)) {
+  const s = document.createElement('script');
+  s.defer = true; s.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+  s.setAttribute('data-cf-beacon', '{"token": "60c2e14386c84f5cbb7fdb804e018bdb"}');
+  document.body.appendChild(s);
+}
 </script>
 </body>
 </html>
