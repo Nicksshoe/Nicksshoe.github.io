@@ -467,7 +467,7 @@
       }
     };
 
-    let onHitCount = 0;
+    let onHitCount = 0; const onHitCharges = new Map();
     const basicAttack = (t) => {
       autoCount++;
       const pN = P && P.everyN && autoCount % P.everyN.n === 0 && t >= pAutoNReady ? P.everyN : null;
@@ -528,6 +528,12 @@
         if (spellblade.doubleOnHit) onHitTimes++;
       }
       onHitEffects(t, onHitTimes);
+      // Ability-empowered attacks whose bonus is on-hit (Udyr Q claws): repeated by Guinsoo / Dusk and Dawn.
+      for (const [pe, left] of onHitCharges) {
+        if (left <= 0) continue;
+        onHitCharges.set(pe, left - 1);
+        for (let k = 0; k < onHitTimes; k++) dealP(t, pe, pe.dmg, pe.kind || 'ability');
+      }
       for (let k = 0; k <= phantom; k++) {
         onHitCount++;
         if (k > 0 && P) phantomHit(t);
@@ -570,6 +576,7 @@
     const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute', 'mark']);
     let markState = null; // Zed-style mark: stores damage dealt until it pops
     const recastLeft = {}; // recasts still available per slot
+    let channelUntil = -1; // a channel that keeps the champion from attacking or casting (Aurelion Sol Q)
     const spellQueue = []; // scheduled ability hits/ticks: { at, raw(), type, label }
     // Expected share of a hit that gets through the dummy's resists right now (used to time executes).
     const mitigation = type => type === 'true' ? 1
@@ -584,9 +591,11 @@
       if (hasAny('hexplate') && t >= hexReady) { hexUntil = t + 8; hexReady = t + 30; }
     };
     // Abilities flagged 'first' (e.g. Zed R) are cast before anything else.
-    const castOrder = castable ? [...castable].sort((a, b) => (b.mech && b.mech.first ? 1 : 0) - (a.mech && a.mech.first ? 1 : 0)) : [];
+    // and abilities flagged 'last' (channels like Aurelion Sol Q) after everything else.
+    const castRank = s => s.mech && s.mech.first ? 0 : s.mech && s.mech.last ? 2 : 1;
+    const castOrder = castable ? [...castable].sort((a, b) => castRank(a) - castRank(b)) : [];
     const tryCastRealSpell = (t) => {
-      if (t < castLock) return;
+      if (t < castLock || t < channelUntil) return;
       for (const sp of castOrder) {
         if ((ready[sp.slot] || 0) > t + 1e-9) continue;
         if (sp.mech && sp.mech.kind === 'empowerAuto') {
@@ -630,8 +639,14 @@
               raw: () => { const b = ev(m.calc); return m.critCalc ? b + st.crit * (ev(m.critCalc) - b) : b; } });
           } else if (m.kind === 'channel') {
             const dur = Math.min(m.duration || 99, T);
-            for (let k = 0.5; k <= dur + 1e-9; k += 0.5) spellQueue.push({ at: t + k, label, type: m.type,
+            // Zones that execute (Aurelion Sol E): threshold in % of max HP, checked on every tick.
+            const exec = m.executeCalc ? () => { const v = ev(m.executeCalc); return v > 1 ? v / 100 : v; } : null;
+            for (let k = 0.5; k <= dur + 1e-9; k += 0.5) spellQueue.push({ at: t + k, label, type: m.type, exec,
               raw: () => (m.empCalc && k > m.empAfter ? ev(m.empCalc) : ev(m.perSec)) / 2 });
+            // Repeating bursts while channeling (Aurelion Sol Q: every 1s, magic + % max HP true per stack).
+            if (m.burstEvery) for (let k = m.burstEvery; k <= dur + 1e-9; k += m.burstEvery) for (const p of m.bursts)
+              spellQueue.push({ at: t + k, label, type: p.type, raw: () => ev(p.calc) * (p.pctMaxHp ? DUMMY.hp : 1) });
+            if (m.blocksAttacks) channelUntil = t + dur;
           }
           onAbilityHit(t, t >= bastionReady, { raw: first, type: m.type, label });
           if (t >= bastionReady) bastionReady = t + 3;
@@ -715,9 +730,11 @@
         if (q.at > t + 1e-9) continue;
         spellQueue.splice(i, 1);
         deal(t, q.raw(), q.type, q.label, 'ability');
+        if (q.exec) { const thr = q.exec(); if (dummyHp > 0 && dummyHp < thr * DUMMY.hp) record(t, dummyHp, 'true', q.label.replace(/ · .*/, ' · Execute')); }
         for (const f of has('burn')) burnUntil[f.burn] = t + 3;
       }
       if (spells && t < castLock && t >= nextAuto) nextAuto = castLock; // can't attack mid-cast
+      if (t < channelUntil && t >= nextAuto) nextAuto = channelUntil;  // or while channeling
       if (t >= nextCombo) {
         comboQueue.push({ at: t, mult: 1 / 3, src: 'Abilities', first: true },
           { at: t + 0.3, mult: 1 / 3, src: 'Abilities' }, { at: t + 0.6, mult: 1 / 3, src: 'Abilities' });
@@ -744,7 +761,8 @@
         if (t < x.at) continue;
         x.at = t + (x.pe.every || Infinity) * (x.pe.ability ? 100 / (100 + st.ah) : 1); // ability cooldowns shrink with haste
         if (!x.pe.cond || x.pe.cond(pctx(t))) {
-          fireP(t, x.pe);
+          if (x.pe.charges) { onHitCharges.set(x.pe, x.pe.charges); nextAuto = Math.min(nextAuto, t + 0.1); } // empowers the next attacks
+          else fireP(t, x.pe);
           if (x.pe.ability) { onAbilityHit(t, true, x.pe.noDamage ? { noDamage: true } : null); if (x.pe.ult) onUltimate(t); }
         }
       }

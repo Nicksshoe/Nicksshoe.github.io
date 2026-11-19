@@ -294,6 +294,15 @@
       W: { kind: 'multi', parts: [{ calc: 'SingleFireDamage', type: 'magic' }, { calc: 'MultiFireDamage', type: 'magic' }, { calc: 'MultiFireDamage', type: 'magic' }] },
       R: { kind: 'cast', type: 'magic', calc: 'RCalculatedDamage', recasts: 3, recastGap: 1 },
     },
+    // Aurelion Sol: E (5s singularity, executes below 5% + 0.026% per stack) and R first, then Q channels for the rest
+    // of the fight (no channel limit at max rank): damage per second plus a burst every second of magic + 0.03% max HP
+    // true damage per stack. With 75+ stacks R is Heavens Descend (125% damage).
+    AurelionSol: {
+      Q: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 'MaxChannelDuration', last: true, blocksAttacks: true,
+        burstEvery: 1, bursts: [{ calc: 'BurstDamage', type: 'magic' }, { calc: 'BurstBonusTrueDamageToChamps', type: 'true', pctMaxHp: true }] },
+      E: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 'Duration', executeCalc: 'CurrentExecutionThreshold', first: true },
+      R: { kind: 'cast', type: 'magic', calc: 'R2Damage', first: true },
+    },
     Naafiri: { Q: { kind: 'multi', parts: [{ calc: 'TotalDamageFirstCast', type: 'physical' }, { calc: 'TotalBleedDamage', type: 'physical' }, { calc: 'TotalMinDamageSecondCast', type: 'physical' }] } },
     Kayle: { E: { kind: 'cast', type: 'magic', calc: 'ActiveTotalExecuteDamage', pctOfMissing: true } }, // formula is a share of missing HP
   };

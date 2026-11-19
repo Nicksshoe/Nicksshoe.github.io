@@ -258,7 +258,8 @@
       // Q: +68% for 4 of every 6s; passive after each of 4 casts per rotation: about +40% kept up; awakened Q: +70% for 4 of 12s.
       stats: c => ({ as: 68 * 4 / 6 + 40 + (c.ap > c.bad ? 0 : 70 * 4 / 12) }),
       periodic: [
-        { every: 6, start: 0.3, ability: true, label: 'Q · Wilding Claw', kind: 'ability', type: 'physical', dmg: c => 2 * (30 + 0.2 * c.bad) + 2 * (0.035 + 0.0002 * c.bad) * c.tmax }, // 2 claws: 7% (+4% per 100 bonus AD) max HP in total
+        // Q empowers the next 2 attacks (on-hit claws), so Guinsoo phantom hits and Dusk and Dawn repeat them.
+        { every: 6, start: 0.3, ability: true, charges: 2, label: 'Q · Wilding Claw', kind: 'ability', type: 'physical', dmg: c => (30 + 0.2 * c.bad) + (0.035 + 0.0002 * c.bad) * c.tmax }, // per claw: 3.5% (+2% per 100 bonus AD) max HP
         { every: 12, start: 0.3, label: 'Q · Awakened lightning', kind: 'ability', type: 'magic', dmg: c => c.ap > c.bad ? 0 : 6 * 0.03 * c.tmax },
         { every: 6, start: 1.8, ability: true, noDamage: true, label: 'E · Blazing Stampede', kind: 'ability', dmg: () => 0 },
         { every: 6, start: 3.3, ability: true, noDamage: true, label: 'W · Iron Mantle', kind: 'ability', dmg: () => 0 },
