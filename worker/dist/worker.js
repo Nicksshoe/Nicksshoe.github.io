@@ -898,6 +898,7 @@
       case 14: return s.missingHp || 0;
       case 15: return s.missingHp || 0;
       case 16: return s.lethality || 0;
+      case 29: return s.lethality || 0;   // lethality (e.g. Pyke R)
       case 18: return pick(s.mana || 0, s.baseMana || 0, s.bonusMana || 0);
       case 19: return s.mana || 0;
       case 20: return s.level || 18;
@@ -1423,7 +1424,7 @@
 })(typeof window !== 'undefined' ? window : globalThis);
 
 ;
-/* Potenshall Damage leaderboard — Cloudflare Worker (module syntax).
+/* Potential Damage leaderboard — Cloudflare Worker (module syntax).
    The build script prepends engine.js and abilities.js, so globalThis.Potenshall is the exact
    same draft + damage engine the game runs. Scores are never trusted from the browser:
    the Worker replays the draft from its seed and re-runs the fight itself.
@@ -1566,7 +1567,7 @@ export default {
       if (req.method === 'POST' && url.pathname === '/start') return await start(req, env, origin);
       if (req.method === 'POST' && url.pathname === '/submit') return await submit(req, env, origin);
       if (req.method === 'GET' && url.pathname === '/board') return await board(url, env, origin);
-      if (url.pathname === '/') return json({ ok: true, service: 'Potenshall Damage leaderboard' }, 200, origin);
+      if (url.pathname === '/') return json({ ok: true, service: 'Potential Damage leaderboard' }, 200, origin);
       return fail('Not found', 404, origin);
     } catch (e) {
       return fail('Server error', 500, origin);

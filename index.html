@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Potenshall Damage</title>
+<title>Potential Damage</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -169,7 +169,7 @@ footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size
 <body>
 <div class="wrap">
   <header>
-    <div class="logo">POTENSHALL DAMAGE<small>Abstract builds · one dummy · ten seconds</small></div>
+    <div class="logo">POTENTIAL DAMAGE<small>Abstract builds · one dummy · ten seconds</small></div>
     <div class="spacer"></div>
     <div class="modes" id="modes">
       <button data-mode="daily" class="on">Daily</button>
@@ -206,8 +206,8 @@ footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size
   </div>
 
   <footer>
-    Potenshall Damage is a fan-made mini game inspired by Bausffs-style abstract builds. Ability damage uses formulas from the game files (via CommunityDragon); item passives, stacks and champion passives are approximations.
-    Potenshall Damage isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties.
+    Potential Damage is a fan-made mini game inspired by Bausffs-style abstract builds. Ability damage uses formulas from the game files (via CommunityDragon); item passives, stacks and champion passives are approximations.
+    Potential Damage isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties.
     Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
   </footer>
 </div>
@@ -640,7 +640,7 @@ function showDailyDone(prev){
 
 function share(res, tier, abs){
   const lines = [
-    `Potenshall Damage ${S.mode === 'daily' ? today() : '(free play)'} · Patch ${DATA.patch}`,
+    `Potential Damage ${S.mode === 'daily' ? today() : '(free play)'} · Patch ${DATA.patch}`,
     `${S.champ.name}: ${S.items.map(i => i.name).join(', ')}`,
     `${fmt(res.total)} damage in 10s · ${tier.name} · Meta Meter ${'🟪'.repeat(abs)}${'⬛'.repeat(6-abs)}`,
   ].join('\n');

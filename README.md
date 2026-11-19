@@ -1,4 +1,4 @@
-# Potenshall Damage
+# Potential Damage
 
 A League of Legends mini game inspired by Bausffs-style abstract builds. Draft one champion from 5 random picks, then 6 items, each picked from 6 random legendary items or boots (3 rerolls total), and see how much damage you deal to a training dummy (10,000 HP, 200 armor, 100 MR) in 10 seconds at level 18.
 
@@ -27,7 +27,7 @@ Any static file server works, e.g. `npx serve .` — opening `index.html` direct
 
 ---
 
-Potenshall Damage isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+Potential Damage isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
 
 ## Leaderboard
 

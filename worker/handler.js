@@ -1,4 +1,4 @@
-/* Potenshall Damage leaderboard — Cloudflare Worker (module syntax).
+/* Potential Damage leaderboard — Cloudflare Worker (module syntax).
    The build script prepends engine.js and abilities.js, so globalThis.Potenshall is the exact
    same draft + damage engine the game runs. Scores are never trusted from the browser:
    the Worker replays the draft from its seed and re-runs the fight itself.
@@ -141,7 +141,7 @@ export default {
       if (req.method === 'POST' && url.pathname === '/start') return await start(req, env, origin);
       if (req.method === 'POST' && url.pathname === '/submit') return await submit(req, env, origin);
       if (req.method === 'GET' && url.pathname === '/board') return await board(url, env, origin);
-      if (url.pathname === '/') return json({ ok: true, service: 'Potenshall Damage leaderboard' }, 200, origin);
+      if (url.pathname === '/') return json({ ok: true, service: 'Potential Damage leaderboard' }, 200, origin);
       return fail('Not found', 404, origin);
     } catch (e) {
       return fail('Server error', 500, origin);

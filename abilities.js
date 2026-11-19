@@ -99,6 +99,7 @@
       case 14: return s.missingHp || 0;
       case 15: return s.missingHp || 0;
       case 16: return s.lethality || 0;
+      case 29: return s.lethality || 0;   // lethality (e.g. Pyke R)
       case 18: return pick(s.mana || 0, s.baseMana || 0, s.bonusMana || 0);
       case 19: return s.mana || 0;
       case 20: return s.level || 18;
