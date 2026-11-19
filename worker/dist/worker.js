@@ -311,14 +311,14 @@
       const ramp = has('ramp').reduce((acc, f) => acc + Math.min(f.ramp.cap, f.ramp.per * Math.floor(t + 1)), 0);
       amt *= 1 + ramp / 100;
       if (kind === 'ability') amt *= (1 + sum('abilityAmp') * (t < 8 ? 1 : 0)) * (1 + 0.03 * shojinStacks * (hasAny('abilityRamp') ? 1 : 0));
-      if (kind === 'attack') amt *= 1 + (ch.ranged ? sum('attackAmpRanged') : sum('attackAmpMelee'));
+      if (kind === 'attack' || kind === 'split') amt *= 1 + (ch.ranged ? sum('attackAmpRanged') : sum('attackAmpMelee'));
       if (type === 'magic') amt *= 1 + sum('magicAmp');
       if ((type === 'magic' || type === 'true') && hasAny('shadowflame') && dummyHp < 0.4 * DUMMY.hp) amt *= 1.2;
 
       if (type === 'physical') {
         const armor = Math.max(0, DUMMY.armor * (1 - 0.06 * cleaverStacks) * st.arpenKeep - st.leth);
         amt *= 100 / (100 + armor);
-        if (hasAny('cleaver')) cleaverStacks = Math.min(5, cleaverStacks + 1);
+        if (hasAny('cleaver') && kind !== 'split') cleaverStacks = Math.min(5, cleaverStacks + 1);
       } else if (type === 'magic') {
         const mr = Math.max(0, DUMMY.mr * (1 - 0.075 * bloodStacks) * st.mpenKeep - st.mpenFlat - malignanceShred);
         amt *= 100 / (100 + mr);
@@ -381,7 +381,7 @@
     let sbReadyAt = 0, sbArmed = false;
 
     let burnUntil = { liandry: -1, blackfire: -1 }, lastBurnTick = -1, ludenReady = 0;
-    let malignanceUntil = -1, empoweredAutos = 0, sunderedReady = 0, autoCount = 0, zekeUntil = -1;
+    let malignanceUntil = -1, empoweredAutos = 0, sunderedReady = 0, sunderedShare = 0, autoCount = 0, zekeUntil = -1;
     // Eclipse: two separate attacks/abilities within 2s deal 8% max HP (ranged 62.5% of that), 6s cooldown.
     let eclipseLast = -Infinity, eclipseReady = 0;
     const eclipseHit = t => {
@@ -447,7 +447,7 @@
       let mult = P && P.noCrit ? 1 : 1 + st.crit * (st.critMult - 1);
       let trueBonus = 0;
       if (pN && pN.crit) mult = Math.max(st.critMult, pN.minCrit || 0); // e.g. Jhin's 4th shot always crits
-      else if (hasAny('sundered') && t >= sunderedReady) { sunderedReady = t + 10; mult = st.critMult; }
+      else if (hasAny('sundered') && t >= sunderedReady) { sunderedReady = t + 10; sunderedShare = 1 - mult / st.critMult; mult = st.critMult; }
       else if (empoweredAutos > 0) {
         empoweredAutos--;
         mult = Math.max(mult, 1 + 0.8 * (st.critMult - 1));
@@ -459,6 +459,8 @@
         for (const [ty, share] of Object.entries(P.autoSplit)) deal(t, autoDmg * share, ty, 'Basic Attacks', 'attack');
         autoDmg *= 1 - Object.values(P.autoSplit).reduce((a, b) => a + b, 0);
       }
+      // Show Sundered Sky's guaranteed crit as its own line: the part above an average attack.
+      if (sunderedShare > 0) { deal(t, autoDmg * sunderedShare, 'physical', 'Sundered Sky', 'split'); autoDmg *= 1 - sunderedShare; sunderedShare = 0; }
       deal(t, autoDmg, 'physical', 'Basic Attacks', 'attack');
       if (!openerDone) {
         openerDone = true;
