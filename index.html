@@ -60,6 +60,10 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 .dummy-card span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
 .rules{font-size:13px;color:var(--muted);margin:14px 0 0;padding-left:18px}
 .rules li{margin:3px 0}
+.howto{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.howto section{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.howto h3{margin:0 0 6px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+.howto p{margin:0;font-size:14px;line-height:1.55;color:var(--text)}
 
 /* Stepper */
 .steps{display:flex;gap:4px;margin-bottom:16px}
@@ -184,6 +188,7 @@ footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size
       <button data-mode="daily" class="on" data-i18n="daily">Daily</button>
       <button data-mode="free" data-i18n="free">Free Play</button>
     </div>
+    <button class="pill" id="howBtn" style="cursor:pointer">❓ <b data-i18n="howTo">How to play</b></button>
     <button class="pill" id="lbBtn" style="cursor:pointer;display:none">🏆 <b data-i18n="leaderboard">Leaderboard</b></button>
     <div class="pill"><span data-i18n="patch">Patch</span> <b id="patch">…</b></div>
     <div class="pill"><span data-i18n="best">Best</span> <b id="best">—</b></div>
@@ -394,6 +399,24 @@ const rankHtml = s => `<h3>${t('leaderboard')}</h3><div style="display:flex;alig
     ${s.lowRank ? `<br>${t('leastRank', { rank: `<b style="color:var(--text)">${s.lowRank}</b>`, of: s.of })}` : ''}</div>
   <div class="spacer"></div><button class="btn sm" id="lbView">${t('viewBoard')}</button></div>`;
 const bindViewBoard = () => { const b = $('#lbView'); if (b) b.onclick = () => showBoard(S.mode === 'daily' ? 'daily' : 'free'); };
+
+// How to play: the basics, shown in the stage. Back returns to whatever screen was open (a draft in progress keeps its picks).
+let howToReturn = null;
+function showHowTo(){
+  if (S && S.result && !S.finished) {      // mid-fight: stop the animation; Back goes straight to the results
+    if (animHandle) cancelAnimationFrame(animHandle);
+    howToReturn = finish;
+  } else if (rerender && rerender !== showHowTo) howToReturn = rerender;
+  rerender = showHowTo;
+  const parts = ['goal', 'draft', 'fight', 'modes', 'score', 'meta'];
+  $('#stage').innerHTML = `<div class="stage-head"><div><h2>${t('howTo')}</h2><p>${t('howToSub')}</p></div><div class="spacer"></div>
+    <button class="btn sm" id="howBack">${t('back')}</button></div>
+    <div class="howto">${parts.map(k => `<section><h3>${t('h_' + k)}</h3><p>${t('p_' + k)}</p></section>`).join('')}</div>`;
+  $('#howBack').onclick = () => {
+    const back = howToReturn; howToReturn = null;
+    if (back) { rerender = back; back(); } else newGame(S && S.mode === 'free' ? 'free' : 'daily');
+  };
+}
 
 // Boards: Daily (today), Free Play (current patch, or a past patch from the picker) and All-time (each player's
 // best ever, with the patch it was set on). Each can be ranked by most or least damage.
@@ -758,6 +781,7 @@ function share(res, tier, abs){
 function toast(msg){ const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg; document.body.appendChild(el); setTimeout(() => el.remove(), 1800); }
 
 // ---------- Boot ----------
+$('#howBtn').onclick = showHowTo;
 document.querySelectorAll('#modes button').forEach(b => b.onclick = () => { if (animHandle) cancelAnimationFrame(animHandle); newGame(b.dataset.mode); });
 applyStatic();
 $('#langSel').onchange = e => setLanguage(e.target.value);
