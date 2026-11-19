@@ -51,21 +51,32 @@
 
   // Legendary = completed (builds into nothing), Summoner's Rift, purchasable,
   // 2000g+, not boots / consumables / Ornn upgrades / champion-specific.
+  // Boots: tier-2 boots and their upgraded tier-3 versions (built from tier-2 boots; Gunmetal Greaves
+  // isn't tagged Boots, so the recipe is checked too). Plain Boots and unbuyable boots are left out.
+  function isBoots(id, v, json) {
+    if (id === '1001') return false;
+    if ((v.tags || []).includes('Boots')) return true;
+    return (v.from || []).some(f => json.data[f] && (json.data[f].tags || []).includes('Boots'));
+  }
+
   function buildItemPool(json) {
     const seen = new Set();
     const out = [];
     for (const [id, v] of Object.entries(json.data)) {
       const g = v.gold || {};
       if (!v.maps || !v.maps['11'] || !g.purchasable) continue;
-      if ((v.into && v.into.length) || Number(id) >= 10000 || g.total < 2000) continue;
       const tags = v.tags || [];
-      if (tags.includes('Boots') || tags.includes('Consumable') || tags.includes('Trinket')) continue;
+      const boots = Number(id) < 10000 && isBoots(id, v, json);
+      if (!boots) {
+        if ((v.into && v.into.length) || Number(id) >= 10000 || g.total < 2000) continue;
+        if (tags.includes('Boots') || tags.includes('Consumable') || tags.includes('Trinket')) continue;
+      }
       if (v.requiredAlly || v.requiredChampion || v.inStore === false) continue;
       if (seen.has(v.name)) continue;
       seen.add(v.name);
       const parsed = parseStats(v.description || '');
       const passives = [...(v.description || '').matchAll(/<(passive|active)>(.*?)<\/\1>/g)].map(m => m[2].trim()).filter(Boolean);
-      out.push({ id, name: v.name, gold: g.total, tags, stats: parsed.stats, statLines: parsed.lines, passives,
+      out.push({ id, name: v.name, gold: g.total, tags, boots, stats: parsed.stats, statLines: parsed.lines, passives,
         known: !!PASSIVES[v.name.toLowerCase()] });
     }
     return out.sort((a, b) => a.name.localeCompare(b.name));
@@ -147,6 +158,7 @@
     "experimental hexplate": { asBonus: 24, tip: 'Overdrive attack speed' },
     "fiendhunter bolts": { fiendhunter: true, tip: 'Post-ult crit barrage' },
     "hexoptics c44": { attackAmpRanged: 0.10, attackAmpMelee: 0.04, tip: 'Long-range attack amp' },
+    "swiftmarch": { adaptive: 21, tip: 'Noxian Fervor: 5% of move speed as adaptive force' },
     "sundered sky": { sundered: true, tip: 'Guaranteed crit every 10s' },
     "eclipse": { eclipse: true, tip: '2 hits in 2s: 8% max HP (5% ranged), every 6s' },
     "dead man's plate": { dmp: true, tip: 'Opening charged attack: 40 + 100% base AD' },
@@ -224,6 +236,10 @@
     const maxMana = champMana + b.mana + (muramana ? 360 : 0);
 
     let bonusAD = b.ad + sum('adPerBonusHp') * bonusHP + (muramana ? 0.02 * maxMana : 0);
+    // Adaptive force: AP if the build has more AP than bonus AD, otherwise 0.6 AD per point.
+    const adaptive = sum('adaptive');
+    const apLean = b.ap > b.ad || (b.ap === b.ad && ch.info.magic > ch.info.attack); // ties go to the champion's own damage type
+    if (adaptive && apLean) b.ap += adaptive; else if (adaptive) bonusAD += 0.6 * adaptive;
     let ap = b.ap + sum('apPerBonusHp') * bonusHP + sum('apPerBonusMana') * (b.mana + 360);
     ap *= has('apMult').reduce((acc, f) => acc * f.apMult, 1) * (1 + sum('apMultAdd'));
 
@@ -699,6 +715,7 @@
     const natural = ch.info.magic > ch.info.attack ? 'ap' : 'ad';
     const isTank = ch.tags[0] === 'Tank';
     return items.filter(it => {
+      if (it.boots) return false; // everyone buys boots
       const f = itemFlavor(it);
       if (f === 'tank') return !isTank;
       return f !== natural;
@@ -709,7 +726,7 @@
   // Every offer comes from a seeded RNG, so a draft can be replayed exactly from its seed and
   // its action log ('r' = reroll, a number = pick that offer). The server uses this to verify
   // leaderboard submissions.
-  const DRAFT = { CHAMP_CHOICES: 5, ITEM_CHOICES: 4, ITEM_SLOTS: 6, REROLLS: 3 };
+  const DRAFT = { CHAMP_CHOICES: 5, ITEM_CHOICES: 6, ITEM_SLOTS: 6, REROLLS: 3 };
   function hashStr(str) { let h = 1779033703 ^ str.length; for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; } return h >>> 0; }
   function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function sample(rng, arr, n, exclude = new Set()) {

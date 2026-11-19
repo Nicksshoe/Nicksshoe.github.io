@@ -193,7 +193,7 @@ footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size
         <div><b>100</b><span>Magic Res</span></div>
       </div>
       <ul class="rules">
-        <li>Pick 1 champion, then 6 legendary items.</li>
+        <li>Pick 1 champion, then 6 items (6 choices each). Legendary items and boots are both in the pool.</li>
         <li>3 rerolls total, spend them anywhere.</li>
         <li>Level 18, 10 seconds, all-in, fighting at 40% health. Dummy respawns on death.</li>
         <li>Score = total damage dealt.</li>
@@ -422,7 +422,7 @@ function render(){
     st.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => pickChamp(+b.dataset.pick));
   } else if (S.items.length < ITEM_SLOTS) {
     st.innerHTML = steps() + `
-      <div class="stage-head"><div><h2>Item ${S.items.length + 1} of ${ITEM_SLOTS}</h2><p>Pick one legendary item for <b>${S.champ.name}</b>.</p></div>
+      <div class="stage-head"><div><h2>Item ${S.items.length + 1} of ${ITEM_SLOTS}</h2><p>Pick one item (legendary or boots) for <b>${S.champ.name}</b>.</p></div>
       <div class="spacer"></div>${rerollBtn()}</div>
       <div class="cards items">${S.offers.map((it, i) => itemCard(it, i)).join('')}</div>`;
     st.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => pickItem(+b.dataset.pick));
@@ -450,7 +450,7 @@ function itemCard(it, i){
   const passive = P.PASSIVES[it.name.toLowerCase()];
   const lines = it.statLines.map(l => l.replace(/^([\d.]+%?)/, '<b>$1</b>'));
   return `<button class="card" data-pick="${i}" style="animation-delay:${i*50}ms">
-    <div class="item-top"><img src="${img.item(it.id)}" alt=""><div><div class="nm">${it.name}</div><div class="gold">${fmt(it.gold)}g</div></div></div>
+    <div class="item-top"><img src="${img.item(it.id)}" alt=""><div><div class="nm">${it.name}</div><div class="gold">${fmt(it.gold)}g${it.boots ? ' · <span style="color:var(--gold2)">Boots</span>' : ''}</div></div></div>
     <ul class="statlist">${lines.map(l => `<li>${l}</li>`).join('')}</ul>
     ${it.passives.length || passive ? `<div class="passive">${it.passives.slice(0,2).join(' · ')}${passive && passive.tip ? `<br><em>${passive.tip}</em>` : ''}</div>` : ''}
   </button>`;
