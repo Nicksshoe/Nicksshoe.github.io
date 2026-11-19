@@ -300,7 +300,8 @@
       pr.autoAmp = 1 + (pr.autoAmp - 1) / 2; pr.onHitAp = 0;
     }
     const disabled = new Set((P && P.disable) || []);
-    const castable = spells ? spells.filter(s => !disabled.has(s.slot)) : null;
+    // ownKit: the passive table models the whole kit (form swaps, weapon/awaken rotations), so the raw slots don't cast.
+    const castable = spells ? (P && P.ownKit ? [] : spells.filter(s => !disabled.has(s.slot))) : null;
     const everyN = mechOf('everyN');
     let empowered = null; // armed by an empowerAuto ability, spent on the next attack
     const { has, sum } = st;
@@ -640,7 +641,7 @@
       }
       for (const x of pPeriodics) {
         if (t < x.at) continue;
-        x.at = t + (x.pe.every || Infinity);
+        x.at = t + (x.pe.every || Infinity) * (x.pe.ability ? 100 / (100 + st.ah) : 1); // ability cooldowns shrink with haste
         if (!x.pe.cond || x.pe.cond(pctx(t))) {
           fireP(t, x.pe);
           if (x.pe.ability) { onAbilityHit(t, true, null); if (x.pe.ult) onUltimate(t); }
@@ -1173,7 +1174,14 @@
     DrMundo: { name: 'Blunt Force Trauma (E)', note: 'E passive: +3.2% max HP as AD; empowered attack every 6s, up to +40% at low health',
       stats: c => ({ ad: 0.032 * c.hp }), timedAuto: { every: 6, label: 'E · Blunt Force Trauma', kind: 'ability', type: 'physical', dmg: c => (45 + 0.05 * c.bhp) * (1 + 0.4 * Math.min(1, c.smiss / 0.7)) } },
     Ekko: { name: 'Z-Drive Resonance', note: 'Every 3rd hit', everyNHits: { n: 3, cd: 5, type: 'magic', dmg: c => 85 + 0.8 * c.ap } },
-    Elise: none('Spider Queen'),
+    Elise: { name: 'Spider Queen', note: 'Human Neurotoxin and Volatile Spiderling, then Spider form: Venomous Bite, empowered attacks, spiderlings', ownKit: true,
+      onHit: { cond: c => c.t >= 1, label: 'Spider form attacks', kind: 'ability', type: 'magic', dmg: c => 44 + 0.15 * c.ap },
+      periodic: [
+        { every: 6, start: 0.3, ability: true, label: 'Q · Neurotoxin', kind: 'ability', type: 'magic', dmg: c => 160 + (0.04 + 0.03 * c.ap / 100) * c.thp },
+        { every: 12, start: 0.6, ability: true, label: 'W · Volatile Spiderling', kind: 'ability', type: 'magic', dmg: c => 220 + 0.75 * c.ap },
+        { every: 6, start: 1.0, ability: true, label: 'Spider Q · Venomous Bite', kind: 'ability', type: 'magic', dmg: c => 170 + (0.08 + 0.03 * c.ap / 100) * c.tmiss },
+        { every: 1, start: 1.2, label: 'Spiderlings', kind: 'ability', type: 'magic', dmg: c => 3 * (40 + 0.15 * c.ap) },
+      ] },
     Evelynn: { name: 'Demon Shade', note: 'E deals % max HP', periodic: { every: 7, start: 0.3, label: 'E · Whiplash', kind: 'ability', type: 'magic', dmg: c => 130 + (0.03 + 0.015 * c.ap / 100) * c.tmax } },
     Ezreal: { name: 'Rising Spell Force', note: 'Attack speed from ability hits', stats: () => ({ as: 45 }) },
     Fiddlesticks: { name: 'A Harmless Scarecrow', note: 'Q deals % current HP', periodic: { every: 10, start: 0.5, label: 'Q · Terrify', kind: 'ability', type: 'magic', dmg: c => (0.10 + 0.02 * c.ap / 100) * c.thp } },
@@ -1197,7 +1205,15 @@
     Janna: { name: 'Tailwind', note: 'Bonus damage from move speed', onHit: { type: 'magic', dmg: () => 25 } },
     JarvanIV: { name: 'Martial Cadence', note: '8% current HP on the first attack', timedAuto: { every: 6, type: 'physical', dmg: c => 0.08 * c.thp } },
     Jax: { name: 'Relentless Assault', note: 'Attack speed stacks', stats: () => ({ as: 70 }) },
-    Jayce: none('Hextech Capacitor'),
+    Jayce: { name: 'Hextech Capacitor', note: 'Cannon: Shock Blast through the gate + Hyper Charge; Hammer: To the Skies!, Lightning Field, Thundering Blow', ownKit: true,
+      periodic: [
+        { every: 8, start: 0.3, ability: true, label: 'Cannon Q · Shock Blast (gate)', kind: 'ability', type: 'physical', dmg: c => 341.6 + 1.82 * c.bad },
+        { every: 6.6, start: 0.6, ability: true, label: 'Cannon W · Hyper Charge', kind: 'ability', type: 'physical', dmg: c => 1.5 * c.ad },
+        { every: 6, start: 1.0, ability: true, label: 'R · Transform', kind: 'ability', type: 'magic', dmg: () => 169 },
+        { every: 8, start: 1.3, ability: true, label: 'Hammer Q · To the Skies!', kind: 'ability', type: 'physical', dmg: c => 260 + 1.35 * c.bad },
+        { every: 10, start: 1.6, ability: true, key: 'jayW', dot: 4, label: 'Hammer W · Lightning Field', kind: 'ability', type: 'magic', dmg: c => 380 + c.ap },
+        { every: 12, start: 1.9, ability: true, label: 'Hammer E · Thundering Blow', kind: 'ability', type: 'magic', dmg: c => 0.192 * c.tmax + c.bad },
+      ] },
     Jhin: { name: 'Whisper', note: 'Locked attack speed; bonus AS and crit become AD; 4th shot always crits + 25% missing HP',
       fixedAS: true, critScale: 0.75,
       // TotalADPercent from the game files: 44% at level 18 + 0.35 x crit chance + 0.3 x bonus attack speed.
@@ -1248,7 +1264,15 @@
     Nasus: { name: 'Soul Eater', note: 'Q stacks are counted in his Q; R burns % max HP every second', periodic: { every: 1, start: 0.5, label: 'R · Fury of the Sands', kind: 'ability', type: 'magic', dmg: c => (0.05 + 0.01 * c.ap / 100) * c.tmax } },
     Nautilus: { name: 'Staggering Blow', note: 'First attack on a target', timedAuto: { every: 10, type: 'physical', dmg: () => 122 } },
     Neeko: none('Inherent Glamour'),
-    Nidalee: none('Prowl'),
+    // Form champions: both forms are used every rotation (cast, swap, cast again), from game-file formulas at 18.
+    Nidalee: { name: 'Prowl + Aspect of the Cougar', note: 'Javelin at max range, then Cougar Takedown, Pounce (reset on hunted) and Swipe', ownKit: true,
+      periodic: [
+        { every: 6, start: 0.3, ability: true, label: 'Q · Javelin Toss (max range)', kind: 'ability', type: 'magic', dmg: c => 487.5 + 1.625 * c.ap },
+        { every: 9, start: 0.6, ability: true, key: 'nidW', dot: 4, label: 'W · Bushwhack', kind: 'ability', type: 'magic', dmg: c => 200 + 0.2 * c.ap },
+        { every: 6, start: 1.0, ability: true, label: 'Cougar Q · Takedown', kind: 'ability', type: 'magic', dmg: c => (155 + 0.75 * c.bad + 0.4 * c.ap) * 1.4 * (1 + 0.75 * c.tmiss / c.tmax) },
+        { every: 6, start: 1.3, ability: true, label: 'Cougar W · Pounce (x2, hunted)', kind: 'ability', type: 'magic', dmg: c => 2 * (170 + 0.5 * c.bad + 0.3 * c.ap) },
+        { every: 6, start: 1.6, ability: true, label: 'Cougar E · Swipe', kind: 'ability', type: 'magic', dmg: c => 250 + 0.7 * c.bad + 0.55 * c.ap },
+      ] },
     Nilah: none('Joy Unending'),
     Nocturne: { name: 'Umbra Blades', note: 'Empowered cleave', timedAuto: { every: 8, type: 'physical', dmg: c => 0.2 * c.ad } },
     Nunu: none('Call of the Freljord'),
@@ -1305,7 +1329,15 @@
     TwistedFate: { name: 'Stacked Deck (E)', note: 'Every 4th attack; E is passive', disable: ['E'], stats: () => ({ as: 45 }),
       everyN: { n: 4, type: 'magic', dmg: c => 165 + 0.5 * c.ap } },
     Twitch: { name: 'Deadly Venom', note: 'Stacking true-damage poison', stackDot: { max: 6, dur: 6, type: 'true', perStack: c => 6 + 0.03 * c.ap } },
-    Udyr: none('Bridge Between'),
+    // Udyr swaps stances every rotation and awakens one every other rotation: Q for AD builds, R for AP builds.
+    Udyr: { name: 'Bridge Between (Awaken)', note: 'Awakens Q (AD) or R (AP) every other rotation; awakened Q lightning hits a lone target 6 times', ownKit: true,
+      stats: () => ({ as: 35 }),
+      periodic: [
+        { every: 6, start: 0.3, ability: true, label: 'Q · Wilding Claw', kind: 'ability', type: 'physical', dmg: c => c.ap > c.bad ? 0 : 2 * (30 + 0.2 * c.bad) + 0.07 * c.tmax },
+        { every: 12, start: 0.3, label: 'Q · Awakened lightning', kind: 'ability', type: 'magic', dmg: c => c.ap > c.bad ? 0 : 6 * 0.03 * c.tmax },
+        { every: 6, start: 0.3, ability: true, key: 'udR', dot: 4, label: 'R · Wingborne Storm', kind: 'ability', type: 'magic', dmg: c => c.ap > c.bad ? 4 * (68 + 0.35 * c.ap) : 0 },
+        { every: 12, start: 0.3, key: 'udR2', dot: 4, label: 'R · Awakened storm', kind: 'ability', type: 'magic', dmg: c => c.ap > c.bad ? 4 * (68 + 0.35 * c.ap) : 0 },
+      ] },
     Urgot: { name: 'Echoing Flames', note: 'Leg shotguns; W machine gun', periodic: [{ every: 2.5, start: 0.5, type: 'physical', dmg: c => 0.4 * c.ad + 0.06 * c.tmax },
       { every: 1, start: 1, label: 'W · Purge', kind: 'ability', type: 'physical', dmg: c => 3 * (12 + 0.4 * c.ad) }] },
     Varus: { name: 'Blighted Quiver (W)', note: 'On-hit + blight detonated by abilities', disable: ['W'],

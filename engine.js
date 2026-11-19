@@ -299,7 +299,8 @@
       pr.autoAmp = 1 + (pr.autoAmp - 1) / 2; pr.onHitAp = 0;
     }
     const disabled = new Set((P && P.disable) || []);
-    const castable = spells ? spells.filter(s => !disabled.has(s.slot)) : null;
+    // ownKit: the passive table models the whole kit (form swaps, weapon/awaken rotations), so the raw slots don't cast.
+    const castable = spells ? (P && P.ownKit ? [] : spells.filter(s => !disabled.has(s.slot))) : null;
     const everyN = mechOf('everyN');
     let empowered = null; // armed by an empowerAuto ability, spent on the next attack
     const { has, sum } = st;
@@ -639,7 +640,7 @@
       }
       for (const x of pPeriodics) {
         if (t < x.at) continue;
-        x.at = t + (x.pe.every || Infinity);
+        x.at = t + (x.pe.every || Infinity) * (x.pe.ability ? 100 / (100 + st.ah) : 1); // ability cooldowns shrink with haste
         if (!x.pe.cond || x.pe.cond(pctx(t))) {
           fireP(t, x.pe);
           if (x.pe.ability) { onAbilityHit(t, true, null); if (x.pe.ult) onUltimate(t); }
