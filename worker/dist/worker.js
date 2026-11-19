@@ -450,7 +450,10 @@
       if (killed) {
         kills++; if (firstKill === null) firstKill = t; dummyHp = DUMMY.hp;
         // Takedown resets (Katarina's Voracity): a dummy kill takes seconds off her ability cooldowns.
-        if (P && P.killReset) for (const s of P.killReset.slots) if (ready[s] > t && ready[s] !== Infinity) ready[s] = Math.max(t, ready[s] - P.killReset.cd);
+        // Master Yi's Highlander: a kill cuts the remaining cooldowns by a share (pct) and extends the ultimate's attack speed.
+        if (P && P.killReset) for (const s of P.killReset.slots) if (ready[s] > t && ready[s] !== Infinity)
+          ready[s] = P.killReset.pct ? t + (ready[s] - t) * (1 - P.killReset.pct) : Math.max(t, ready[s] - P.killReset.cd);
+        if (P && P.killReset && P.killReset.extendAS && t <= tempASUntil) tempASUntil += P.killReset.extendAS;
       }
       hits.push({ t, amt, type, src, hp: dummyHp, killed });
     }
@@ -511,17 +514,22 @@
       onAbilityHit(t, first, { raw: (d.physical + d.magic) * mult, type: big, label: src });
     };
 
-    const onHitEffects = (t, times) => {
+    // Ability buffs that add damage to every attack while they last (Master Yi's Wuju Style): { until, raw, type, label }.
+    let onHitBuffs = [];
+    // mult: on-hit effectiveness (Master Yi's Alpha Strike applies on-hit effects at 75%).
+    const onHitEffects = (t, times, mult = 1) => {
+      const hit = (amt, type, src) => deal(t, amt * mult, type, src, 'onhit');
       for (let i = 0; i < times; i++) {
         for (const f of has('onHit')) {
           const o = f.onHit;
-          if (o.magic || o.ap) deal(t, (o.magic || 0) + (o.ap || 0) * st.ap, 'magic', f.item, 'onhit');
-          if (o.curHpMelee) deal(t, dummyHp * (ch.ranged ? o.curHpRanged : o.curHpMelee), 'physical', f.item, 'onhit');
-          if (o.ownHpMelee) deal(t, st.maxHP * (ch.ranged ? o.ownHpRanged : o.ownHpMelee), 'physical', f.item, 'onhit');
+          if (o.magic || o.ap) hit((o.magic || 0) + (o.ap || 0) * st.ap, 'magic', f.item);
+          if (o.curHpMelee) hit(dummyHp * (ch.ranged ? o.curHpRanged : o.curHpMelee), 'physical', f.item);
+          if (o.ownHpMelee) hit(st.maxHP * (ch.ranged ? o.ownHpRanged : o.ownHpMelee), 'physical', f.item);
         }
-        if (pr.onHitAp) deal(t, pr.onHitAp * st.ap + 20, 'magic', 'Champion on-hit', 'onhit');
-        if (P && P.onHit && (!P.onHit.cond || P.onHit.cond(pctx(t)))) { if (P.onHit.dot) addDot(t, P.onHit, P.onHit.dmg); else dealP(t, P.onHit, P.onHit.dmg, 'onhit'); }
-        if (st.muramana) deal(t, 0.012 * st.maxMana, 'physical', 'Manamune', 'onhit');
+        if (pr.onHitAp) hit(pr.onHitAp * st.ap + 20, 'magic', 'Champion on-hit');
+        if (P && P.onHit && (!P.onHit.cond || P.onHit.cond(pctx(t)))) { if (P.onHit.dot) addDot(t, P.onHit, P.onHit.dmg); else dealP(t, P.onHit, c => P.onHit.dmg(c) * mult, 'onhit'); }
+        if (st.muramana) hit(0.012 * st.maxMana, 'physical', 'Manamune');
+        for (const b of onHitBuffs) if (t <= b.until) hit(b.raw, b.type, b.label);
       }
     };
 
@@ -790,7 +798,14 @@
             // Akali R2: the recast scales with the target's missing health, up to recastMaxMult at recastFullAt health left.
             const miss = 1 - dummyHp / DUMMY.hp, full = 1 - (m.recastFullAt || 0.3);
             first = deal(t, ev(m.recastCalc) * (1 + ((m.recastMaxMult || 1) - 1) * Math.min(1, miss / full)), m.type, label, 'ability');
-          } else if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, label, 'ability');
+          } else if (m.kind === 'cast') {
+            // critAvg: the cast can crit (Alpha Strike), counted at the average crit; onHitMult: applies on-hit effects once.
+            const critAvg = m.critAvg ? 1 + st.crit * (st.critMult - 1) : 1;
+            first = deal(t, ev(m.calc) * critAvg * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, label, 'ability');
+            if (m.onHitMult) onHitEffects(t, 1, m.onHitMult);
+          }
+          // Wuju Style: every attack deals the buff's damage for its duration.
+          if (m.onHitBuff) { onHitBuffs = onHitBuffs.filter(b => b.label !== label); onHitBuffs.push({ until: t + (m.duration || 5), raw: ev(m.onHitBuff), type: m.onHitType || 'true', label }); }
           // Akali W: restores energy and raises her max energy by the same amount while the shroud lasts.
           if (m.energyMax) { energyNow(t); energyMaxBonus = m.energyMax; energyMaxUntil = t + (m.duration || 5); energy += m.energyMax; }
           // Temporary attack speed from a cast (Wukong E); game data stores 60% as 0.6.
@@ -1411,7 +1426,14 @@
     Blitzcrank: { W: { kind: 'buff', stats: { as: ['AttackSpeedMod', 100] }, duration: 5 } },
     Draven: { W: { kind: 'buff', stats: { as: ['AttackSpeed', 100] }, duration: 10 } }, // refreshed by catching axes
     Lulu: { W: { kind: 'buff', stats: { as: ['ASBonus', 100] }, duration: 4 } },
-    MasterYi: { R: { kind: 'buff', stats: { as: 'RASBonus' }, duration: 7 } },
+    // Master Yi: Highlander first (attack speed for 7s, extended by kills: see passives.js), then Wuju Style (true damage
+    // on every attack for 5s), then Alpha Strike: on one target all 4 strikes hit it (1.75x), it can crit, applies on-hit
+    // effects at 75%, and each basic attack cuts its cooldown by 1s.
+    MasterYi: {
+      R: { kind: 'cast', noDamage: true, asBonus: 'RASBonus', asDur: 'RDuration', order: 0.4 },
+      E: { kind: 'cast', noDamage: true, onHitBuff: 'TotalDamage', onHitType: 'true', duration: 'Duration', order: 0.5 },
+      Q: { kind: 'cast', type: 'physical', calc: 'SingleTotalDamage', critAvg: true, onHitMult: 'BaseOnHitMultiplier', cdPerHit: 'BasicAttackCDR', order: 0.6 },
+    },
     // Olaf: W attack speed for 5s. Q: he walks about 2s to pick the axe up, which drops its cooldown to 2.5s from the
     // throw. E: true damage; each attack cuts its cooldown by 1s. (R's attack damage is in passives.js.)
     Olaf: {
@@ -1537,7 +1559,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));
@@ -1793,7 +1815,9 @@
     Malphite: none('Granite Shield', 'Shield only'),
     Malzahar: none('Void Shift'),
     Maokai: none('Sap Magic', 'Healing only'),
-    MasterYi: { name: 'Double Strike', note: 'Every 4th attack strikes twice', everyN: { n: 4, extraOnHit: true, type: 'physical', dmg: c => 0.5 * c.ad * avgCrit(c) } },
+    // Highlander (R) passive: a kill cuts Q, W and E's remaining cooldowns by 70% and extends the ultimate by 7s.
+    MasterYi: { name: 'Double Strike', note: 'Every 4th attack strikes twice; kills extend Highlander and refresh abilities',
+      killReset: { pct: 0.7, slots: ['Q', 'W', 'E'], extendAS: 7 }, everyN: { n: 4, extraOnHit: true, type: 'physical', dmg: c => 0.5 * c.ad * avgCrit(c) } },
     Mel: { name: 'Searing Brilliance', note: 'Bonus projectiles after abilities; Overwhelm execute', afterAbility: { type: 'magic', dmg: c => 3 * (30 + 0.025 * c.ap) }, execute: 0.05 },
     Milio: none('Fired Up!', 'Buffs allies'),
     MissFortune: { name: 'Love Tap', note: 'First attack on a new target', timedAuto: { once: true, type: 'physical', dmg: c => c.ad } },

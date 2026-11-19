@@ -449,7 +449,10 @@
       if (killed) {
         kills++; if (firstKill === null) firstKill = t; dummyHp = DUMMY.hp;
         // Takedown resets (Katarina's Voracity): a dummy kill takes seconds off her ability cooldowns.
-        if (P && P.killReset) for (const s of P.killReset.slots) if (ready[s] > t && ready[s] !== Infinity) ready[s] = Math.max(t, ready[s] - P.killReset.cd);
+        // Master Yi's Highlander: a kill cuts the remaining cooldowns by a share (pct) and extends the ultimate's attack speed.
+        if (P && P.killReset) for (const s of P.killReset.slots) if (ready[s] > t && ready[s] !== Infinity)
+          ready[s] = P.killReset.pct ? t + (ready[s] - t) * (1 - P.killReset.pct) : Math.max(t, ready[s] - P.killReset.cd);
+        if (P && P.killReset && P.killReset.extendAS && t <= tempASUntil) tempASUntil += P.killReset.extendAS;
       }
       hits.push({ t, amt, type, src, hp: dummyHp, killed });
     }
@@ -510,17 +513,22 @@
       onAbilityHit(t, first, { raw: (d.physical + d.magic) * mult, type: big, label: src });
     };
 
-    const onHitEffects = (t, times) => {
+    // Ability buffs that add damage to every attack while they last (Master Yi's Wuju Style): { until, raw, type, label }.
+    let onHitBuffs = [];
+    // mult: on-hit effectiveness (Master Yi's Alpha Strike applies on-hit effects at 75%).
+    const onHitEffects = (t, times, mult = 1) => {
+      const hit = (amt, type, src) => deal(t, amt * mult, type, src, 'onhit');
       for (let i = 0; i < times; i++) {
         for (const f of has('onHit')) {
           const o = f.onHit;
-          if (o.magic || o.ap) deal(t, (o.magic || 0) + (o.ap || 0) * st.ap, 'magic', f.item, 'onhit');
-          if (o.curHpMelee) deal(t, dummyHp * (ch.ranged ? o.curHpRanged : o.curHpMelee), 'physical', f.item, 'onhit');
-          if (o.ownHpMelee) deal(t, st.maxHP * (ch.ranged ? o.ownHpRanged : o.ownHpMelee), 'physical', f.item, 'onhit');
+          if (o.magic || o.ap) hit((o.magic || 0) + (o.ap || 0) * st.ap, 'magic', f.item);
+          if (o.curHpMelee) hit(dummyHp * (ch.ranged ? o.curHpRanged : o.curHpMelee), 'physical', f.item);
+          if (o.ownHpMelee) hit(st.maxHP * (ch.ranged ? o.ownHpRanged : o.ownHpMelee), 'physical', f.item);
         }
-        if (pr.onHitAp) deal(t, pr.onHitAp * st.ap + 20, 'magic', 'Champion on-hit', 'onhit');
-        if (P && P.onHit && (!P.onHit.cond || P.onHit.cond(pctx(t)))) { if (P.onHit.dot) addDot(t, P.onHit, P.onHit.dmg); else dealP(t, P.onHit, P.onHit.dmg, 'onhit'); }
-        if (st.muramana) deal(t, 0.012 * st.maxMana, 'physical', 'Manamune', 'onhit');
+        if (pr.onHitAp) hit(pr.onHitAp * st.ap + 20, 'magic', 'Champion on-hit');
+        if (P && P.onHit && (!P.onHit.cond || P.onHit.cond(pctx(t)))) { if (P.onHit.dot) addDot(t, P.onHit, P.onHit.dmg); else dealP(t, P.onHit, c => P.onHit.dmg(c) * mult, 'onhit'); }
+        if (st.muramana) hit(0.012 * st.maxMana, 'physical', 'Manamune');
+        for (const b of onHitBuffs) if (t <= b.until) hit(b.raw, b.type, b.label);
       }
     };
 
@@ -789,7 +797,14 @@
             // Akali R2: the recast scales with the target's missing health, up to recastMaxMult at recastFullAt health left.
             const miss = 1 - dummyHp / DUMMY.hp, full = 1 - (m.recastFullAt || 0.3);
             first = deal(t, ev(m.recastCalc) * (1 + ((m.recastMaxMult || 1) - 1) * Math.min(1, miss / full)), m.type, label, 'ability');
-          } else if (m.kind === 'cast') first = deal(t, ev(m.calc) * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, label, 'ability');
+          } else if (m.kind === 'cast') {
+            // critAvg: the cast can crit (Alpha Strike), counted at the average crit; onHitMult: applies on-hit effects once.
+            const critAvg = m.critAvg ? 1 + st.crit * (st.critMult - 1) : 1;
+            first = deal(t, ev(m.calc) * critAvg * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, label, 'ability');
+            if (m.onHitMult) onHitEffects(t, 1, m.onHitMult);
+          }
+          // Wuju Style: every attack deals the buff's damage for its duration.
+          if (m.onHitBuff) { onHitBuffs = onHitBuffs.filter(b => b.label !== label); onHitBuffs.push({ until: t + (m.duration || 5), raw: ev(m.onHitBuff), type: m.onHitType || 'true', label }); }
           // Akali W: restores energy and raises her max energy by the same amount while the shroud lasts.
           if (m.energyMax) { energyNow(t); energyMaxBonus = m.energyMax; energyMaxUntil = t + (m.duration || 5); energy += m.energyMax; }
           // Temporary attack speed from a cast (Wukong E); game data stores 60% as 0.6.

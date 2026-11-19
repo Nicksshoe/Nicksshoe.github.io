@@ -198,7 +198,9 @@
     Malphite: none('Granite Shield', 'Shield only'),
     Malzahar: none('Void Shift'),
     Maokai: none('Sap Magic', 'Healing only'),
-    MasterYi: { name: 'Double Strike', note: 'Every 4th attack strikes twice', everyN: { n: 4, extraOnHit: true, type: 'physical', dmg: c => 0.5 * c.ad * avgCrit(c) } },
+    // Highlander (R) passive: a kill cuts Q, W and E's remaining cooldowns by 70% and extends the ultimate by 7s.
+    MasterYi: { name: 'Double Strike', note: 'Every 4th attack strikes twice; kills extend Highlander and refresh abilities',
+      killReset: { pct: 0.7, slots: ['Q', 'W', 'E'], extendAS: 7 }, everyN: { n: 4, extraOnHit: true, type: 'physical', dmg: c => 0.5 * c.ad * avgCrit(c) } },
     Mel: { name: 'Searing Brilliance', note: 'Bonus projectiles after abilities; Overwhelm execute', afterAbility: { type: 'magic', dmg: c => 3 * (30 + 0.025 * c.ap) }, execute: 0.05 },
     Milio: none('Fired Up!', 'Buffs allies'),
     MissFortune: { name: 'Love Tap', note: 'First attack on a new target', timedAuto: { once: true, type: 'physical', dmg: c => c.ad } },

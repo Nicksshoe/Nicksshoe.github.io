@@ -287,7 +287,14 @@
     Blitzcrank: { W: { kind: 'buff', stats: { as: ['AttackSpeedMod', 100] }, duration: 5 } },
     Draven: { W: { kind: 'buff', stats: { as: ['AttackSpeed', 100] }, duration: 10 } }, // refreshed by catching axes
     Lulu: { W: { kind: 'buff', stats: { as: ['ASBonus', 100] }, duration: 4 } },
-    MasterYi: { R: { kind: 'buff', stats: { as: 'RASBonus' }, duration: 7 } },
+    // Master Yi: Highlander first (attack speed for 7s, extended by kills: see passives.js), then Wuju Style (true damage
+    // on every attack for 5s), then Alpha Strike: on one target all 4 strikes hit it (1.75x), it can crit, applies on-hit
+    // effects at 75%, and each basic attack cuts its cooldown by 1s.
+    MasterYi: {
+      R: { kind: 'cast', noDamage: true, asBonus: 'RASBonus', asDur: 'RDuration', order: 0.4 },
+      E: { kind: 'cast', noDamage: true, onHitBuff: 'TotalDamage', onHitType: 'true', duration: 'Duration', order: 0.5 },
+      Q: { kind: 'cast', type: 'physical', calc: 'SingleTotalDamage', critAvg: true, onHitMult: 'BaseOnHitMultiplier', cdPerHit: 'BasicAttackCDR', order: 0.6 },
+    },
     // Olaf: W attack speed for 5s. Q: he walks about 2s to pick the axe up, which drops its cooldown to 2.5s from the
     // throw. E: true damage; each attack cuts its cooldown by 1s. (R's attack damage is in passives.js.)
     Olaf: {
@@ -413,7 +420,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));
