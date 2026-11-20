@@ -64,6 +64,7 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 .spacer{flex:1}
 .pill{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
 .pill b{color:var(--gold2);font-weight:600}
+#patch,#best{display:inline-block;min-width:6ch} /* room for "16.23.1" / "10,984" before they load, so the header doesn't rewrap */
 .modes{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
 .modes button{background:transparent;border:0;padding:6px 14px;font-size:13px;color:var(--muted)}
 .modes button.on{background:var(--gold);color:#1a1405;font-weight:600}
@@ -205,7 +206,9 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--gold);color:#1a1405;padding:10px 18px;border-radius:8px;font-weight:600;
   animation:pop .25s both;z-index:10}
-.loading{display:grid;place-items:center;min-height:300px;color:var(--muted);text-align:center}
+/* The first load holds about a screen of space, so the footer starts below the fold and nothing jumps when the
+   champion cards arrive (layout shift). Smaller loaders (the leaderboard) set their own height inline. */
+.loading{display:grid;place-items:center;min-height:max(300px,85vh);color:var(--muted);text-align:center}
 .spinner{width:42px;height:42px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px}
 @keyframes spin{to{transform:rotate(360deg)}}
 footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size:11px;color:var(--muted);line-height:1.6}
@@ -392,7 +395,7 @@ html[data-theme=arcade] footer{border-top:3px solid var(--gold);color:var(--mute
       <button data-mode="free" data-i18n="free">Free Play</button>
     </div>
     <button class="pill" id="howBtn" style="cursor:pointer">❓ <b data-i18n="howTo">How to play</b></button>
-    <button class="pill" id="lbBtn" style="cursor:pointer;display:none">🏆 <b data-i18n="leaderboard">Leaderboard</b></button>
+    <button class="pill" id="lbBtn" style="cursor:pointer;visibility:hidden">🏆 <b data-i18n="leaderboard">Leaderboard</b></button>
     <div class="pill"><span data-i18n="patch">Patch</span> <b id="patch">…</b></div>
     <div class="pill"><span data-i18n="best">Best</span> <b id="best">—</b></div>
     <!-- Settings: language (English, German, Russian, Spanish, Portuguese, Dutch, French; English by default) -->
@@ -1118,7 +1121,7 @@ Promise.all([P.loadPatchData(), fetch("stacks.json").then(r => r.ok ? r.json() :
   DATA = d; STACKS = stacks;
   if (arcadeOn()) ARCADE_SKINS = await fetch('arcade-skins.json').then(r => r.ok ? r.json() : {}).then(j => j.champions || {}).catch(() => ({}));
   $('#patch').textContent = d.patch;
-  if (LB.enabled) { $('#lbBtn').style.display = ''; $('#lbBtn').onclick = () => showBoard('daily'); }
+  if (LB.enabled) { $('#lbBtn').style.visibility = ''; $('#lbBtn').onclick = () => showBoard('daily'); }
   window.__POTENSHALL_DATA = d;
   loadSponsor();
   await loadLocalizedNames();
