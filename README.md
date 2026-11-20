@@ -1,6 +1,6 @@
 # Potential Damage
 
-A League of Legends mini game inspired by Bausffs-style abstract builds. Draft one champion from 6 random picks (5 before 2026-11-21), then 6 items, each picked from 6 random legendary items or boots (3 rerolls total), and see how much damage you deal to a training dummy (10,000 HP, 200 armor, 100 MR) in 10 seconds at level 18.
+A League of Legends mini game inspired by Bausffs-style abstract builds. Draft one champion from 6 random picks (5 before 2026-11-20), then 6 items, each picked from 6 random legendary items or boots (3 rerolls total), and see how much damage you deal to a training dummy (10,000 HP, 200 armor, 100 MR) in 10 seconds at level 18.
 
 ## How the damage works
 

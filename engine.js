@@ -1445,9 +1445,9 @@
     return out;
   }
   // Draft rules by the day the draft started, so the game and the leaderboard server always agree on the offers.
-  // From 2026-11-21: an item that has already been offered in this draft is 4x less likely to be offered again, and the
+  // From 2026-11-20: an item that has already been offered in this draft is 4x less likely to be offered again, and the
   // champion pick offers 6 champions (like the 6 item choices) instead of 5.
-  const DRAFT_V2_FROM = '2026-11-21';
+  const DRAFT_V2_FROM = '2026-11-20';
   const CHAMP_CHOICES_V2 = 6;
   // Champion choices for a draft started on this date (How to play shows the same number the draft will offer).
   const champChoicesFor = date => (typeof date === 'string' && date >= DRAFT_V2_FROM ? CHAMP_CHOICES_V2 : DRAFT.CHAMP_CHOICES);
