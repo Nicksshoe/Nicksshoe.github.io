@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<path d="M256,24 L293,167 L403,109 L345,219 L488,256 L345,293 L403,403 L293,345 L256,488 L219,345 L109,403 L167,293 L24,256 L167,219 L109,109 L219,167 Z" fill="#ffd23f" stroke="#ff3ea5" stroke-width="8" stroke-linejoin="miter" stroke-miterlimit="4"/>
+<path d="M216,152 H280 A104,104 0 0 1 280,360 H216 Z" fill="#ff3ea5" stroke="#ff3ea5" stroke-width="8" stroke-linejoin="miter" stroke-miterlimit="4" transform="translate(24 24)"/>
+<path d="M216,152 H280 A104,104 0 0 1 280,360 H216 Z M280,200 A56,56 0 0 1 280,312 Z" fill="#ffd23f" fill-rule="evenodd" stroke="#ff3ea5" stroke-width="8" stroke-linejoin="miter" stroke-miterlimit="4"/>
+<path d="M280,200 A56,56 0 0 1 280,312 Z" fill="#3ef0ff"/>
+<path d="M120,152 H184 A64,64 0 0 1 184,280 V360 H120 Z M184,200 A16,16 0 0 1 184,232 Z" fill="#ff3ea5" fill-rule="evenodd" stroke="#ff3ea5" stroke-width="8" stroke-linejoin="miter" stroke-miterlimit="4" transform="translate(24 24)"/>
+<path d="M120,152 H184 A64,64 0 0 1 184,280 V360 H120 Z M184,200 A16,16 0 0 1 184,232 Z" fill="#ffd23f" fill-rule="evenodd" stroke="#ff3ea5" stroke-width="8" stroke-linejoin="miter" stroke-miterlimit="4"/>
+</svg>

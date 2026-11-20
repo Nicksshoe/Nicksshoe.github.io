@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<path d="M16,1 L19,10 L25,7 L22,13 L31,16 L22,19 L25,25 L19,22 L16,31 L13,22 L7,25 L10,19 L1,16 L10,13 L7,7 L13,10 Z" fill="#ffd23f"/>
+<path d="M9,6 H15 A5,5 0 0 1 15,16 V24 H9 Z M15,10 A1,1 0 0 1 15,12 Z" fill="#ff3ea5" fill-rule="evenodd" stroke="#ff3ea5" stroke-width="2" stroke-linejoin="miter" transform="translate(2 2)"/>
+<path d="M9,6 H15 A5,5 0 0 1 15,16 V24 H9 Z M15,10 A1,1 0 0 1 15,12 Z" fill="#ffd23f" fill-rule="evenodd" stroke="#ff3ea5" stroke-width="2" stroke-linejoin="miter"/>
+</svg>

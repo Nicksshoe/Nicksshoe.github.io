@@ -250,7 +250,7 @@ footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size
    opens the phone's own picker and needs no reserved space for the longest name. */
 /* The language picker always starts its own header line, so the header can't rewrap when fonts load (one row gap, not two). */
 .hbreak{flex-basis:100%;height:0}
-#modeBtn[hidden]{display:none}
+#modeBtn[hidden],html:not([data-theme=arcade]) #modeBtn{display:none} /* classic has one look: hidden from the first paint */
 /* Rows are spaced by item margins (8px above and below), not row-gap, so the empty break row adds no space. */
 header{row-gap:0;padding-top:0;padding-bottom:8px}
 header>*:not(.hbreak){margin-top:8px;margin-bottom:8px}
@@ -279,7 +279,9 @@ html[data-theme=arcade] .settings:focus-within{outline-color:var(--cyan)}
 .lb-score{font-variant-numeric:tabular-nums}
 .lb-you{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border:1px solid currentColor;padding:0 5px;margin-left:4px;color:var(--gold)} /* your row says so in words, not only colour */
 h1.logo{margin:0;display:flex;align-items:center;gap:10px}
-.logo-mark{width:1.15em;height:1.15em;flex:none}
+.logo-mark{width:1.7em;height:1.7em;flex:none;margin:-.3em 0} /* the PD burst (brand/pd-mark.svg); pink follows the theme's pink */
+.logo-mark path{stroke-width:8;stroke-linejoin:miter;stroke:var(--pink,#ff3ea5)}
+.logo-mark .lm-g{fill:#ffd23f}.logo-mark .lm-p{fill:var(--pink,#ff3ea5)}.logo-mark .lm-c{fill:#3ef0ff;stroke:none}
 .lb-lock{text-align:center;padding:28px 12px;border:1px dashed var(--line);border-radius:10px}
 .lb-select{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit}
 
@@ -314,8 +316,8 @@ html[data-theme=arcade] header{border-bottom:3px solid var(--frame);padding-bott
 html[data-theme=arcade] .logo{font:400 26px var(--pix);letter-spacing:.02em;background:none;color:var(--title);-webkit-text-fill-color:var(--title);
   text-shadow:3px 3px 0 var(--pink)}
 /* Reserve the logo's final width (mark + Bungee text) so the header doesn't rewrap when the font arrives. */
-html[data-theme=arcade] h1.logo{min-width:12.7em}
-html:not([data-theme=arcade]) h1.logo{min-width:13.6em} /* classic: Cinzel is wider than its fallback too */
+html[data-theme=arcade] h1.logo{min-width:13.25em}
+html:not([data-theme=arcade]) h1.logo{min-width:14.15em} /* classic: Cinzel is wider than its fallback too */
 html[data-theme=arcade] .pill,
 html[data-theme=arcade] .modes button{border:2px solid var(--cyan);border-radius:0;background:var(--bg);color:var(--cyan);
   font:var(--ui);text-transform:uppercase;letter-spacing:.04em;padding:7px 12px;box-shadow:var(--e1) var(--cyan-soft)}
@@ -510,7 +512,7 @@ html[data-theme=arcade] :focus-visible{outline:3px solid var(--cyan);outline-off
 <body>
 <div class="wrap">
   <header>
-    <h1 class="logo"><svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect x="6" y="6" width="56" height="56" fill="#ff3ea5"/><rect x="2" y="2" width="56" height="56" fill="#0c0614" stroke="#ffd23f" stroke-width="4"/><polygon points="30,9 33.4,21.7 44.8,15.2 38.3,26.6 51,30 38.3,33.4 44.8,44.8 33.4,38.3 30,51 26.6,38.3 15.2,44.8 21.7,33.4 9,30 21.7,26.6 15.2,15.2 26.6,21.7" fill="#ffd23f"/><rect x="25" y="25" width="10" height="10" fill="#3ef0ff"/></svg>POTENTIAL DAMAGE</h1>
+    <h1 class="logo"><svg class="logo-mark" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path class="lm-g" d="M256,24 L293,167 L403,109 L345,219 L488,256 L345,293 L403,403 L293,345 L256,488 L219,345 L109,403 L167,293 L24,256 L167,219 L109,109 L219,167 Z"/><path class="lm-p" d="M216,152 H280 A104,104 0 0 1 280,360 H216 Z" transform="translate(24 24)"/><path class="lm-g" d="M216,152 H280 A104,104 0 0 1 280,360 H216 Z M280,200 A56,56 0 0 1 280,312 Z" fill-rule="evenodd"/><path class="lm-c" d="M280,200 A56,56 0 0 1 280,312 Z"/><path class="lm-p" d="M120,152 H184 A64,64 0 0 1 184,280 V360 H120 Z M184,200 A16,16 0 0 1 184,232 Z" fill-rule="evenodd" transform="translate(24 24)"/><path class="lm-g" d="M120,152 H184 A64,64 0 0 1 184,280 V360 H120 Z M184,200 A16,16 0 0 1 184,232 Z" fill-rule="evenodd"/></svg>POTENTIAL DAMAGE</h1>
     <div class="spacer"></div>
     <div class="modes" id="modes">
       <button data-mode="daily" class="on" data-i18n="daily">Daily</button>
@@ -522,7 +524,7 @@ html[data-theme=arcade] :focus-visible{outline:3px solid var(--cyan);outline-off
     <div class="pill stat"><span data-i18n="best">Best</span> <b id="best">—</b></div>
     <!-- Settings: language (English, German, Russian, Spanish, Portuguese, Dutch, French; English by default) -->
     <span class="hbreak" aria-hidden="true"></span>
-    <button class="pill" id="modeBtn" type="button" style="cursor:pointer"></button>
+    <button class="pill" id="modeBtn" type="button" style="cursor:pointer">Light mode</button>
     <label class="pill settings" id="settings" title="Settings">
       <span id="langName" aria-hidden="true">English</span><select id="langSel" aria-label="Language"></select></label>
   </header>

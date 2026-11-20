@@ -154,8 +154,12 @@ with a 2px yellow offset).  High-contrast tweaks apply to dark mode only. `tools
 - Don't imitate the League client (gold filigree frames, Beaufort-style serif, hex patterns): fan content must not look
   official.
 - Link preview image: `og.png` (1200x630, drawn in the browser by `tools/og-image.html` with the site fonts; Save writes it through the local server); bump `?v=` in the meta tags when it changes.
-- Brand mark: `favicon.svg` (a gold damage burst in a gold frame with a pink offset shadow), also inline in the header
-  logo and drawn at 180px as `icon-180.png` for phone home screens. Change all three together.
+- Brand mark: "PD in a burst". Bold P and D (one baseline, square ends, the P in front) with pink outlines and a 24-unit
+  pink offset, over a centred 8-point gold burst (4 long, 4 short points) with a pink outline and no shadow; cyan only in
+  the D's hole. Flat vector, drawn by `tools/make-logo.py` into `brand/` (`pd-mark.svg`, `pd-mark-light.svg` with pink
+  `#d1006a`, and the favicons). The header uses it inline (its pink follows `--pink`). Browser tab: `favicon.svg` (a
+  separate P-on-burst drawing for 16px) and `favicon.ico`; phone home screen: `icon-180.png`. Change them together, and
+  share PNGs rendered from the SVG, never screenshots (JPEG adds the speckle that reads as AI art).
 - Every image has alt text: the champion, skin or item name. Structured data (`VideoGame` JSON-LD) sits in the page head.
 
 ## Don'ts (the generic-AI look we moved away from)
