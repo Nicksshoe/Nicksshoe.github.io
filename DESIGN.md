@@ -58,6 +58,31 @@ shadows get stronger, and tags and card subtitles go bold.
 Tier colours (results badge, `data-tier`): Iron `#b8aca4`, Bronze `#e8945a`, Silver `#d4dde6`, Gold `#ffd23f`,
 Platinum `#4fe6d0`, Emerald `#3ddc84`, Diamond `#7aa2ff`, Master `#c77dff`, Grandmaster `#ff5468`, Challenger `#fff0a0` (glow).
 
+Gold has three jobs, each its own token so light mode can treat them differently: `--fill` (primary button and active
+tab fills, top stripe), `--frame` (main panel and button frames), `--title` (logo, headings, scores, champion names).
+In dark mode all three are `#ffd23f`. `--on-skin` (`#ffffff`) is the skin label text in both modes.
+
+## Light and dark mode (arcade)
+
+`data-mode=light` on `<html>` switches arcade to light ("arcade on paper"); no attribute is dark. Set by the theme
+script from `?mode=light|dark` or the header button, remembered as `potenshall:mode`; `DEFAULT_MODE` in `index.html`
+and `theme.js` decides what new visitors get. Classic has one look and hides the button.
+
+| Token | Light value | Note |
+|---|---|---|
+| `--bg` | `#fff8ec` | Warm cream paper, never pure white |
+| `--text` / `--hi` / `--frame` / `--title` | `#1b1030` | Ink: body text, frames, headlines |
+| `--muted` | `#5a4a6e` | 7.5:1 on cream (ink is 17.1:1) |
+| `--fill` | `#ffd23f` | Same yellow as dark; ink text on it (`--on-gold`) |
+| `--cyan` / `--magic` | `#006b7a` | Teal, 5.9:1 |
+| `--pink` | `#d1006a` | Shadows, tags, health bar; 5.0:1 as text |
+| `--lime` / `--good` | `#2a7a00` | 5.1:1 |
+| `--phys` / `--true` | `#b84a00` / `#1b1030` | Damage types |
+| `--line` / `--track` / `--floor` | `#d9cbe3` / `#efe5f5` / `#f3e6cc` | Hairlines, bar tracks, arena floor |
+
+Light tier colours are darker versions of the dark ones (Iron `#6b5f57` ... Grandmaster `#c2002c`, Challenger `#7a5900`
+with a yellow glow). High-contrast tweaks apply to dark mode only. `tools/ui-check.js` must report 0 in both modes.
+
 ## Typography
 
 - Two families only. **Bungee** (display): logo, stage headings, champion names, the score, dummy stats, ranks, tier,

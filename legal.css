@@ -41,3 +41,8 @@ html[data-theme=arcade] a{color:var(--gold)}
 html[data-theme=arcade] footer{border-top:3px solid var(--gold)}
 :focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 html[data-theme=arcade] :focus-visible{outline-color:var(--cyan)}
+/* Light mode (same palette as the game): ink headlines and frames on cream, yellow top stripe, pink shadows. */
+html[data-theme=arcade][data-mode=light]{color-scheme:light;--bg:#fff8ec;--panel:#fff8ec;--line:#d9cbe3;--gold:#1b1030;--gold2:#1b1030;--gold-dim:#b89a52;
+  --text:#1b1030;--muted:#5a4a6e;--cyan:#006b7a;--pink:#d1006a}
+html[data-theme=arcade][data-mode=light] body{border-top-color:#ffd23f}
+html[data-theme=arcade][data-mode=light] a{color:#8a4b00}

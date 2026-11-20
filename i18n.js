@@ -121,7 +121,9 @@
     subTop: ["Top 50, every score verified by the server.","Top 50, jede Punktzahl vom Server bestätigt.","Топ-50, каждый результат проверен сервером.","Top 50, todas las puntuaciones verificadas por el servidor.","Top 50, todas as pontuações verificadas pelo servidor.","Top 50, elke score gecontroleerd door de server.","Top 50, chaque score vérifié par le serveur."],
     back: ["◂ Back to game","◂ Zurück zum Spiel","◂ Назад к игре","◂ Volver al juego","◂ Voltar ao jogo","◂ Terug naar het spel","◂ Retour au jeu"],
     // Bug report form (no login)
-    you: ["You","Du","Вы","Tú","Você","Jij","Vous"],
+    darkMode: ["Dark mode","Dunkler Modus","Тёмная тема","Modo oscuro","Modo escuro","Donkere modus","Mode sombre"],
+  lightMode: ["Light mode","Heller Modus","Светлая тема","Modo claro","Modo claro","Lichte modus","Mode clair"],
+  you: ["You","Du","Вы","Tú","Você","Jij","Vous"],
     reportBug: ["Report a bug","Fehler melden","Сообщить об ошибке","Reportar un error","Reportar um bug","Bug melden","Signaler un bug"],
     reportSub: ["No account needed. Your current champion, items and score are attached so we can check the numbers.","Kein Konto nötig. Dein aktueller Champion, Gegenstände und Punktestand werden angehängt, damit wir die Zahlen prüfen können.","Аккаунт не нужен. Текущий чемпион, предметы и счёт прикрепляются, чтобы мы могли проверить цифры.","No necesitas cuenta. Se adjuntan tu campeón, objetos y puntuación actuales para revisar los números.","Não precisa de conta. Seu campeão, itens e pontuação atuais são anexados para conferirmos os números.","Geen account nodig. Je huidige champion, items en score worden meegestuurd zodat we de cijfers kunnen controleren.","Aucun compte requis. Votre champion, vos objets et votre score actuels sont joints pour qu'on vérifie les chiffres."],
     reportKind: ["What kind of problem?","Was für ein Problem?","Какая проблема?","¿Qué tipo de problema?","Que tipo de problema?","Wat voor probleem?","Quel type de problème ?"],
