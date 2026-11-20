@@ -87,9 +87,8 @@
     Briar: { castDebuff: { Q: { armor: 0.2, mr: 0.2, dur: 5 } }, name: 'Crimson Curse', note: 'Stacking bleed from attacks and abilities', stackDot: { max: 5, dur: 5, type: 'physical', perStack: c => (25 + 0.05 * c.bad) / 5 } },
     Caitlyn: { name: 'Headshot', note: 'Every 6th attack, and after a net/trap hit', everyN: { n: 6, type: 'physical', dmg: c => c.ad * (1.2 + c.crit * 1.3125 * (c.cm / 1.75)) },
       afterAbility: { cd: 10, type: 'physical', dmg: c => c.ad * (1.2 + c.crit * 1.3125 * (c.cm / 1.75)) } },
-    Camille: { name: 'Adaptive Defenses', note: 'Q empowered attacks, the second part true damage', timedAuto: { every: 4, label: 'Q · Precision Protocol', kind: 'ability', dmg: c => ({ physical: 0.3 * c.ad, true: 0.5 * c.ad }) },
-      // R (Hextech Ultimatum) cast at the start: attacks deal 15 + 8% current HP magic for 4s.
-      onHit: { cond: c => c.t >= 0.5 && c.t <= 4.5, label: 'R · Hextech Ultimatum', kind: 'ability', type: 'magic', dmg: c => 15 + 0.08 * c.thp } },
+    // Her kit (Q's two empowered attacks, R's % current health on attacks) is in abilities.js from the game data.
+    Camille: none('Adaptive Defenses', 'Shield only'),
     // Q poisons for 3s; W's cloud lasts 5s and poisons for 1s more (game data), so E's poisoned bonus applies.
     Cassiopeia: { ...none('Serpentine Grace'), poison: { Q: 3, W: 6 } },
     Chogath: none('Carnivore', 'Healing only'),

@@ -476,6 +476,16 @@
       E: { kind: 'cast', type: 'magic', calc: 'Calc_HealthDamage', pctOfMax: true },
       R: { kind: 'pet', type: 'magic', calc: 'YorickBigGhoulDamage', petAS: 1, petASPerLevel: 0, duration: 99, turret: true, onHitPctMax: 'RMarkDamagePercent', order: 0.3 },
     },
+    // Camille: E hooks a wall and dashes in (stun, +attack speed); R (cast, so ultimate items trigger) makes her attacks deal
+    // 8% current health for 4s; Q's next attack hits harder, then the recast at least 1.5s later deals the empowered bonus
+    // with the whole attack turned into true damage (it's a cast too, so Sheen procs). W: base plus the outer edge's max health.
+    Camille: {
+      E: { kind: 'cast', type: 'physical', calc: 'TotalDamage', asBonus: 'ASBuff', asDur: 'ASDuration', channelBlock: 'WallHangDuration', order: 0.3 },
+      R: { kind: 'cast', type: 'magic', noDamage: true, onHitPctCur: 'RPercentCurrentHPDamage', duration: 'RDuration', order: 0.35 },
+      Q: { kind: 'empowerAuto', type: 'physical', calc: 'BonusDamage', lastCalc: 'EmpoweredBonusDamage', convCalc: 'DamageConversionPercentage',
+        charges: 2, chargeGap: 'QRampUpTime', cdAfterCharges: true, recastIsCast: true, resetsAttack: true },
+      W: { kind: 'multi', type: 'physical', parts: [{ calc: 'BaseDamageTotal', type: 'physical' }, { calc: 'OuterEdgeTooltip', pctOfMax: true, type: 'physical' }], channelBlock: 'ChargeDuration', order: 0.32 }, // before R, so R's 4s are all attacks
+    },
     // Kayn at 18 as Rhaast (Darkin Slayer: max-health damage is far more against a 10,000 HP dummy than Shadow Assassin's
     // burst). Q hits twice (dash, then spin), each 65% AD + a share of max health. R deals a share of max health; he
     // bursts out after the 0.5s minimum, and can't attack while inside.
@@ -513,9 +523,10 @@
       W: { kind: 'cast', noDamage: true, cdReduce: 'CooldownReduction', whenNotReady: 'Q' },
     },
     // Bel'Veth E (Royal Maelstrom): 1.5s of strikes (6, +40% more per 100% bonus attack speed), each up to double damage
-    // as the target's health drops and applying 12% of on-hit effects; held until the dummy is at half health or 8.3s.
+    // as the target's health drops and applying 12% (up to 24%) of on-hit effects; held until the dummy is 85% down (each strike
+    // near its maximum) or 8.5s. It still rarely beats attacking (it's mostly damage reduction and life steal), so it stays optional.
     Belveth: { E: { kind: 'flurry', type: 'physical', calc: 'DamagePerStrike', strikesCalc: 'TotalStrikes', duration: 'TotalDuration',
-      missAmpMax: 'MissingHealthMult', onHitRatio: 'OnHitRatio', critAvg: true, holdMissing: 0.5, latest: 8.3 } },
+      missAmpMax: 'MissingHealthMult', onHitRatio: 'OnHitRatio', critAvg: true, holdMissing: 0.85, latest: 8.5 } },
     // Shen Q: his next 3 attacks deal 40 + 7% (+2% per 100 AP) of the target's max health (the empowered version, with the
     // spirit blade pulled through the target) and gain 50% attack speed.
     Shen: { Q: { kind: 'empowerAuto', type: 'magic', calc: 'BaseFlatDamage', pctCalc: 'EmpPercentHealth', charges: 3, asBonus: 'SteroidAS' } },
@@ -645,7 +656,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut', 'sleepDelay', 'sleepDur', 'falloff', 'apPerStack', 'venomSeconds', 'cdRefund', 'lowBelow', 'stackMax', 'stackCdCut', 'stackDur', 'rCd', 'execPct', 'execDur', 'altCdCut', 'altMinCd', 'mines', 'detonateAfter', 'cutPerCast', 'missAmpPer', 'lastMult', 'perSecFlat', 'onHitPctMax', 'channelBlock', 'charges']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut', 'sleepDelay', 'sleepDur', 'falloff', 'apPerStack', 'venomSeconds', 'cdRefund', 'lowBelow', 'stackMax', 'stackCdCut', 'stackDur', 'rCd', 'execPct', 'execDur', 'altCdCut', 'altMinCd', 'mines', 'detonateAfter', 'cutPerCast', 'missAmpPer', 'lastMult', 'perSecFlat', 'onHitPctMax', 'channelBlock', 'charges', 'chargeGap', 'onHitPctCur']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: (v => v > 1 ? v / 100 : v)(dv(p.pctMaxHp)) } : {}), // stored as 0.09 or as 9 (%)
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));

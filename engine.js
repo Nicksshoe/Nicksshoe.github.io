@@ -604,7 +604,7 @@
         if (pr.onHitAp) hit(pr.onHitAp * st.ap + 20, 'magic', 'Champion on-hit');
         if (P && P.onHit && (!P.onHit.cond || P.onHit.cond(pctx(t)))) { if (P.onHit.dot) addDot(t, P.onHit, P.onHit.dmg); else dealP(t, P.onHit, c => P.onHit.dmg(c) * mult, 'onhit'); }
         if (st.muramana) hit(0.012 * st.maxMana, 'physical', 'Manamune');
-        for (const b of onHitBuffs) if (t <= b.until) hit(b.raw, b.type, b.label);
+        for (const b of onHitBuffs) if (t <= b.until) hit(b.raw + (b.pctCur || 0) * dummyHp, b.type, b.label); // pctCur: Camille R
       }
     };
 
@@ -633,7 +633,12 @@
       // Show Sundered Sky's guaranteed crit as its own line: the part above an average attack.
       if (sunderedShare > 0) { deal(t, autoDmg * sunderedShare, 'physical', 'Sundered Sky', 'split'); autoDmg *= 1 - sunderedShare; sunderedShare = 0; }
       if (fiendShare > 0) { deal(t, autoDmg * fiendShare, 'physical', 'Fiendhunter Bolts', 'split'); autoDmg *= 1 - fiendShare; }
-      if (empowered && empowered.replacesAttack) autoDmg = 0; // Twisted Fate's card: the card's damage instead of the attack's
+      // An empowered attack waiting for its recast window (Camille's Q2: at least 1.5s after the first) isn't spent yet.
+      const empNow = empowered && !(empowered.nextAt > t) ? empowered : null;
+      if (empNow && empNow.replacesAttack) autoDmg = 0; // Twisted Fate's card: the card's damage instead of the attack's
+      // Camille's Q2: a share of the whole attack becomes true damage.
+      const convNow = empNow && empNow.left === 1 && empNow.convFn ? Math.min(1, Math.max(0, empNow.convFn())) : 0;
+      if (convNow > 0) { deal(t, autoDmg * convNow, 'true', empNow.label + ' (true)', 'split'); autoDmg *= 1 - convNow; }
       deal(t, autoDmg, 'physical', 'Basic Attacks', 'attack');
       if (P && P.brittle) brittlePop(t, 'attack'); // Ornn: the attack knocks a Brittle target back
       // Xayah: attacks after an ability leave a feather behind the target.
@@ -662,20 +667,24 @@
         if (t > eArm.until) eArm = null;
         else if (--eArm.left <= 0) { const e = eArm; eArm = null; deal(t, e.raw(), e.type, e.label, 'ability'); }
       }
-      if (empowered) {
-        const e = empowered;
+      if (empNow) {
+        const e = empNow;
         e.left--;
         if (e.left <= 0) {
           empowered = null;
           if (e.cdAfterCharges) ready[e.slot] = t + cdOf(e.slot, e.cd);
         }
+        if (e.left > 0 && e.chargeGap) e.nextAt = t + e.chargeGap; // Camille: the recast waits for the empowered window
+        if (e.left <= 0 && e.recastIsCast) onAbilityHit(t, false); // the recast is an ability cast (Sheen, etc.)
         if (e.shred) { shredPct = e.shred; shredUntil = t + (e.shredDur || 3); } // armor shred lands with the hit
         // Xin Zhao Q: each empowered attack cuts his other abilities' cooldowns (so E and W come back for a second cast).
         if (e.cdOthersPerHit) for (const s of ['Q', 'W', 'E', 'R']) if (s !== e.slot && ready[s] > t && ready[s] !== Infinity) ready[s] = Math.max(t, ready[s] - e.cdOthersPerHit);
         const firstHit = !e.firstOnly || e.left === (e.charges || 1) - 1; // Rengar Q: only the first attack hits harder
         empRaw = firstHit ? (e.adRatio || 0) * st.totalAD + (e.bonusAdRatio || 0) * st.bonusAD + (e.apRatio || 0) * st.ap + (e.flat || 0)
-          + (e.calcFn ? e.calcFn() : 0) + (e.pctFn ? e.pctFn() * DUMMY.hp : 0) // Shen Q: flat + % of max health on each
+          + (e.left <= 0 && e.lastCalcFn ? e.lastCalcFn() : e.calcFn ? e.calcFn() : 0) + (e.pctFn ? e.pctFn() * DUMMY.hp : 0) // Shen Q: flat + % of max health on each
           + (e.left <= 0 && e.finalPctMaxHp ? e.finalPctMaxHp * DUMMY.hp : 0) : 0;
+        const conv = e.left <= 0 && e.convFn ? Math.min(1, Math.max(0, e.convFn())) : 0; // Camille Q2: true damage share
+        if (conv > 0 && empRaw > 0) { deal(t, empRaw * conv, 'true', e.label + ' (true)', 'ability'); empRaw *= 1 - conv; }
         if (empRaw > 0) deal(t, empRaw, e.type, e.label, 'ability');
         if (empRaw > 0 && t <= cloneUntil) deal(t, empRaw * cloneMult, e.type, e.label + ' (clone)', 'ability'); // the clone's next attack is empowered too
       }
@@ -907,7 +916,10 @@
           empowered = { ...sp.mech, label: `${sp.slot} · ${labels[sp.slot] || sp.name}`, slot: sp.slot, cd: sp.cooldown,
             left: sp.mech.charges || 1,
             calcFn: sp.mech.calc ? () => root.Potenshall.Abilities.evalCalc(sp.mech.calc, sp.sp, { ...spellCtx(), rank: sp.rank }) || 0 : null,
-            pctFn: sp.mech.pctCalc ? () => root.Potenshall.Abilities.evalCalc(sp.mech.pctCalc, sp.sp, { ...spellCtx(), rank: sp.rank }) || 0 : null };
+            pctFn: sp.mech.pctCalc ? () => root.Potenshall.Abilities.evalCalc(sp.mech.pctCalc, sp.sp, { ...spellCtx(), rank: sp.rank }) || 0 : null,
+            // Camille Q2: the last empowered attack uses its own formula and converts a share to true damage.
+            lastCalcFn: sp.mech.lastCalc ? () => root.Potenshall.Abilities.evalCalc(sp.mech.lastCalc, sp.sp, { ...spellCtx(), rank: sp.rank }) || 0 : null,
+            convFn: sp.mech.convCalc ? () => root.Potenshall.Abilities.evalCalc(sp.mech.convCalc, sp.sp, { ...spellCtx(), rank: sp.rank }) || 0 : null };
           onAbilityHit(t, false); castDebuff(t, sp.slot);
           // Multi-charge empowers (Skarner Q): the cooldown starts when the last empowered attack lands.
           ready[sp.slot] = sp.mech.cdAfterCharges ? Infinity : t + cdOf(sp.slot, sp.cooldown);
@@ -1043,6 +1055,8 @@
           // Wuju Style: every attack deals the buff's damage for its duration.
           if (m.onHitBuff) { onHitBuffs = onHitBuffs.filter(b => b.label !== label); onHitBuffs.push({ until: t + (m.duration || 5), raw: ev(m.onHitBuff), type: m.onHitType || 'true', label }); }
           // Yorick's Maiden marks the target: his attacks deal a share of its max health for the rest of the fight.
+          // Camille's R: for its duration her attacks deal a share of the target's current health.
+          if (m.onHitPctCur) onHitBuffs.push({ until: t + (m.duration || 4), raw: 0, pctCur: m.onHitPctCur > 1 ? m.onHitPctCur / 100 : m.onHitPctCur, type: m.onHitType || m.type, label });
           if (m.onHitPctMax) onHitBuffs.push({ until: Infinity, raw: (m.onHitPctMax > 1 ? m.onHitPctMax / 100 : m.onHitPctMax) * DUMMY.hp, type: m.onHitType || m.type, label: label + ' (mark)' });
           // Akali W: restores energy and raises her max energy by the same amount while the shroud lasts.
           // Zilean's Rewind: takes seconds off his other basic abilities' cooldowns.
