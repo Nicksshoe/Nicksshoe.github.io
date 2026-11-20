@@ -37,7 +37,11 @@
 
   // Riot leaves attack/magic/defense at 0 for a few newer champions (e.g. Akshan, Rell,
   // Seraphine, Vex). Fill them with the average of champions that share the same roles.
+  // Ratings Riot lists wrong (not missing): Qiyana is an AD assassin but Data Dragon gives her Attack 0, Magic 4, which
+  // also made her count as a magic champion for damage types and the Meta Meter. Values from comparable AD assassins.
+  const RATING_FIXES = { Qiyana: { attack: 9, magic: 2, defense: 2 } };
   function fillMissingRatings(champs) {
+    for (const c of champs) if (RATING_FIXES[c.id]) { Object.assign(c.info, RATING_FIXES[c.id]); c.ratingsEstimated = true; }
     const rated = champs.filter(c => c.info.attack + c.info.magic + c.info.defense > 0);
     for (const c of champs) {
       if (c.info.attack + c.info.magic + c.info.defense > 0) continue;
@@ -306,10 +310,15 @@
     const allOut = !!(AO && opts.allOut);
     // Abilities that may cost more damage than they add (Bel'Veth's E channel replaces her attacks): the fight is run with
     // and without them and the better one is kept.
+    // Every on/off combination is tried (Pantheon: E and R, so 4 fights).
     const OPT = P && P.optional;
     if (OPT && opts.optOff === undefined) {
-      const withIt = simulate(ch, items, { ...opts, optOff: false }), without = simulate(ch, items, { ...opts, optOff: true });
-      return without.total > withIt.total ? without : withIt;
+      let best = null;
+      for (let mask = 0; mask < (1 << OPT.length); mask++) {
+        const r = simulate(ch, items, { ...opts, optOff: OPT.filter((_, i) => mask & (1 << i)) });
+        if (!best || r.total > best.total) best = r;
+      }
+      return best;
     }
     if (allOut) { extraStats.as = (extraStats.as || 0) + AO.as; extraStats.arpen = (extraStats.arpen || 0) + AO.bonusArpen; }
     let st = computeStats(ch, items, kit, extraStats, P);
@@ -337,7 +346,7 @@
     }
     const disabled = new Set((P && P.disable) || []);
     if (AO && !allOut) disabled.add(AO.slot); // without the form, the ultimate isn't cast at all
-    if (OPT && opts.optOff) for (const s of OPT) disabled.add(s);
+    if (OPT && Array.isArray(opts.optOff)) for (const s of opts.optOff) disabled.add(s);
     // ownKit: the passive table models the whole kit (form swaps, weapon/awaken rotations), so the raw slots don't cast.
     const castable = spells ? (P && P.ownKit ? [] : spells.filter(s => !disabled.has(s.slot))) : null;
     const everyN = mechOf('everyN');
@@ -648,6 +657,7 @@
       const phantom = hasAny('guinsoo') && autoCount % 3 === 0 ? 1 : 0;
       if (P && P.rend) rendSpears += 1 + phantom; // Guinsoo's extra hit lodges a second spear
       addOverwhelm(t, 'A'); // Mel's attacks stack Overwhelm too
+      if (P && P.fury) addFury(P.fury.perAttack || 0); // Renekton's attacks build Fury
       onHitTimes += phantom;
       if (sbArmed) {
         sbArmed = false;
@@ -702,7 +712,7 @@
         baseHp: DUMMY.baseHp, bonusHp: DUMMY.hp - DUMMY.baseHp },
       stacks: stackInfo.counter ?? 0,
     });
-    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute', 'mark', 'clone', 'pet', 'afterHits', 'knives', 'bomb', 'flurry', 'recall']);
+    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute', 'mark', 'clone', 'pet', 'afterHits', 'knives', 'bomb', 'flurry', 'recall', 'expunge']);
     let markState = null; // Zed-style mark: stores damage dealt until it pops
     const recastLeft = {}; // recasts still available per slot
     let channelUntil = -1; // a channel that keeps the champion from attacking or casting (Aurelion Sol Q)
@@ -745,7 +755,21 @@
     const mitigation = (type, t) => type === 'true' ? 1
       : type === 'magic' ? 100 / (100 + mrAt(t))
       : 100 / (100 + armorAt(t));
-    let lastUltAt = null; const summons = []; let empLastHits = 0, fiendReady = 0, hexReady = 0, hexUntil = -1;
+    // empLastHits: Pantheon's Mortal Will can start fully stacked (start), so his first Q is empowered.
+    let lastUltAt = null; const summons = []; let empLastHits = P && P.empowerAfter && P.empowerAfter.start ? -P.empowerAfter.actions : 0, fiendReady = 0, hexReady = 0, hexUntil = -1;
+    // Stacking abilities (Hecarim's Rampage): { slot: { n, until } }.
+    const castStacks = {};
+    const stackOf = (slot, t) => castStacks[slot] && t <= castStacks[slot].until ? castStacks[slot].n : 0;
+    // Renekton's Fury (0-100): attacks and abilities build it (+50% below half health); at 50+ an ability is empowered.
+    let fury = P && P.fury ? (P.fury.start || 0) : 0;
+    const addFury = v => { fury = Math.min(100, fury + v * (SELF_HP < 0.5 ? (P.fury.lowHpMult || 1) : 1)); };
+    // Cooldown after a cast: Hecarim's stacks shorten it; Pantheon's tapped Q refunds part of it (not the execute throw).
+    const castCd = (sp, m, t, low) => {
+      let cd = sp.cooldown;
+      if (m.stackMax) cd = Math.max(0.5, cd - (m.stackCdCut || 0) * stackOf(sp.slot, t));
+      if (m.cdRefund && !(m.lowNoRefund && low)) cd *= 1 - m.cdRefund;
+      return cd;
+    };
     const onUltimate = t => {
       lastUltAt = t;
       if (hasAny('malignance')) { malignanceUntil = t + 3; malignanceShred = 10; }
@@ -826,6 +850,7 @@
         }
         if (sp.mech && SPELL_MECHS.has(sp.mech.kind)) {
           const m = sp.mech, label = `${sp.slot} · ${labels[sp.slot] || sp.name}`;
+          const castLow = !!(m.lowBelow && dummyHp < m.lowBelow * DUMMY.hp);
           const ev = name => { const v = root.Potenshall.Abilities.evalCalc(name, sp.sp, { ...spellCtx(), rank: sp.rank }); return Number.isFinite(v) && v > 0 ? Math.min(v, 6000) : 0; };
           let first = 0;
           let resetNow = false;
@@ -859,6 +884,12 @@
             if (bomb && t <= bomb.at) { bomb.spent = true; first = deal(t, bomb.raw, m.type, label, 'ability') + deal(t, v, m.type, label, 'ability'); bomb = null; }
             else { const b = { raw: v, at: t + (m.fuse || 3) }; bomb = b;
               spellQueue.push({ at: b.at, label, type: m.type, raw: () => { if (b.spent) return 0; if (bomb === b) bomb = null; return b.raw; } }); }
+          } else if (m.kind === 'expunge') {
+            // Twitch E: flat damage plus physical and magic damage per venom stack; held for full stacks (or the end).
+            const n = t <= pStack.until ? pStack.n : 0;
+            if (!n || (n < (m.holdStacks || 6) && t < (m.latest ?? 9.3))) continue;
+            first = deal(t, (m.flat || 0) + n * ev(m.perStackCalc), 'physical', label, 'ability');
+            if (m.apPerStack && st.ap) first += deal(t, n * m.apPerStack * st.ap, 'magic', label, 'ability');
           } else if (m.kind === 'recall') {
             // Xayah's E: every feather on the ground flies back through the target; each one after the first deals a bit
             // less. Held until she has plenty, a feather is about to expire, or the fight is ending.
@@ -890,7 +921,19 @@
           } else if (m.kind === 'cast') {
             // critAvg: the cast can crit (Alpha Strike), counted at the average crit; onHitMult: applies on-hit effects once.
             const critAvg = m.critAvg ? 1 + st.crit * (st.critMult - 1) : 1;
-            first = deal(t, ev(m.calc) * critAvg * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, label, 'ability');
+            let calcName = m.calc, mult = 1, lab = label, furyEmp = false;
+            if (castLow && m.lowCalc) calcName = m.lowCalc; // Pantheon Q: the execute throw below 20% health
+            // Pantheon's Mortal Will (works for real-kit casts too): every few actions his next Q hits harder.
+            if (P && P.empowerAfter && sp.slot === P.empowerAfter.slot && pHits - empLastHits >= P.empowerAfter.actions) { mult *= P.empowerAfter.mult; empLastHits = pHits; lab += ' (empowered)'; }
+            // Renekton: 50 Fury empowers the ability (W first; Q or E only when W is far off or Fury is full).
+            if (P && P.fury && m.empCalc && fury >= 50 && (sp.slot === P.fury.prefer || fury >= 100 || (ready[P.fury.prefer] || 0) - t > 3)) {
+              calcName = m.empCalc; fury -= 50; furyEmp = true; lab += ' (Fury)';
+            }
+            if (m.stackMax) mult *= 1 + stackOf(sp.slot, t) * ev(m.stackAmpCalc) / 100; // Hecarim: +damage per Rampage stack
+            first = deal(t, ev(calcName) * mult * critAvg * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, lab, 'ability');
+            if (castLow && m.lowBonusCalc) first += deal(t, ev(m.lowBonusCalc) * mult, m.type, lab, 'ability'); // Qiyana's Rock Q vs low health
+            if (P && P.fury && !furyEmp) addFury((P.fury.perSlot || {})[sp.slot] || 0); // empowered casts don't build Fury
+            if (m.stackMax && first > 0) castStacks[sp.slot] = { n: Math.min(m.stackMax, stackOf(sp.slot, t) + 1), until: t + (m.stackDur || 8) };
             if (m.onHitMult) onHitEffects(t, 1, m.onHitMult);
             // Zoe: the hit that wakes a sleeping target deals its damage again as true damage, up to the bubble's cap.
             if (sleep && first > 0 && t >= sleep.from && t <= sleep.until) { deal(t, Math.min(first, sleep.cap), 'true', 'E · Sleep (wake-up hit)', 'ability'); sleep = null; }
@@ -899,6 +942,17 @@
           // Xayah's Q drops feathers (and R, a fan of them).
           if (P && P.feathers && P.feathers.from[sp.slot]) for (let i = 0; i < P.feathers.from[sp.slot]; i++) feathers.push(t + P.feathers.dur);
           if (m.resetsAttack) nextAuto = Math.min(nextAuto, t + sp.castTime); // Riven Q: each cast is followed by an attack
+          // Channels and leaps that stop attacks (Pantheon's E shield and R leap).
+          if (m.channelBlock) channelUntil = Math.max(channelUntil, t + m.channelBlock);
+          // Twitch W: a venom stack on hit, then one per second in the cloud.
+          if (m.venomStacks && P && P.stackDot) {
+            const addVenom = (tt, v) => { if (tt > pStack.until) pStack.n = 0; pStack.n = Math.min(P.stackDot.max, pStack.n + v); pStack.until = tt + P.stackDot.dur; };
+            addVenom(t, m.venomStacks);
+            for (let k = 1; k <= (m.venomSeconds || 0); k++) spellQueue.push({ at: t + k, label, type: 'true', raw: () => 0, after: tt => addVenom(tt, 1) });
+          }
+          // Renekton's ultimate: Fury on cast and every second.
+          if (P && P.fury && sp.slot === P.fury.rSlot) { addFury(P.fury.rOnCast || 0);
+            for (let k = 1; k <= Math.min(m.duration || 15, T); k++) spellQueue.push({ at: t + k, label, type: m.type, raw: () => 0, after: () => addFury(P.fury.rPerSec || 0) }); }
           // Wuju Style: every attack deals the buff's damage for its duration.
           if (m.onHitBuff) { onHitBuffs = onHitBuffs.filter(b => b.label !== label); onHitBuffs.push({ until: t + (m.duration || 5), raw: ev(m.onHitBuff), type: m.onHitType || 'true', label }); }
           // Akali W: restores energy and raises her max energy by the same amount while the shroud lasts.
@@ -967,7 +1021,7 @@
             : afterCharge(sp, t, t + cdOf(sp.slot, m.zoneCd && t < zoneUntil ? m.zoneCd // Kindred Q: shorter inside her zone
               : m.resistCdCap ? Math.max(m.resistCdMin, sp.cooldown - (sp.cooldown - m.resistCdMin) * Math.min(1, (st.bonusArmor + st.bonusMR) / m.resistCdCap))
                 * (allOut && m.allOutCdCut ? 1 - m.allOutCdCut : 1) // K'Sante Q: shorter with resists, and a third shorter in All Out
-              : sp.cooldown));
+              : castCd(sp, m, t, castLow)));
           // Olaf Q: he walks to the axe and picks it up (pickup seconds later); the cooldown drops to pickupCd from the throw.
           if (m.pickup) { const castAt = t; spellQueue.push({ at: t + m.pickup, label, type: m.type, raw: () => 0,
             after: tt => { if (ready[sp.slot] > tt && ready[sp.slot] !== Infinity) ready[sp.slot] = Math.max(tt, castAt + cdOf(sp.slot, m.pickupCd || 0)); } }); }

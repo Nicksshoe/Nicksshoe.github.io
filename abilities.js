@@ -335,11 +335,42 @@
     Tristana: { Q: { kind: 'buff', stats: { as: ['AttackSpeedMod', 100] }, duration: 7 } },
     Viego: { E: { kind: 'buff', stats: { as: ['AttackSpeed', 100] }, duration: 8 } },
     Samira: { R: { kind: 'hits', type: 'physical', calc: 'DamageCalc', critCalc: 'CriticalDamageCalc', n: 10, over: 2 } },
-    Twitch: { E: { kind: 'multi', parts: [{ calc: 'MaxPhysicalDamage', type: 'physical' }, { calc: 'MaxMagicDamage', type: 'magic' }] }, // 6 stacks
+    // Twitch: Q (Ambush) at the start: +60% attack speed for 6s after leaving camouflage. W: a venom stack on hit plus one per
+    // second in the cloud (3s). E: 60 + per stack 35 + 35% bonus AD (and 35% AP as magic), held for 6 stacks or the end.
+    Twitch: {
+      E: { kind: 'expunge', type: 'physical', flat: 'BaseDamage', perStackCalc: 'PhysicalDamagePerStack', apPerStack: 'APRatioPerStack', holdStacks: 6, latest: 9.3 },
+      W: { kind: 'cast', noDamage: true, venomStacks: 1, venomSeconds: 'Duration', order: 0.5 },
       R: { kind: 'buff', stats: { ad: 'BonusAD' }, duration: 'Duration' }, // Spray and Pray: +AD for 6s
-      Q: { kind: 'buff', stats: { as: ['AttackSpeedMod', 100] }, duration: 'AttackSpeedDuration' } }, // Ambush: +AS for 6s
+      Q: { kind: 'cast', noDamage: true, asBonus: 'AttackSpeedMod', asDur: 'AttackSpeedDuration', order: 0.4 } },
+    // Pantheon: Q tapped (thrust) refunds 60% of its cooldown; below 20% health he throws it for the execute damage instead
+    // (no refund). Mortal Will empowers Q (passives.js). E is a 1.5s shield channel (strikes, then a slam) and R a 2.5s leap
+    // that lands for full damage; both stop his attacks, so each is used only when it adds damage (optional, passives.js).
+    Pantheon: {
+      W: { kind: 'cast', type: 'physical', calc: 'MaxHealthDamageCalc', pctOfMax: true },
+      Q: { kind: 'cast', type: 'physical', calc: 'TapDamageCalc', cdRefund: 'TapCooldownRefund', lowBelow: 'CritHealthThreshold', lowCalc: 'ExecuteDamageCalcModified', lowNoRefund: true },
+      E: { kind: 'multi', type: 'physical', parts: [{ calc: 'DamageCalc', type: 'physical' }, { calc: 'ShieldDamageCalc', type: 'physical' }], channelBlock: 1.5 },
+      R: { kind: 'cast', type: 'physical', noDamage: true, delayCalc: 'DamageCalc', delayAfter: 2.5, channelBlock: 2.5 },
+    },
+    // Hecarim: each Rampage (Q) hit adds a stack (max 3, 8s): 0.75s off its cooldown and +damage each. E charges in from
+    // range for its maximum damage.
+    Hecarim: {
+      Q: { kind: 'cast', type: 'physical', calc: 'Damage', stackMax: 'MaxStacks', stackCdCut: 'RampageCooldownReduction', stackAmpCalc: 'RampageBonusDamagePerc', stackDur: 'BuffDuration' },
+      E: { kind: 'cast', type: 'physical', calc: 'MaxDamage' },
+    },
+    // Renekton: abilities have Fury versions (passives.js tracks Fury). E is two dashes (Slice, then Dice).
+    Renekton: {
+      Q: { kind: 'cast', type: 'physical', calc: 'BasicDamage', empCalc: 'EmpDamage' },
+      W: { kind: 'cast', type: 'physical', calc: 'BasicTotalDamage', empCalc: 'EmpTotalDamage', resetsAttack: true },
+      E: { kind: 'cast', type: 'physical', calc: 'BasicDamage', empCalc: 'EmpDamage', recasts: 2, recastGap: 1 },
+      R: { kind: 'channel', type: 'magic', perSec: 'TotalDamagePerSecond', duration: 'BuffDuration', order: 0.3 },
+    },
+    // Qiyana: Q with the Rock element deals bonus damage to targets under 50% health; R's shockwave (target knocked into
+    // terrain) adds 10% of the target's max health. W's enchantment is passive (passives.js).
+    Qiyana: {
+      Q: { kind: 'cast', type: 'physical', calc: 'EnchantedDamage', lowBelow: 'CritThreshold', lowBonusCalc: 'TremorDamage' },
+      R: { kind: 'multi', type: 'physical', parts: [{ calc: 'Damage', type: 'physical' }, { pctMaxHp: 'PercentHPDamageBaseRock', type: 'physical' }] },
+    },
     Anivia: { R: { kind: 'channel', type: 'magic', perSec: 'TotalDamagePerSecond', empCalc: 'EmpoweredDamagePerSecondTooltipOnly', empAfter: 1.5, duration: 99, once: true } },
-    Renekton: { R: { kind: 'channel', type: 'magic', perSec: 'TotalDamagePerSecond', duration: 'BuffDuration' } },
     Rumble: { R: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 'TrailDuration' } },
     Singed: { Q: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 99, once: true } },
     Kennen: { R: { kind: 'hits', type: 'magic', calc: 'PerTickDamageCalculated', n: 6, over: 3 } },
@@ -448,7 +479,6 @@
         recasts: 2, recastGap: 3, blocksAttacks: true, cloneEcho: true, first: true },
     },
     // Pantheon W: damage is a share of the target's max health (game data stores 0.08 = 8%).
-    Pantheon: { W: { kind: 'cast', type: 'physical', calc: 'MaxHealthDamageCalc', pctOfMax: true } },
     Naafiri: { Q: { kind: 'multi', parts: [{ calc: 'TotalDamageFirstCast', type: 'physical' }, { calc: 'TotalBleedDamage', type: 'physical' }, { calc: 'TotalMinDamageSecondCast', type: 'physical' }] } },
     Kayle: { E: { kind: 'cast', type: 'magic', calc: 'ActiveTotalExecuteDamage', pctOfMissing: true } }, // formula is a share of missing HP
     // Skarner Q: rip up a boulder that empowers his next 3 attacks with attack speed and the ability damage; the 3rd
@@ -497,7 +527,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut', 'sleepDelay', 'sleepDur', 'falloff']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut', 'sleepDelay', 'sleepDur', 'falloff', 'apPerStack', 'venomSeconds', 'cdRefund', 'lowBelow', 'stackMax', 'stackCdCut', 'stackDur']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));

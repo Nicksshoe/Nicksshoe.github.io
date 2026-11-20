@@ -252,17 +252,26 @@
     Orianna: { name: 'Clockwork Windup', note: 'On-hit, stacking on repeated attacks', onHit: { type: 'magic', dmg: c => (59 + 0.15 * c.ap) * 1.4 } },
     Ornn: none('Living Forge'),
     // Mortal Will: every 5 actions (attacks and abilities) empower his next Q: +70% on the close-range stab (game data).
-    Pantheon: { name: 'Mortal Will', note: 'After 5 attacks/abilities, the next Q deals +70%', empowerAfter: { actions: 5, slot: 'Q', mult: 1.7 } },
+    // Mortal Will starts full (it builds out of combat), so he opens with an empowered Q (+70% on the thrust); then every
+    // 5 actions. R's passive (rank 3): 30% armor penetration. E and R are each used only when they add damage.
+    Pantheon: { name: 'Mortal Will', note: 'Opens with an empowered Q, then every 5 attacks/abilities; R passive 30% armor pen', empowerAfter: { actions: 5, slot: 'Q', mult: 1.7, start: true },
+      stats: () => ({ arpen: 30 }), optional: ['E', 'R'] },
     Poppy: { name: 'Iron Ambassador', note: 'Thrown buckler attack', timedAuto: { every: 7, type: 'magic', dmg: () => 180 } },
     Pyke: { name: 'Gift of the Drowned Ones', note: 'Bonus HP turns into AD', stats: c => ({ ad: c.bhp / 14, hp: -c.bhp }) },
-    Qiyana: { name: 'Royal Privilege', note: 'First hit on a new target', timedAuto: { once: true, type: 'physical', dmg: c => 117 + 0.55 * c.bad + 0.45 * c.ap } },
+    // W (Terrashape) enchants her for the fight: +35% attack speed and every attack deals 40 + 20% bonus AD + 45% AP magic.
+    Qiyana: { name: 'Royal Privilege + Terrashape (W)', note: 'First hit on a new target; W enchant: attack speed and on-hit damage', disable: ['W'],
+      stats: () => ({ as: 35 }), onHit: { label: 'W · Terrashape', kind: 'ability', type: 'magic', dmg: c => 40 + 0.2 * c.bad + 0.45 * c.ap },
+      timedAuto: { once: true, type: 'physical', dmg: c => 117 + 0.55 * c.bad + 0.45 * c.ap } },
     Quinn: { name: 'Harrier', note: 'Valor marks the target', timedAuto: { every: 6, type: 'physical', dmg: c => 100 + 0.5 * c.ad } },
     Rakan: { name: 'Fey Feathers', note: 'R damage', periodic: { start: 0.5, label: 'R · The Quickness', kind: 'ability', type: 'magic', dmg: c => 300 + 0.5 * c.ap } },
     Rammus: { name: 'Spiked Shell', note: 'On-hit from armor', onHit: { type: 'magic', dmg: c => 30 + 0.1 * c.barm } },
     RekSai: { name: 'Fury of the Xer', note: 'Q empowers 3 attacks', timedAuto: { every: 4, label: "Q · Queen's Wrath", kind: 'ability', type: 'physical', dmg: c => 3 * (45 + 0.5 * c.bad) } },
     Rell: { name: 'Break the Mold', note: 'E deals % max HP', periodic: { every: 12, start: 0.5, label: 'E · Attract and Repel', kind: 'ability', type: 'magic', dmg: c => 0.03 * c.tmax } },
     Renata: { name: 'Leverage', note: '% max HP on attacks', onHit: { type: 'magic', dmg: c => 0.01 * c.tmax } },
-    Renekton: none('Reign of Anger'),
+    // Reign of Anger: attacks build 5 Fury and each ability hit 10 (R: 20 on cast, then 5 a second), +50% below half health
+    // (he fights at 40%). At 50 Fury his next ability is the Fury version (no Fury gained); W gets it first.
+    Renekton: { name: 'Reign of Anger', note: 'Fury from attacks and abilities (+50% at low health); 50 Fury empowers an ability, W first',
+      fury: { start: 0, perAttack: 5, lowHpMult: 1.5, perSlot: { Q: 10, W: 10, E: 10 }, prefer: 'W', rSlot: 'R', rOnCast: 20, rPerSec: 5 } },
     // Rengar: Bonetooth Necklace fully stacked (5 trophies = +25% bonus AD). Ferocity: +1 per ability cast, max 4; at max
     // his next ability is empowered. He opens at max Ferocity (from brush or R) and always spends it on empowered Q,
     // which ignores Q's cooldown: next attack deals the empowered bonus and grants attack speed for 5s.
