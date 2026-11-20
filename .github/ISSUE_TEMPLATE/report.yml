@@ -1,4 +1,4 @@
-name: Report a bug or a wrong number
+name: Report a bug
 description: Something broke, or a champion or item deals damage it shouldn't.
 title: "[Report] "
 body:
