@@ -54,7 +54,49 @@
   "MonkeyKing Q over": "Wukong and his clone both get the empowered attack",
   "XinZhao W over": "Slash plus thrust (tooltip number read is the slash)",
   "Yuumi R over": "All waves on one target (the game's own single-target total)",
-  "Naafiri R nodata": "The dash's damage isn't in the game data (no formula); R is modeled as its +22% AD buff"
+  "Naafiri R nodata": "The dash's damage isn't in the game data (no formula); R is modeled as its +22% AD buff",
+  "Akali R partial": "R2 scales with missing health (up to 3x below 30%); per cast is the average in the fight",
+  "Ambessa W partial": "The higher damage needs her to be hit by a champion while braced; the dummy never attacks",
+  "AurelionSol R partial": "Falling Star and The Skies Descend are alternatives; the shockwave hits others",
+  "Blitzcrank R partial": "The passive charge on attacks is lost once R is cast; R is used for its active",
+  "Caitlyn Q partial": "The wider second shot hits enemies behind the first; one target takes the first",
+  "Corki R partial": "Per cast is the average: every third missile is the big one",
+  "Evelynn E partial": "The empowered E needs Demon Shade (out of combat); not available mid-fight",
+  "Fiddlesticks Q partial": "Doubled only if the target was recently feared; Q's own fear doesn't count",
+  "Galio E partial": "The second number is for other enemies in the way",
+  "Heimerdinger W partial": "All rockets on one target (the maximum); the first number is one rocket",
+  "Hwei Q partial": "Three alternative spells; Devastating Fire (the strongest on one target) is used",
+  "Hwei E partial": "Three alternative spells, one per cast",
+  "Irelia R partial": "The cage's damage needs the target to walk through it; the dummy stays inside",
+  "Ivern W partial": "The second number is for allies",
+  "Jax R partial": "The every-3rd-attack part is counted on his attacks (R · passive), not per cast",
+  "Kennen W partial": "The every-5th-attack part is counted on his attacks (W · passive), not per cast",
+  "Leblanc Q partial": "The mark pops when her next ability hits (counted as its own hit)",
+  "Leblanc R partial": "R mimics one ability per cast (Sigil of Malice); the tooltip lists all of them",
+  "Malphite W partial": "The aftershock hits enemies behind the target",
+  "Maokai E partial": "Empowered only from brush",
+  "MissFortune Q partial": "The second shot hits an enemy behind the first",
+  "Nautilus R partial": "The second number is for other enemies hit",
+  "Orianna Q partial": "The reduced number is for enemies after the first",
+  "Ornn W partial": "Brittle's damage is counted on his passive (Brittle pops)",
+  "Pantheon Q partial": "Tap, hold and execute are alternatives; per cast is what he used",
+  "Poppy R partial": "The half damage is the uncharged version",
+  "Pyke Q partial": "Tap or hold: one or the other, same damage",
+  "Renata Q partial": "The recast damages enemies the target is thrown into, not the target",
+  "Rengar W partial": "Empowered at max Ferocity, which he spends on Q",
+  "Rengar E partial": "Empowered at max Ferocity, which he spends on Q",
+  "Riven R partial": "Scales with missing health; per cast is what it dealt",
+  "Rumble E partial": "Empowered on a target already slowed by it; per cast is the average",
+  "Shyvana Q partial": "Her % max health on attacks is counted on her attacks (Q · passive), not per cast",
+  "Shyvana E partial": "Dragon form version is an alternative",
+  "Swain Q partial": "All 5 bolts on one target is the maximum (the tooltip lists the max separately)",
+  "Veigar R partial": "Scales with missing health; per cast is what it dealt",
+  "Viktor Q partial": "The empowered attack's bonus over a normal attack is counted (the attack itself is a basic attack)",
+  "Volibear R partial": "The second number is damage to towers",
+  "Yone Q partial": "Q3 deals the same damage; per cast is one thrust",
+  "Yunara W partial": "Damage per second while the bead lingers; counted for the time it lasts",
+  "Yuumi Q partial": "Empowered only when cast while attached to an ally",
+  "Zeri W partial": "The laser crit needs a wall behind the target"
  },
  "champs": {
   "Aatrox": {
@@ -101,6 +143,19 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 400,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Ahri": {
@@ -147,6 +202,17 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Akali": {
@@ -192,7 +258,22 @@
     "ourCd": 60,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 807.4,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Akshan": {
@@ -239,6 +320,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 754.2,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Alistar": {
@@ -266,14 +360,16 @@
    },
    "E": {
     "expFirst": 318.3,
-    "perCast": 318.3,
-    "ratio": 1,
+    "perCast": 593.3,
+    "ratio": 1.864,
     "casts": 1,
     "gameCd": 10,
     "ourCd": 10,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "R": {
     "expFirst": null,
@@ -285,19 +381,32 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Ambessa": {
    "Q": {
     "expFirst": 1008,
-    "perCast": 1008,
-    "ratio": 1,
+    "perCast": 2150,
+    "ratio": 2.133,
     "casts": 1,
     "gameCd": 10,
     "ourCd": 10,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "W": {
     "expFirst": 190,
@@ -308,7 +417,9 @@
     "ourCd": 14,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "E": {
     "expFirst": 160,
@@ -331,6 +442,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 105.3,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Amumu": {
@@ -382,6 +506,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 449.9,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Anivia": {
@@ -409,14 +546,16 @@
    },
    "E": {
     "expFirst": 248,
-    "perCast": 248,
-    "ratio": 1,
+    "perCast": 495.9,
+    "ratio": 2,
     "casts": 3,
     "gameCd": 4,
     "ourCd": 4,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "R": {
     "expFirst": 81.1,
@@ -429,6 +568,19 @@
     "ourType": "magic",
     "flags": [
      "cd"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
     ]
    }
   },
@@ -476,6 +628,17 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Aphelios": {
@@ -521,6 +684,17 @@
     "ourCd": 100,
     "tipType": "physical",
     "ourType": "physical",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -568,6 +742,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "AurelionSol": {
@@ -615,6 +802,19 @@
     "ourCd": 100,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": [
+     "partial"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -662,6 +862,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 353.5,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Azir": {
@@ -707,6 +920,17 @@
     "ourCd": 90,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -754,6 +978,19 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 533.8,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Belveth": {
@@ -806,6 +1043,17 @@
     "flags": [
      "cd"
     ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Blitzcrank": {
@@ -851,6 +1099,19 @@
     "ourCd": 20,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": [
+     "partial"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -898,6 +1159,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 1875.5,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Braum": {
@@ -944,6 +1218,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 98,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Briar": {
@@ -990,6 +1277,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 98.9,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Caitlyn": {
@@ -1002,7 +1302,9 @@
     "ourCd": 6,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "W": {
     "expFirst": 239,
@@ -1038,6 +1340,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 165.3,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Camille": {
@@ -1088,6 +1403,19 @@
     "flags": [
      "over"
     ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Cassiopeia": {
@@ -1133,6 +1461,17 @@
     "ourCd": 80,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -1180,6 +1519,17 @@
     "tipType": "true",
     "ourType": "true",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Corki": {
@@ -1226,7 +1576,21 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": [
+     "partial",
      "cd"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
     ]
    }
   },
@@ -1274,6 +1638,19 @@
     "tipType": "true",
     "ourType": "true",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 389.5,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Diana": {
@@ -1320,6 +1697,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 501.8,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "DrMundo": {
@@ -1363,6 +1753,17 @@
     "casts": 0,
     "gameCd": 120,
     "ourCd": 120,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
     "tipType": null,
     "ourType": null,
     "flags": []
@@ -1412,6 +1813,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 608,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Ekko": {
@@ -1458,6 +1872,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 220.2,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Elise": {
@@ -1504,6 +1931,17 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Evelynn": {
@@ -1538,7 +1976,9 @@
     "ourCd": 8,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "R": {
     "expFirst": 501.8,
@@ -1549,6 +1989,17 @@
     "ourCd": 80,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -1596,6 +2047,17 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Fiddlesticks": {
@@ -1608,7 +2070,9 @@
     "ourCd": 13,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "W": {
     "expFirst": 256,
@@ -1641,6 +2105,17 @@
     "ourCd": 80,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -1688,6 +2163,17 @@
     "tipType": null,
     "ourType": "true",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 1980,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Fizz": {
@@ -1704,14 +2190,16 @@
    },
    "W": {
     "expFirst": 132.3,
-    "perCast": 226,
-    "ratio": 1.709,
+    "perCast": 452.8,
+    "ratio": 3.424,
     "casts": 4,
     "gameCd": 3,
     "ourCd": 3,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "E": {
     "expFirst": 440.5,
@@ -1734,19 +2222,34 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Galio": {
    "Q": {
     "expFirst": 328.3,
-    "perCast": 328.3,
-    "ratio": 1,
+    "perCast": 2132.6,
+    "ratio": 6.496,
     "casts": 2,
     "gameCd": 7,
     "ourCd": 7,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "W": {
     "expFirst": 110.7,
@@ -1768,7 +2271,9 @@
     "ourCd": 7,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "R": {
     "expFirst": 468.3,
@@ -1780,6 +2285,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 483,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Gangplank": {
@@ -1828,6 +2346,19 @@
     "tipType": "true",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 390,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Garen": {
@@ -1874,6 +2405,19 @@
     "tipType": null,
     "ourType": "true",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Gnar": {
@@ -1920,19 +2464,32 @@
     "tipType": "physical",
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Gragas": {
    "Q": {
     "expFirst": 375.2,
-    "perCast": 375.2,
-    "ratio": 1,
+    "perCast": 562.8,
+    "ratio": 1.5,
     "casts": 2,
     "gameCd": 6,
     "ourCd": 6,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "W": {
     "expFirst": 958.3,
@@ -1966,19 +2523,32 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Graves": {
    "Q": {
     "expFirst": 194,
-    "perCast": 194,
-    "ratio": 1,
+    "perCast": 538,
+    "ratio": 2.773,
     "casts": 2,
     "gameCd": 6,
     "ourCd": 6,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "W": {
     "expFirst": 361.4,
@@ -2011,6 +2581,17 @@
     "ourCd": 60,
     "tipType": "physical",
     "ourType": "physical",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -2050,14 +2631,29 @@
    },
    "R": {
     "expFirst": 86.9,
-    "perCast": 86.9,
-    "ratio": 1,
+    "perCast": 782.1,
+    "ratio": 9,
     "casts": 1,
     "gameCd": 80,
     "ourCd": 80,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 1409.8,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Hecarim": {
@@ -2104,6 +2700,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Heimerdinger": {
@@ -2130,7 +2739,9 @@
     "ourCd": 7,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "E": {
     "expFirst": 321.4,
@@ -2153,6 +2764,17 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Hwei": {
@@ -2165,7 +2787,9 @@
     "ourCd": 6,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "W": {
     "expFirst": 85.4,
@@ -2187,7 +2811,9 @@
     "ourCd": 11,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "R": {
     "expFirst": 38.5,
@@ -2199,6 +2825,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 344.1,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Illaoi": {
@@ -2244,6 +2883,17 @@
     "ourCd": 70,
     "tipType": "physical",
     "ourType": "physical",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 4338.5,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -2292,7 +2942,22 @@
     "ourCd": 85,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 462,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Ivern": {
@@ -2317,6 +2982,7 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": [
+     "partial",
      "cd"
     ]
    },
@@ -2340,6 +3006,17 @@
     "ourCd": 120,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -2387,6 +3064,19 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 112.5,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "JarvanIV": {
@@ -2433,6 +3123,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 579.2,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Jax": {
@@ -2478,6 +3181,19 @@
     "ourCd": 90,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": [
+     "partial"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -2524,6 +3240,17 @@
     "ourCd": 20,
     "tipType": null,
     "ourType": "magic",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -2573,6 +3300,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 151.5,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Jinx": {
@@ -2622,6 +3362,17 @@
     "tipType": null,
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "KSante": {
@@ -2668,6 +3419,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 624,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Kaisa": {
@@ -2714,6 +3478,19 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 589.8,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Kalista": {
@@ -2760,6 +3537,17 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Karma": {
@@ -2798,27 +3586,42 @@
    },
    "R": {
     "expFirst": 210.7,
-    "perCast": 210.7,
-    "ratio": 1,
+    "perCast": 515.2,
+    "ratio": 2.445,
     "casts": 1,
     "gameCd": 36,
     "ourCd": 36,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": [
+     "drift"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
   "Karthus": {
    "Q": {
     "expFirst": 175.1,
-    "perCast": 175.1,
-    "ratio": 1,
+    "perCast": 350.3,
+    "ratio": 2,
     "casts": 11,
     "gameCd": 0,
     "ourCd": 6,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "W": {
     "expFirst": null,
@@ -2853,6 +3656,17 @@
     "ourCd": 160,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -2900,6 +3714,17 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Katarina": {
@@ -2945,6 +3770,17 @@
     "ourCd": 45,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 685.5,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -2992,6 +3828,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 475.5,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Kayn": {
@@ -3038,6 +3887,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Kennen": {
@@ -3061,7 +3923,9 @@
     "ourCd": 6,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "E": {
     "expFirst": 375.2,
@@ -3083,6 +3947,17 @@
     "ourCd": 120,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -3130,6 +4005,19 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 95,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Kindred": {
@@ -3173,6 +4061,17 @@
     "casts": 0,
     "gameCd": 120,
     "ourCd": 120,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
     "tipType": null,
     "ourType": null,
     "flags": []
@@ -3222,6 +4121,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "KogMaw": {
@@ -3270,6 +4182,19 @@
     "flags": [
      "under"
     ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 3486.1,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Leblanc": {
@@ -3282,7 +4207,9 @@
     "ourCd": 6,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "W": {
     "expFirst": 387.1,
@@ -3315,7 +4242,22 @@
     "ourCd": 25,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "LeeSin": {
@@ -3361,6 +4303,17 @@
     "ourCd": 60,
     "tipType": "physical",
     "ourType": "physical",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -3408,19 +4361,34 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Lillia": {
    "Q": {
     "expFirst": 134.1,
-    "perCast": 134.1,
-    "ratio": 1,
+    "perCast": 268.3,
+    "ratio": 2,
     "casts": 3,
     "gameCd": 4,
     "ourCd": 4,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "W": {
     "expFirst": 219.1,
@@ -3454,6 +4422,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 1112.8,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Lissandra": {
@@ -3500,6 +4481,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Locke": {
@@ -3527,14 +4521,16 @@
    },
    "E": {
     "expFirst": 184.5,
-    "perCast": 184.5,
-    "ratio": 1,
+    "perCast": 372.1,
+    "ratio": 2.017,
     "casts": 2,
     "gameCd": 0,
     "ourCd": 6,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "R": {
     "expFirst": 401.4,
@@ -3546,6 +4542,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 249.5,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Lucian": {
@@ -3592,19 +4601,32 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 126.2,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Lulu": {
    "Q": {
     "expFirst": 284.5,
-    "perCast": 284.5,
-    "ratio": 1,
+    "perCast": 426.8,
+    "ratio": 1.5,
     "casts": 2,
     "gameCd": 7,
     "ourCd": 7,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "W": {
     "expFirst": null,
@@ -3638,6 +4660,19 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 640.6,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Lux": {
@@ -3684,6 +4719,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 559.5,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Malphite": {
@@ -3707,7 +4755,9 @@
     "ourCd": 8,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "E": {
     "expFirst": 351.1,
@@ -3730,6 +4780,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Malzahar": {
@@ -3768,14 +4831,29 @@
    },
    "R": {
     "expFirst": 410.2,
-    "perCast": 410.2,
-    "ratio": 1,
+    "perCast": 2832.7,
+    "ratio": 6.906,
     "casts": 1,
     "gameCd": 80,
     "ourCd": 80,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Maokai": {
@@ -3810,7 +4888,9 @@
     "ourCd": 14,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "R": {
     "expFirst": 426.8,
@@ -3822,6 +4902,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "MasterYi": {
@@ -3868,6 +4961,19 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 62.5,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Mel": {
@@ -3914,6 +5020,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 165.4,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Milio": {
@@ -3962,6 +5081,19 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "MissFortune": {
@@ -3974,7 +5106,9 @@
     "ourCd": 3,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "W": {
     "expFirst": null,
@@ -3989,14 +5123,16 @@
    },
    "E": {
     "expFirst": 206.4,
-    "perCast": 206.4,
-    "ratio": 1,
+    "perCast": 412.8,
+    "ratio": 2,
     "casts": 1,
     "gameCd": 14,
     "ourCd": 14,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "R": {
     "expFirst": 187.7,
@@ -4008,6 +5144,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 58.6,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Mordekaiser": {
@@ -4054,6 +5203,19 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 2741.9,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Morgana": {
@@ -4100,6 +5262,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Naafiri": {
@@ -4148,6 +5323,19 @@
     "tipType": null,
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 139.4,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Nami": {
@@ -4194,6 +5382,17 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Nasus": {
@@ -4221,14 +5420,16 @@
    },
    "E": {
     "expFirst": 271.4,
-    "perCast": 271.4,
-    "ratio": 1,
+    "perCast": 542.8,
+    "ratio": 2,
     "casts": 1,
     "gameCd": 12,
     "ourCd": 12,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "R": {
     "expFirst": null,
@@ -4239,6 +5440,17 @@
     "ourCd": 80,
     "tipType": null,
     "ourType": "magic",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -4285,7 +5497,22 @@
     "ourCd": 80,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 40.7,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Neeko": {
@@ -4332,6 +5559,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Nidalee": {
@@ -4375,6 +5615,17 @@
     "casts": 0,
     "gameCd": 3,
     "ourCd": 20,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
     "tipType": null,
     "ourType": null,
     "flags": []
@@ -4426,6 +5677,17 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Nocturne": {
@@ -4472,6 +5734,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 24.8,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Nunu": {
@@ -4518,6 +5793,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Olaf": {
@@ -4564,6 +5852,17 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Orianna": {
@@ -4576,7 +5875,9 @@
     "ourCd": 3,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "W": {
     "expFirst": 373.7,
@@ -4610,6 +5911,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 531.4,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Ornn": {
@@ -4633,7 +5947,9 @@
     "ourCd": 10,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "E": {
     "expFirst": 260,
@@ -4656,6 +5972,17 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 2550,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Pantheon": {
@@ -4668,7 +5995,9 @@
     "ourCd": 8,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "W": {
     "expFirst": 1453.5,
@@ -4700,6 +6029,17 @@
     "gameCd": 150,
     "ourCd": 150,
     "tipType": "magic",
+    "ourType": null,
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
     "ourType": null,
     "flags": []
    }
@@ -4747,7 +6087,22 @@
     "ourCd": 100,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 180,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Pyke": {
@@ -4760,7 +6115,9 @@
     "ourCd": 8,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "W": {
     "expFirst": null,
@@ -4794,6 +6151,19 @@
     "tipType": null,
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Qiyana": {
@@ -4840,6 +6210,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 79,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Quinn": {
@@ -4888,6 +6271,19 @@
     "flags": [
      "cd"
     ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 131.1,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Rakan": {
@@ -4933,6 +6329,17 @@
     "ourCd": 90,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -4980,6 +6387,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 135,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "RekSai": {
@@ -5029,6 +6449,17 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Rell": {
@@ -5077,6 +6508,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Renata": {
@@ -5089,7 +6533,9 @@
     "ourCd": 16,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "W": {
     "expFirst": null,
@@ -5123,6 +6569,19 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 400,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Renekton": {
@@ -5169,6 +6628,17 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Rengar": {
@@ -5194,7 +6664,9 @@
     "ourCd": 10,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "E": {
     "expFirst": 315,
@@ -5205,7 +6677,9 @@
     "ourCd": 10,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "R": {
     "expFirst": 219,
@@ -5217,6 +6691,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Riven": {
@@ -5262,7 +6749,22 @@
     "ourCd": 60,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 234,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Rumble": {
@@ -5298,6 +6800,7 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": [
+     "partial",
      "cd"
     ]
    },
@@ -5311,6 +6814,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 1121.1,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Ryze": {
@@ -5357,6 +6873,19 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Samira": {
@@ -5405,6 +6934,19 @@
     "flags": [
      "cd"
     ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 632,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Sejuani": {
@@ -5421,14 +6963,16 @@
    },
    "W": {
     "expFirst": 238.4,
-    "perCast": 238.4,
-    "ratio": 1,
+    "perCast": 710.3,
+    "ratio": 2.979,
     "casts": 2,
     "gameCd": 5,
     "ourCd": 5,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "E": {
     "expFirst": 373.3,
@@ -5451,6 +6995,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Senna": {
@@ -5497,6 +7054,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 248.8,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Seraphine": {
@@ -5545,6 +7115,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 127,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Sett": {
@@ -5591,6 +7174,19 @@
     "tipType": null,
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 173.3,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Shaco": {
@@ -5637,6 +7233,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 68,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Shen": {
@@ -5683,6 +7292,17 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Shyvana": {
@@ -5695,7 +7315,9 @@
     "ourCd": 6,
     "tipType": "true",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "W": {
     "expFirst": 269.8,
@@ -5717,7 +7339,9 @@
     "ourCd": 8,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "R": {
     "expFirst": 519,
@@ -5728,6 +7352,17 @@
     "ourCd": 60,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -5777,6 +7412,17 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Sion": {
@@ -5823,6 +7469,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Sivir": {
@@ -5866,6 +7525,17 @@
     "casts": 0,
     "gameCd": 80,
     "ourCd": 80,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
     "tipType": null,
     "ourType": null,
     "flags": []
@@ -5917,6 +7587,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 900,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Smolder": {
@@ -5957,14 +7640,29 @@
    },
    "R": {
     "expFirst": 599,
-    "perCast": 599,
-    "ratio": 1,
+    "perCast": 898.5,
+    "ratio": 1.5,
     "casts": 1,
     "gameCd": 100,
     "ourCd": 100,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Sona": {
@@ -6011,6 +7709,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 380.7,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Soraka": {
@@ -6038,14 +7749,16 @@
    },
    "E": {
     "expFirst": 237.6,
-    "perCast": 237.6,
-    "ratio": 1,
+    "perCast": 475.2,
+    "ratio": 2,
     "casts": 1,
     "gameCd": 16,
     "ourCd": 16,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "R": {
     "expFirst": null,
@@ -6054,6 +7767,17 @@
     "casts": 0,
     "gameCd": 120,
     "ourCd": 120,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
     "tipType": null,
     "ourType": null,
     "flags": []
@@ -6069,7 +7793,9 @@
     "ourCd": 3,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "W": {
     "expFirst": 351.4,
@@ -6103,19 +7829,34 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Sylas": {
    "Q": {
     "expFirst": 187.6,
-    "perCast": 187.6,
-    "ratio": 1,
+    "perCast": 602.8,
+    "ratio": 3.213,
     "casts": 2,
     "gameCd": 6,
     "ourCd": 6,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "W": {
     "expFirst": 316.4,
@@ -6149,6 +7890,19 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 149.8,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Syndra": {
@@ -6176,14 +7930,16 @@
    },
    "E": {
     "expFirst": 301.4,
-    "perCast": 301.4,
-    "ratio": 1,
+    "perCast": 602.8,
+    "ratio": 2,
     "casts": 1,
     "gameCd": 15,
     "ourCd": 15,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "R": {
     "expFirst": 193.8,
@@ -6195,6 +7951,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "TahmKench": {
@@ -6241,6 +8010,19 @@
     "tipType": null,
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 600,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Taliyah": {
@@ -6287,19 +8069,32 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Talon": {
    "Q": {
     "expFirst": 225,
-    "perCast": 225,
-    "ratio": 1,
+    "perCast": 731.3,
+    "ratio": 3.25,
     "casts": 2,
     "gameCd": 6,
     "ourCd": 6,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "W": {
     "expFirst": 122,
@@ -6325,14 +8120,29 @@
    },
    "R": {
     "expFirst": 260,
-    "perCast": 260,
-    "ratio": 1,
+    "perCast": 520,
+    "ratio": 2,
     "casts": 1,
     "gameCd": 60,
     "ourCd": 60,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 270,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Taric": {
@@ -6379,6 +8189,19 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 100,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Teemo": {
@@ -6425,6 +8248,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 697.8,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Thresh": {
@@ -6471,6 +8307,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 669.2,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Tristana": {
@@ -6516,6 +8365,17 @@
     "ourCd": 100,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -6563,6 +8423,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Tryndamere": {
@@ -6606,6 +8479,17 @@
     "casts": 0,
     "gameCd": 80,
     "ourCd": 80,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
     "tipType": null,
     "ourType": null,
     "flags": []
@@ -6655,6 +8539,17 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Twitch": {
@@ -6701,6 +8596,19 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 614.4,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Udyr": {
@@ -6746,6 +8654,17 @@
     "ourCd": 20,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -6793,6 +8712,17 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 912.5,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Varus": {
@@ -6839,6 +8769,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 1056.7,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Vayne": {
@@ -6887,6 +8830,17 @@
     "tipType": null,
     "ourType": null,
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Veigar": {
@@ -6932,6 +8886,19 @@
     "ourCd": 60,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": [
+     "partial"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -6983,6 +8950,19 @@
     "flags": [
      "type"
     ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 1259.4,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Vex": {
@@ -7029,6 +9009,19 @@
     "tipType": null,
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 86.9,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Vi": {
@@ -7078,6 +9071,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 791.2,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Viego": {
@@ -7126,6 +9132,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 2323.7,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Viktor": {
@@ -7138,7 +9157,9 @@
     "ourCd": 5,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "W": {
     "expFirst": null,
@@ -7171,6 +9192,17 @@
     "ourCd": 80,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -7218,6 +9250,17 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Volibear": {
@@ -7263,7 +9306,22 @@
     "ourCd": 110,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 588,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Warwick": {
@@ -7310,6 +9368,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 290,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "MonkeyKing": {
@@ -7358,6 +9429,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Xayah": {
@@ -7404,6 +9488,17 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
    }
   },
   "Xerath": {
@@ -7420,14 +9515,16 @@
    },
    "W": {
     "expFirst": 299.8,
-    "perCast": 299.8,
-    "ratio": 1,
+    "perCast": 499.8,
+    "ratio": 1.667,
     "casts": 1,
     "gameCd": 10,
     "ourCd": 10,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "E": {
     "expFirst": 266,
@@ -7449,6 +9546,17 @@
     "ourCd": 100,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   },
@@ -7498,6 +9606,19 @@
     "tipType": null,
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 116.4,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Yasuo": {
@@ -7544,6 +9665,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Yone": {
@@ -7556,7 +9690,9 @@
     "ourCd": 4,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "W": {
     "expFirst": null,
@@ -7590,6 +9726,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Yorick": {
@@ -7636,19 +9785,34 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 299.2,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Yunara": {
    "Q": {
     "expFirst": 56.8,
-    "perCast": 56.8,
-    "ratio": 1,
+    "perCast": 312.4,
+    "ratio": 5.5,
     "casts": 2,
     "gameCd": 0,
     "ourCd": 6,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
    },
    "W": {
     "expFirst": 367.5,
@@ -7659,7 +9823,9 @@
     "ourCd": 6,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "E": {
     "expFirst": null,
@@ -7682,6 +9848,19 @@
     "tipType": null,
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Yuumi": {
@@ -7694,7 +9873,9 @@
     "ourCd": 6.5,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "W": {
     "expFirst": null,
@@ -7729,6 +9910,19 @@
     "ourType": "magic",
     "flags": [
      "over"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 125.3,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
     ]
    }
   },
@@ -7779,6 +9973,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Zac": {
@@ -7817,14 +10024,29 @@
    },
    "R": {
     "expFirst": 327.6,
-    "perCast": 327.6,
-    "ratio": 1,
+    "perCast": 819,
+    "ratio": 2.5,
     "casts": 1,
     "gameCd": 90,
     "ourCd": 90,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": []
+    "flags": [
+     "drift"
+    ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Zed": {
@@ -7871,6 +10093,19 @@
     "tipType": "physical",
     "ourType": "physical",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Zeri": {
@@ -7894,7 +10129,9 @@
     "ourCd": 8,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": []
+    "flags": [
+     "partial"
+    ]
    },
    "E": {
     "expFirst": 63.8,
@@ -7917,6 +10154,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "pmissing"
+    ]
    }
   },
   "Ziggs": {
@@ -7963,6 +10213,19 @@
     "tipType": "magic",
     "ourType": "magic",
     "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 318.8,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Zilean": {
@@ -8006,6 +10269,17 @@
     "casts": 0,
     "gameCd": 60,
     "ourCd": 60,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
     "tipType": null,
     "ourType": null,
     "flags": []
@@ -8057,6 +10331,19 @@
     "flags": [
      "cd"
     ]
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": 245.7,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "phand"
+    ]
    }
   },
   "Zyra": {
@@ -8102,6 +10389,17 @@
     "ourCd": 90,
     "tipType": "magic",
     "ourType": "magic",
+    "flags": []
+   },
+   "P": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 0,
+    "tipType": null,
+    "ourType": null,
     "flags": []
    }
   }

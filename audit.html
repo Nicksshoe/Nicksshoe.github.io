@@ -112,8 +112,11 @@ function tooltipDamage(tip, sp, ctx, rank) {
     // How this number relates to the one before it: an upgrade that replaces it ("instead", "increased to", "or ... at
     // the edge"), and whether this hit lands a second time ("again", "deals the damage again").
     const between = text.slice(prevEnd, m.index), after = text.slice(m.index + m[0].length).split(/[.!]/)[0];
-    const alt = prevEnd > 0 && /\binstead\b|increased to|\bor\b|empowered|\bbelow\b|\bif\b/i.test(between);
-    const again = /\bagain\b/i.test(after) || /\bagain\b/i.test(between.split(/[.!]/).pop() || '');
+    // An upgrade of the number before it: "instead" (before or right after this number), "increased to", "or", a total
+    // that restates per-second damage ("(total ...").
+    const alt = prevEnd > 0 && (/\binstead\b|increased to|\bor\b|empowered|\bbelow\b|\bif\b|\(total/i.test(between) || /^[^,;]{0,40}\binstead\b/i.test(after));
+    // A hit that lands a second time without its own number ("damaged again for the same amount").
+    const again = /\bagain for the same amount|deals? (the|this) damage again/i.test(after + ' ' + (between.split(/[.!]/).pop() || ''));
     prevEnd = m.index + m[0].length;
     if (/monster|minion/i.test(name)) continue; // damage to monsters and minions only (Nunu Q)
     let v = readName(name, sp, ctx, rank);
@@ -125,8 +128,10 @@ function tooltipDamage(tip, sp, ctx, rank) {
     const base = baseName ? readName(baseName, sp, ctx, rank) : null;
     if (base) v += base;
     // "between {{ min }} and {{ max }}" / "{{ min }} - {{ max }}": compare with the minimum, allow up to the maximum.
-    const range = /(?:between|from)\s*\{\{\s*([A-Za-z0-9_]+)\s*\}\}\s*(?:and|to)\s*$|\{\{\s*([A-Za-z0-9_]+)\s*\}\}\s*-\s*$/i.exec(text.slice(Math.max(0, m.index - 60), m.index));
+    const range = /(?:between|from)\s*\{\{\s*([A-Za-z0-9_]+)\s*\}\}\s*(?:(?:physical|magic|true)\s+damage\s+)?(?:and|to)\s*$|\{\{\s*([A-Za-z0-9_]+)\s*\}\}\s*-\s*$/i.exec(text.slice(Math.max(0, m.index - 80), m.index));
     const lo = range ? readName(range[1] || range[2], sp, ctx, rank) : null;
+    // The range's low end may already be listed as its own number ("between {{ min }} magic damage and {{ max }}"): drop it.
+    if (lo != null && lo > 0 && !health && out.length && out[out.length - 1].name === (range[1] || range[2])) out.pop();
     if (lo != null && lo > 0 && !health) { out.push({ name: `${range[1] || range[2]} to ${name}`, type: type.toLowerCase(), value: lo, max: v, alt, again }); continue; }
     out.push({ name: baseName ? `${baseName} + ${name}` : name, type: type.toLowerCase(), value: v, alt, again });
   }

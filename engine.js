@@ -653,6 +653,7 @@
       if (convNow > 0) { deal(t, autoDmg * convNow, 'true', empNow.label + ' (true)', 'split'); autoDmg *= 1 - convNow; }
       deal(t, autoDmg, 'physical', 'Basic Attacks', 'attack');
       if (P && P.brittle) brittlePop(t, 'attack'); // Ornn: the attack knocks a Brittle target back
+      if (nthHits.length) nthHitAttack(t);
       // Talon: an attack on a target with 3 Wounds makes it bleed.
       if (P && P.everyNAbility && P.everyNAbility.hold && P.everyNAbility.onAttack && pNStacks >= P.everyNAbility.n && t >= pNReady) {
         pNStacks = 0; pNReady = t + (P.everyNAbility.cd || 0); fireP(t, P.everyNAbility);
@@ -884,10 +885,26 @@
       for (const s of live) deal(t, s.raw, s.type, s.label + ' (mark)', 'ability');
     };
     const castOrder = castable ? [...castable].sort((a, b) => castRank(a) - castRank(b)) : [];
+    // An ability's passive that triggers on every Nth attack (Jax R: 3rd, Kennen W: 5th, Fizz W: every attack's bleed).
+    const nthHits = castOrder.filter(s => s.mech && s.mech.nthHit).map(s => ({ s, ...s.mech.nthHit, count: 0 }));
+    let lastAttackAt = null;
+    const nthHitAttack = t => {
+      const gap = lastAttackAt == null ? 1 / Math.max(0.2, st.as) : t - lastAttackAt; lastAttackAt = t;
+      for (const h of nthHits) {
+        if (++h.count % h.n) continue;
+        let v = root.Potenshall.Abilities.evalCalc(h.calc, h.s.sp, { ...spellCtx(), rank: h.s.rank });
+        if (!(Number.isFinite(v) && v > 0)) continue;
+        if (h.refreshDur) v *= Math.min(1, gap / h.refreshDur); // a refreshing bleed: this attack's share of it
+        deal(t, v, h.type || h.s.mech.type || 'magic', `${h.s.slot} · ${labels[h.s.slot] || h.s.name} (passive)`, 'onhit');
+      }
+    };
     // Passive on-hit damage from an ability (Kassadin's Nether Blade): every attack, all fight.
-    for (const s of castOrder) if (s.mech && s.mech.permOnHit) {
-      const v = root.Potenshall.Abilities.evalCalc(s.mech.permOnHit, s.sp, { ...spellCtx(), rank: s.rank });
-      if (Number.isFinite(v) && v > 0) onHitBuffs.push({ until: Infinity, raw: v, type: s.mech.type || 'magic', label: `${s.slot} · ${labels[s.slot] || s.name} (passive)` });
+    for (const s of castOrder) if (s.mech && (s.mech.permOnHit || s.mech.permOnHitPct)) {
+      const ev = c => { const v = root.Potenshall.Abilities.evalCalc(c, s.sp, { ...spellCtx(), rank: s.rank }); return Number.isFinite(v) && v > 0 ? v : 0; };
+      // permOnHitPct: a share of the target's max health on every attack (Shyvana Q's passive); stored as 0.03 or 3 (%).
+      const pct = s.mech.permOnHitPct ? (v => v > 1 ? v / 100 : v)(ev(s.mech.permOnHitPct)) * DUMMY.hp : 0;
+      const v = (s.mech.permOnHit ? ev(s.mech.permOnHit) : 0) + pct;
+      if (v > 0) onHitBuffs.push({ until: Infinity, raw: v, type: s.mech.permOnHitType || s.mech.type || 'magic', label: `${s.slot} · ${labels[s.slot] || s.name} (passive)` });
     }
     // Rengar's Ferocity: +1 per ability cast; at max his next ability is empowered. He always spends it on empowered Q,
     // which ignores Q's cooldown: the next attack deals the empowered bonus and he gains attack speed.
