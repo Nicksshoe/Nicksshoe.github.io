@@ -191,8 +191,11 @@ async function submit(req, env, origin) {
     seed = `free|${ticket.seed}`; period = shortPatch(patch);
   } else return fail('Bad mode', 400, origin);
 
+  // The draft's start date picks its rules (engine DRAFT_V2_FROM). Free Play sends it too; it must be a real, recent day.
+  let draftDate = mode === 'daily' ? date : undefined;
+  if (mode === 'free' && /^\d{4}-\d{2}-\d{2}$/.test(date || '') && Math.abs(Date.parse(date + 'T12:00:00Z') - Date.now()) / 86400000 <= 1.6) draftDate = date;
   let draft;
-  try { draft = PE().replayDraft(data, seed, log); }
+  try { draft = PE().replayDraft(data, seed, log, { date: draftDate }); }
   catch (e) { return fail('That draft doesn\'t match the offers for this run.', 400, origin); }
 
   const champ = draft.champ;

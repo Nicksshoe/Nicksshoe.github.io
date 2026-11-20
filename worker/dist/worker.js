@@ -321,7 +321,8 @@
       }
       return best;
     }
-    if (allOut) { extraStats.as = (extraStats.as || 0) + AO.as; extraStats.arpen = (extraStats.arpen || 0) + AO.bonusArpen; }
+    if (allOut) { extraStats.as = (extraStats.as || 0) + (AO.as || 0); extraStats.arpen = (extraStats.arpen || 0) + (AO.bonusArpen || 0);
+      for (const [k, v] of Object.entries(AO.stats || {})) extraStats[k] = (extraStats[k] || 0) + v; } // Mega Gnar's bonus stats
     let st = computeStats(ch, items, kit, extraStats, P);
     if (P && P.stats) {
       const add = P.stats(passiveCtx(st, DUMMY.hp, 0, ch));
@@ -330,9 +331,9 @@
       st = computeStats(ch, items, kit, merged, P);
     }
     if (allOut) { // loses a share of max health and most of his bonus armor and magic resist
-      const lost = st.maxHP * AO.healthLost;
+      const lost = st.maxHP * (AO.healthLost || 0);
       st.maxHP -= lost; st.bonusHP = Math.max(0, st.bonusHP - lost);
-      st.bonusArmor *= 1 - AO.defensesLost; st.bonusMR *= 1 - AO.defensesLost;
+      st.bonusArmor *= 1 - (AO.defensesLost || 0); st.bonusMR *= 1 - (AO.defensesLost || 0);
     }
     const pr = profile(ch);
     if (spells) {
@@ -347,6 +348,7 @@
     }
     const disabled = new Set((P && P.disable) || []);
     if (AO && !allOut) disabled.add(AO.slot); // without the form, the ultimate isn't cast at all
+    if (allOut && AO.enable) for (const s of AO.enable) disabled.delete(s); // Mega Gnar casts W (Mini Gnar's W is passive)
     if (OPT && Array.isArray(opts.optOff)) for (const s of opts.optOff) disabled.add(s);
     // ownKit: the passive table models the whole kit (form swaps, weapon/awaken rotations), so the raw slots don't cast.
     const castable = spells ? (P && P.ownKit ? [] : spells.filter(s => !disabled.has(s.slot))) : null;
@@ -429,6 +431,7 @@
       // Passive executes: a share of max HP (P.execute), or a line that grows with stacks (Mel's Overwhelm, P.executeHp).
       const pExec = P ? (P.executeHp ? P.executeHp(pctx(t)) : P.execute ? P.execute * DUMMY.hp : 0) : 0;
       if (pExec > 0 && dummyHp > 0 && dummyHp < pExec) record(t, dummyHp, 'true', PSRC);
+      if (castExec && t <= castExec.until && dummyHp > 0 && dummyHp < castExec.pct * DUMMY.hp) { record(t, dummyHp, 'true', castExec.label); castExec = null; }
       return amt;
     }
 
@@ -465,16 +468,18 @@
     let pHits = 0, pAbilities = 0, pArmed = 0, pTimedArmed = false, pTimedReady = P && P.timedAuto ? (P.timedAuto.start || 0) : Infinity;
     let pAbilityReady = 0, pAfterReady = 0, pHitsReady = 0, pNReady = 0, pAutoNReady = 0, pStack = { n: 0, until: -1 };
     let pAuras = P && P.aura ? -1 : null;
-    let pOnHits = 0;
+    let pOnHits = 0, nHitsFired = 0;
+    // Gnar's Mega line: only the first Mini W proc happens before he transforms (AO.nHitsMax).
+    const nHitsOpen = () => !(allOut && AO.nHitsMax != null && nHitsFired >= AO.nHitsMax);
     const phantomHit = t => { // a repeated on-hit (Guinsoo) adds on-hit stacks but isn't a new action
       pOnHits++;
-      if (P.everyNHits && pOnHits % P.everyNHits.n === 0 && t >= pHitsReady) { fireP(t, P.everyNHits); pHitsReady = t + (P.everyNHits.cd || 0); }
+      if (P.everyNHits && pOnHits % P.everyNHits.n === 0 && t >= pHitsReady && nHitsOpen()) { fireP(t, P.everyNHits); nHitsFired++; pHitsReady = t + (P.everyNHits.cd || 0); }
     };
     const countHit = t => {
       pHits++; pOnHits++;
       if (P && P.aura && pHits >= (P.aura.hits || 1)) pAuras = t + (P.aura.linger || 4);
-      if (P && P.everyNHits && pOnHits % P.everyNHits.n === 0 && t >= pHitsReady) {
-        fireP(t, P.everyNHits); pHitsReady = t + (P.everyNHits.cd || 0);
+      if (P && P.everyNHits && pOnHits % P.everyNHits.n === 0 && t >= pHitsReady && nHitsOpen()) {
+        fireP(t, P.everyNHits); nHitsFired++; pHitsReady = t + (P.everyNHits.cd || 0);
       }
       if (P && P.stackDot) { pStack.n = Math.min(P.stackDot.max, pStack.n + 1); pStack.until = t + P.stackDot.dur; }
     };
@@ -517,8 +522,9 @@
 
     const onAbilityHit = (t, first, cast) => {
       // All Out: every ability hit also deals a share of the target's max health.
-      if (allOut && !(cast && cast.noDamage)) deal(t, AO.extraPct * DUMMY.hp, 'physical', AO.label, 'ability');
+      if (allOut && AO.extraPct && !(cast && cast.noDamage)) deal(t, AO.extraPct * DUMMY.hp, 'physical', AO.label, 'ability');
       if (P && P.feathers) featherCharges = Math.min(P.feathers.max, featherCharges + P.feathers.perCast); // Xayah's Clean Cuts
+      if (P && P.tentacles && cast && cast.label) tentacleCast(t, cast.label[0]); // Illaoi
       if (P) {
         pAbilities++;
         if (P.afterAbility && t >= pAfterReady) {
@@ -756,16 +762,32 @@
     const mitigation = (type, t) => type === 'true' ? 1
       : type === 'magic' ? 100 / (100 + mrAt(t))
       : 100 / (100 + armorAt(t));
-    // empLastHits: Pantheon's Mortal Will can start fully stacked (start), so his first Q is empowered.
-    let lastUltAt = null; const summons = []; let empLastHits = P && P.empowerAfter && P.empowerAfter.start ? -P.empowerAfter.actions : 0, fiendReady = 0, hexReady = 0, hexUntil = -1;
+    // Pantheon's Mortal Will counts attacks and abilities (pActions). It can start fully stacked (start); with open, that
+    // stored empowerment goes on his opening W, and the empowered Q follows a few actions later.
+    let lastUltAt = null; const summons = []; let empLastHits = P && P.empowerAfter && P.empowerAfter.start && !P.empowerAfter.open ? -P.empowerAfter.actions : 0, fiendReady = 0, hexReady = 0, hexUntil = -1;
+    let extraActions = 0, openUsed = false;
+    const pActions = () => pHits + pAbilities + extraActions;
     // Stacking abilities (Hecarim's Rampage): { slot: { n, until } }.
     const castStacks = {};
     const stackOf = (slot, t) => castStacks[slot] && t <= castStacks[slot].until ? castStacks[slot].n : 0;
     // Renekton's Fury (0-100): attacks and abilities build it (+50% below half health); at 50+ an ability is empowered.
     let fury = P && P.fury ? (P.fury.start || 0) : 0;
     const addFury = v => { fury = Math.min(100, fury + v * (SELF_HP < 0.5 ? (P.fury.lowHpMult || 1) : 1)); };
+    // Illaoi's Tentacles: they never attack on their own. W makes every Tentacle slam the target; E makes them slam the
+    // spirit every few seconds (part of it echoes to the target); R adds one, and for its duration W has a short cooldown.
+    let tentacles = P && P.tentacles ? P.tentacles.start : 0, rFormUntil = -1;
+    const tentacleSlam = (t, mult, label) => spellQueue.push({ at: t, label, type: 'physical', raw: () => P.tentacles.slam(pctx(t)) * mult });
+    const tentacleCast = (t, slot) => {
+      const TT = P.tentacles;
+      if (slot === TT.rSlot) { tentacles += TT.rAdd; rFormUntil = t + TT.rDur; }
+      if (slot === TT.wSlot) for (let i = 0; i < tentacles; i++) tentacleSlam(t + 0.35, 1, 'Passive · Tentacle slams (W)');
+      if (slot === TT.eSlot) for (let k = TT.eEvery; k <= TT.eDur + 1e-9; k += TT.eEvery) for (let i = 0; i < tentacles; i++) tentacleSlam(t + k, TT.eEcho, 'E · Tentacles slam the spirit');
+    };
+    // Locke's R: marks the target; for its duration, damage that leaves it under the line seals (executes) it.
+    let castExec = null;
     // Cooldown after a cast: Hecarim's stacks shorten it; Pantheon's tapped Q refunds part of it (not the execute throw).
     const castCd = (sp, m, t, low) => {
+      if (m.rCd && t < rFormUntil) return m.rCd; // Illaoi W during her ultimate
       let cd = sp.cooldown;
       if (m.stackMax) cd = Math.max(0.5, cd - (m.stackCdCut || 0) * stackOf(sp.slot, t));
       if (m.cdRefund && !(m.lowNoRefund && low)) cd *= 1 - m.cdRefund;
@@ -808,6 +830,7 @@
     let ferocity = FER ? FER.start : 0;
     const tryCastRealSpell = (t) => {
       if (t < castLock || t < channelUntil) return;
+      if (allOut && AO.waitProc && nHitsFired < 1) return; // Gnar's Mega line: transform after the first Mini W proc
       if (FER && ferocity >= FER.max) {
         const q = (castable || []).find(s => s.slot === FER.slot);
         if (q) {
@@ -836,6 +859,10 @@
         if (sp.mech && sp.mech.whenNotReady && (ready[sp.mech.whenNotReady] || 0) <= t + 1e-9) continue;
         // Zoe's Q waits for the bubble's sleep to set in, so it lands on a sleeping target.
         if (sp.mech && sp.mech.waitSleep && sleep && t < sleep.from) continue;
+        // Locke's R: held until the dummy is low enough for its seal, or until its mark would just cover the rest of the fight.
+        if (sp.mech && sp.mech.holdBelow && dummyHp > sp.mech.holdBelow * DUMMY.hp && t < (sp.mech.latest ?? 0)) continue;
+        // Pantheon: one action short of Mortal Will, Q waits for the next attack so it goes out empowered.
+        if (P && P.empowerAfter && P.empowerAfter.waitOne && sp.slot === P.empowerAfter.slot && pActions() - empLastHits === P.empowerAfter.actions - 1) continue;
         if (sp.mech && sp.mech.kind === 'empowerAuto') {
           if (empowered) continue; // don't waste it before the armed attack lands
           empowered = { ...sp.mech, label: `${sp.slot} · ${labels[sp.slot] || sp.name}`, slot: sp.slot, cd: sp.cooldown,
@@ -922,10 +949,16 @@
           } else if (m.kind === 'cast') {
             // critAvg: the cast can crit (Alpha Strike), counted at the average crit; onHitMult: applies on-hit effects once.
             const critAvg = m.critAvg ? 1 + st.crit * (st.critMult - 1) : 1;
-            let calcName = m.calc, mult = 1, lab = label, furyEmp = false;
+            let calcName = allOut && m.formCalc ? m.formCalc : m.calc, mult = 1, lab = label, furyEmp = false; // formCalc: Mega Gnar
             if (castLow && m.lowCalc) calcName = m.lowCalc; // Pantheon Q: the execute throw below 20% health
             // Pantheon's Mortal Will (works for real-kit casts too): every few actions his next Q hits harder.
-            if (P && P.empowerAfter && sp.slot === P.empowerAfter.slot && pHits - empLastHits >= P.empowerAfter.actions) { mult *= P.empowerAfter.mult; empLastHits = pHits; lab += ' (empowered)'; }
+            if (P && P.empowerAfter && sp.slot === P.empowerAfter.slot && pActions() - empLastHits >= P.empowerAfter.actions) { mult *= P.empowerAfter.mult; empLastHits = pActions() + 1; lab += ' (empowered)'; } // +1: the empowered cast itself doesn't count
+            // Pantheon opens with the stored Mortal Will on W: a stun and 3 extra strikes (attacks, so on-hit and Mortal Will count).
+            if (P && P.empowerAfter && P.empowerAfter.open === sp.slot && !openUsed && m.openCalc) {
+              openUsed = true; empLastHits = pActions();
+              deal(t, ev(m.openCalc), m.type, lab + ' (empowered strikes)', 'ability');
+              onHitEffects(t, m.openHits || 3); extraActions += m.openHits || 3;
+            }
             // Renekton: 50 Fury empowers the ability (W first; Q or E only when W is far off or Fury is full).
             if (P && P.fury && m.empCalc && fury >= 50 && (sp.slot === P.fury.prefer || fury >= 100 || (ready[P.fury.prefer] || 0) - t > 3)) {
               calcName = m.empCalc; fury -= 50; furyEmp = true; lab += ' (Fury)';
@@ -943,6 +976,7 @@
           // Xayah's Q drops feathers (and R, a fan of them).
           if (P && P.feathers && P.feathers.from[sp.slot]) for (let i = 0; i < P.feathers.from[sp.slot]; i++) feathers.push(t + P.feathers.dur);
           if (m.resetsAttack) nextAuto = Math.min(nextAuto, t + sp.castTime); // Riven Q: each cast is followed by an attack
+          if (m.execPct) castExec = { until: t + (m.execDur || 5), pct: m.execPct, label: label + ' (sealed)' }; // Locke R
           // Channels and leaps that stop attacks (Pantheon's E shield and R leap).
           if (m.channelBlock) channelUntil = Math.max(channelUntil, t + m.channelBlock);
           // Twitch W: a venom stack on hit, then one per second in the cloud.
@@ -969,7 +1003,7 @@
             tempASUntil = t + (m.asDur || 5);
           }
           else if (m.kind === 'multi') for (const p of m.parts) // a part is a formula, a flat data value, or a share of max HP
-            first += deal(t, (p.calc ? ev(p.calc) * (p.pctOfMax ? DUMMY.hp : 1) : 0) + (p.flat || 0) + (p.pctMaxHp || 0) * DUMMY.hp
+            first += deal(t, (p.calc ? ev(p.calc) * (p.pctOfMax ? DUMMY.hp : 1) * (p.mult || 1) : 0) + (p.flat || 0) + (p.pctMaxHp || 0) * DUMMY.hp
               + (p.pctCurHp || 0) * dummyHp, p.type, label, 'ability'); // Xin Zhao R: % current health
           else if (m.kind === 'hits') {
             for (let i = 0; i < m.n; i++) spellQueue.push({ at: t + (m.n > 1 ? i * m.over / (m.n - 1) : 0), label, type: m.type,
@@ -1034,7 +1068,7 @@
         let dmg = root.Potenshall.Abilities.evalSpellDamage(sp, spellCtx());
         // Empowered ability after N actions (Pantheon's Mortal Will).
         let empTag = '';
-        if (P && P.empowerAfter && sp.slot === P.empowerAfter.slot && pHits - empLastHits >= P.empowerAfter.actions) { dmg *= P.empowerAfter.mult; empLastHits = pHits; empTag = ' (empowered)'; }
+        if (P && P.empowerAfter && sp.slot === P.empowerAfter.slot && pActions() - empLastHits >= P.empowerAfter.actions) { dmg *= P.empowerAfter.mult; empLastHits = pActions() + 1; empTag = ' (empowered)'; }
         const label = `${sp.slot} · ${sp.lastVariant || labels[sp.slot] || sp.name}${empTag}`;
         deal(t, dmg, sp.type, label, 'ability');
         if (P && P.rend && P.rend.fromSlot === sp.slot) rendSpears++; // Kalista's Pierce lodges a spear
@@ -1268,17 +1302,38 @@
     while (out.length < n && pool.length) out.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
     return out;
   }
+  // Weighted version: weight(x) is the relative chance (items already offered this draft are less likely, not impossible).
+  function sampleWeighted(rng, arr, n, exclude, weight) {
+    const pool = arr.filter(x => !exclude.has(x.id)); const out = [];
+    while (out.length < n && pool.length) {
+      const total = pool.reduce((s, x) => s + weight(x), 0);
+      let r = rng() * total, i = 0;
+      while (i < pool.length - 1 && (r -= weight(pool[i])) >= 0) i++;
+      out.push(pool.splice(i, 1)[0]);
+    }
+    return out;
+  }
+  // Draft rules by the day the draft started, so the game and the leaderboard server always agree on the offers.
+  // From 2026-11-21: an item that has already been offered in this draft is 4x less likely to be offered again.
+  const DRAFT_V2_FROM = '2026-11-21';
+  const SEEN_ITEM_WEIGHT = 0.25;
 
-  function createDraft(data, seed) {
+  function createDraft(data, seed, opts = {}) {
     const rng = mulberry32(hashStr(seed));
-    const d = { seed, rerolls: DRAFT.REROLLS, champ: null, items: [], offers: [], log: [] };
+    const v2 = typeof opts.date === 'string' && opts.date >= DRAFT_V2_FROM;
+    const seen = new Set(); // every item offered so far (v2)
+    const d = { seed, date: opts.date, rerolls: DRAFT.REROLLS, champ: null, items: [], offers: [], log: [] };
     // Unique item groups (itemgroups.js, from the game files): once a group is full, e.g. one Last Whisper item or one
     // pair of boots, the other items in it are no longer offered.
     const itemOffers = (extra = []) => {
       const groups = root.Potenshall.ItemGroups || {}, owned = {};
       for (const it of d.items) for (const [g] of groups[it.id] || []) owned[g] = (owned[g] || 0) + 1;
       const allowed = data.items.filter(it => !(groups[it.id] || []).some(([g, max]) => (owned[g] || 0) >= max));
-      return sample(rng, allowed, DRAFT.ITEM_CHOICES, new Set([...extra, ...d.items.map(i => i.id)]));
+      const exclude = new Set([...extra, ...d.items.map(i => i.id)]);
+      if (!v2) return sample(rng, allowed, DRAFT.ITEM_CHOICES, exclude);
+      const offers = sampleWeighted(rng, allowed, DRAFT.ITEM_CHOICES, exclude, it => seen.has(it.id) ? SEEN_ITEM_WEIGHT : 1);
+      for (const it of offers) seen.add(it.id);
+      return offers;
     };
     d.offers = sample(rng, data.champions, DRAFT.CHAMP_CHOICES);
     d.done = () => d.items.length >= DRAFT.ITEM_SLOTS;
@@ -1298,9 +1353,9 @@
     return d;
   }
 
-  function replayDraft(data, seed, log) {
+  function replayDraft(data, seed, log, opts = {}) {
     if (!Array.isArray(log) || log.length > 20) throw new Error('Bad draft log');
-    const d = createDraft(data, seed);
+    const d = createDraft(data, seed, opts);
     for (const a of log) { if (a === 'r') d.reroll(); else if (Number.isInteger(a)) d.pick(a); else throw new Error('Bad draft action'); }
     if (!d.champ || !d.done()) throw new Error('Draft not finished');
     return d;
@@ -1661,7 +1716,7 @@
     // (no refund). Mortal Will empowers Q (passives.js). E is a 1.5s shield channel (strikes, then a slam) and R a 2.5s leap
     // that lands for full damage; both stop his attacks, so each is used only when it adds damage (optional, passives.js).
     Pantheon: {
-      W: { kind: 'cast', type: 'physical', calc: 'MaxHealthDamageCalc', pctOfMax: true },
+      W: { kind: 'cast', type: 'physical', calc: 'MaxHealthDamageCalc', pctOfMax: true, openCalc: 'EmpoweredDamageMultCalcModified', openHits: 3, order: 0.5 },
       Q: { kind: 'cast', type: 'physical', calc: 'TapDamageCalc', cdRefund: 'TapCooldownRefund', lowBelow: 'CritHealthThreshold', lowCalc: 'ExecuteDamageCalcModified', lowNoRefund: true },
       E: { kind: 'multi', type: 'physical', parts: [{ calc: 'DamageCalc', type: 'physical' }, { calc: 'ShieldDamageCalc', type: 'physical' }], channelBlock: 1.5 },
       R: { kind: 'cast', type: 'physical', noDamage: true, delayCalc: 'DamageCalc', delayAfter: 2.5, channelBlock: 2.5 },
@@ -1687,7 +1742,38 @@
     },
     Anivia: { R: { kind: 'channel', type: 'magic', perSec: 'TotalDamagePerSecond', empCalc: 'EmpoweredDamagePerSecondTooltipOnly', empAfter: 1.5, duration: 99, once: true } },
     Rumble: { R: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 'TrailDuration' } },
-    Singed: { Q: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 99, once: true } },
+    // Singed R (Insanity Potion, rank 3): +85 AP, armor and magic resist for 25s, so the whole fight.
+    Singed: { Q: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 99, once: true },
+      R: { kind: 'buff', stats: { ap: 'StatAmount', armor: 'StatAmount', mr: 'StatAmount' }, duration: 'Duration' } },
+    // Gnar: Mini abilities, or Mega ones (formCalc) in the Mega line (passives.js runs both and keeps the better). Mega W
+    // and R only exist in Mega form; R knocks the target into a wall (1.5x).
+    Gnar: {
+      Q: { kind: 'cast', type: 'physical', calc: 'MiniTotalDamage', formCalc: 'MegaTotalDamage' },
+      W: { kind: 'cast', type: 'physical', calc: 'MegaTotalDamage', formCalc: 'MegaTotalDamage' },
+      E: { kind: 'cast', type: 'physical', calc: 'MiniTotalDamage', formCalc: 'MegaTotalDamage' },
+      R: { kind: 'cast', type: 'physical', calc: 'WallDamage', formCalc: 'WallDamage' },
+    },
+    // Illaoi W: her next attack leaps for a share of the target's max health; every Tentacle slams with it (passives.js).
+    // During R its cooldown is 2s.
+    Illaoi: {
+      W: { kind: 'cast', type: 'physical', calc: 'HealthPercentTotal', pctOfMax: true, resetsAttack: true, rCd: 'CooldownDuringR' },
+      E: { kind: 'cast', type: 'physical', noDamage: true, order: 0.5 },
+      R: { kind: 'cast', type: 'physical', calc: 'DamageCalc', order: 0.3 },
+    },
+    // Zaahen: Q's next attack slashes twice, then the recast's attack hits again (1.5s later); W stabs then pulls (two hits);
+    // E's edge deals its bonus physical damage plus 6% of max health as magic.
+    Zaahen: {
+      Q: { kind: 'cast', type: 'physical', calc: 'InitialDamage', delayCalc: 'SecondHitDamage', delayAfter: 'TimeBetweenAttacks', resetsAttack: true },
+      W: { kind: 'multi', type: 'physical', parts: [{ calc: 'InitialDamage', type: 'physical' }, { calc: 'SecondaryDamage', type: 'physical' }] },
+      E: { kind: 'multi', type: 'physical', parts: [{ calc: 'BonusDamageCalc', type: 'physical' }, { pctMaxHp: 'PercentHPDamage', type: 'magic' }] },
+    },
+    // Locke: Q throws its 3 Soul Nails (all hit), then his next attack rips them out (3 x nail damage, +40% with 3).
+    // W deals no damage: attack speed (70%, fading) and a self-burn. R marks the target for 5s and seals it below 12%.
+    Locke: {
+      Q: { kind: 'multi', type: 'magic', parts: [{ calc: 'MissileDamage', type: 'magic', mult: 3 }, { calc: 'NailDamage', type: 'magic', mult: 4.2 }] },
+      W: { kind: 'cast', noDamage: true, asBonus: 35, asDur: 'BaseDuration', order: 0.4 }, // 70% fading: about 35% over 5s
+      R: { kind: 'cast', type: 'magic', calc: 'Damage', execPct: 'ExecutionThreshold', execDur: 'Duration', holdBelow: 0.45, latest: 5, order: 0.3 },
+    },
     Kennen: { R: { kind: 'hits', type: 'magic', calc: 'PerTickDamageCalculated', n: 6, over: 3 } },
     // Execute ultimates: held until the hit leaves the target under the threshold, then the execute kills it.
     // If the dummy never gets that low, it's fired near the end of the fight for its damage.
@@ -1842,7 +1928,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut', 'sleepDelay', 'sleepDur', 'falloff', 'apPerStack', 'venomSeconds', 'cdRefund', 'lowBelow', 'stackMax', 'stackCdCut', 'stackDur']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut', 'sleepDelay', 'sleepDur', 'falloff', 'apPerStack', 'venomSeconds', 'cdRefund', 'lowBelow', 'stackMax', 'stackCdCut', 'stackDur', 'rCd', 'execPct', 'execDur']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));
@@ -2040,7 +2126,10 @@
     Garen: { ...none('Perseverance', 'Regeneration only'), castDebuff: { E: { armor: 0.25, dur: 6, delay: 1.5 } } },
     // Mini Gnar's W (Hyper) is passive: every 3rd hit on the same target deals 40 + 100% AP + 14% of its max health (magic).
     // A 10s fight starting at no Rage stays in Mini form, so Mega Gnar's abilities and his R (Mega only) aren't used.
-    Gnar: { name: 'Rage Gene + Hyper (W)', note: 'Every 3rd hit: 40 + 100% AP + 14% max health; stays Mini Gnar', disable: ['W', 'R'],
+    // Mega line (like K'Sante's All Out): enough Rage to land one Mini W proc, then transform and use Mega Q, W, E and R
+    // (shared cooldowns, so no Mini abilities first). The fight is run both ways and the better line is kept.
+    Gnar: { name: 'Rage Gene + Hyper (W)', note: 'Every 3rd hit: 40 + 100% AP + 14% max health; Mega Gnar when it deals more', disable: ['W', 'R'],
+      allOut: { slot: 'R', label: 'Mega Gnar', enable: ['W', 'R'], nHitsMax: 1, waitProc: true },
       everyNHits: { n: 3, label: 'W · Hyper', kind: 'ability', type: 'magic', dmg: c => 40 + c.ap + 0.14 * c.tmax } },
     Gragas: none('Happy Hour', 'Healing only'),
     Graves: { name: 'New Destiny', note: 'Shotgun pellets all hit; 2 shells then reload', autoMult: 1.99, magazine: { size: 2, reload: c => 1.6 / c.as } },
@@ -2049,8 +2138,12 @@
     Hecarim: { name: 'Warpath', note: 'AD from bonus move speed', stats: () => ({ ad: 17 }) },
     Heimerdinger: none('Hextech Affinity'),
     Hwei: { name: 'Signature of the Visionary', note: 'Second spell detonates his mark', everyNAbility: { n: 2, type: 'magic', dmg: c => 285 + 0.35 * c.ap } }, // game files: 285 + 35% AP at 18
-    Illaoi: { name: 'Prophet of an Elder God', note: 'Tentacle slams', onAbility: { cd: 4, type: 'physical', dmg: c => 162 + 1.2 * c.ad },
-      periodic: { every: 6, start: 2, type: 'physical', dmg: c => 162 + 1.2 * c.ad } },
+    // Tentacles (game files, level 18): a slam deals 180 + 110% AD + 40% AP, +30% from Q's passive. They never attack on
+    // their own: every W makes all of them slam, E makes them slam the spirit every 3s for 7s (77% echoes to the target),
+    // and R adds one. She starts with 3 already placed around the fight before her ultimate (her passive places one per
+    // stretch of nearby terrain, so there's no fixed cap; 3 is a full setup).
+    Illaoi: { name: 'Prophet of an Elder God', note: 'Starts with 3 Tentacles; they slam with every W and at the spirit during E; R adds one',
+      tentacles: { start: 3, slam: c => (180 + 1.1 * c.ad + 0.4 * c.ap) * 1.3, wSlot: 'W', eSlot: 'E', eEvery: 3, eDur: 7, eEcho: 0.77, rSlot: 'R', rAdd: 1, rDur: 8 } },
     Irelia: { name: 'Ionian Fervor', note: 'Max stacks: attack speed + on-hit; Q applies on-hit', onHitAbility: { Q: {} }, stats: () => ({ as: 40 }), onHit: { type: 'magic', dmg: c => 61 + 0.2 * c.bad } },
     Ivern: none('Friend of the Forest'),
     Janna: { name: 'Tailwind', note: 'Bonus damage from move speed', onHit: { type: 'magic', dmg: () => 25 } },
@@ -2110,7 +2203,8 @@
     Leona: none('Sunlight', 'Procs for allies'),
     Lillia: { name: 'Dream-Laden Bough', note: 'Abilities burn % max HP', onAbility: { type: 'magic', dot: 3, dmg: c => (0.05 + 0.012 * c.ap / 100) * c.tmax } }, // game data: 5% + 1.2% per 100 AP over 3s
     Lissandra: none('Iceborn Subjugation'),
-    Locke: { name: 'Silver Stake', note: 'On-hit, more vs low HP', onHit: { type: 'magic', dmg: c => (30 + 0.2 * c.bad + 0.1 * c.ap) * (1 + c.tmiss / c.tmax) } },
+    // Game files, level 18: attacks add 40 magic damage on-hit, rising to 80 as the target's health drops.
+    Locke: { name: 'Silver Stake', note: 'On-hit, more vs low HP', onHit: { type: 'magic', dmg: c => 40 * (1 + c.tmiss / c.tmax) } },
     Lucian: { name: 'Lightslinger', note: 'Double shot after abilities', afterAbility: { extraAttack: 1.0 } },
     Lulu: { name: 'Pix, Faerie Companion', note: 'Pix bolts on attacks', onHit: { type: 'magic', dmg: c => 117 + 0.15 * c.ap } },
     Lux: { name: 'Illumination', note: 'Ability marks detonate', onAbility: { type: 'magic', dmg: c => 190 + 0.2 * c.ap } },
@@ -2156,10 +2250,13 @@
     Orianna: { name: 'Clockwork Windup', note: 'On-hit, stacking on repeated attacks', onHit: { type: 'magic', dmg: c => (59 + 0.15 * c.ap) * 1.4 } },
     Ornn: none('Living Forge'),
     // Mortal Will: every 5 actions (attacks and abilities) empower his next Q: +70% on the close-range stab (game data).
-    // Mortal Will starts full (it builds out of combat), so he opens with an empowered Q (+70% on the thrust); then every
-    // 5 actions. R's passive (rank 3): 30% armor penetration. E and R are each used only when they add damage.
-    Pantheon: { name: 'Mortal Will', note: 'Opens with an empowered Q, then every 5 attacks/abilities; R passive 30% armor pen', empowerAfter: { actions: 5, slot: 'Q', mult: 1.7, start: true },
-      stats: () => ({ arpen: 30 }), optional: ['E', 'R'] },
+    // Standard rotation: Mortal Will starts full (it builds out of combat) and goes on W: stun plus 3 extra strikes. Those
+    // strikes and W count toward the next Mortal Will, so after one attack Q goes out empowered (+70% on the thrust); then
+    // every 5 attacks/abilities. R isn't used mid-fight (2.5s leap) but its passive gives 30% armor penetration.
+    // E (1.5s shield channel) is used only when it adds damage.
+    Pantheon: { name: 'Mortal Will', note: 'Empowered W opener, empowered Q right after, then every 5 actions; R passive 30% armor pen',
+      empowerAfter: { actions: 5, slot: 'Q', mult: 1.7, start: true, open: 'W', waitOne: true },
+      stats: () => ({ arpen: 30 }), disable: ['R'], optional: ['E'] },
     Poppy: { name: 'Iron Ambassador', note: 'Thrown buckler attack', timedAuto: { every: 7, type: 'magic', dmg: () => 180 } },
     Pyke: { name: 'Gift of the Drowned Ones', note: 'Bonus HP turns into AD', stats: c => ({ ad: c.bhp / 14, hp: -c.bhp }) },
     // W (Terrashape) enchants her for the fight: +35% attack speed and every attack deals 40 + 20% bonus AD + 45% AP magic.
@@ -2497,8 +2594,11 @@ async function submit(req, env, origin) {
     seed = `free|${ticket.seed}`; period = shortPatch(patch);
   } else return fail('Bad mode', 400, origin);
 
+  // The draft's start date picks its rules (engine DRAFT_V2_FROM). Free Play sends it too; it must be a real, recent day.
+  let draftDate = mode === 'daily' ? date : undefined;
+  if (mode === 'free' && /^\d{4}-\d{2}-\d{2}$/.test(date || '') && Math.abs(Date.parse(date + 'T12:00:00Z') - Date.now()) / 86400000 <= 1.6) draftDate = date;
   let draft;
-  try { draft = PE().replayDraft(data, seed, log); }
+  try { draft = PE().replayDraft(data, seed, log, { date: draftDate }); }
   catch (e) { return fail('That draft doesn\'t match the offers for this run.', 400, origin); }
 
   const champ = draft.champ;

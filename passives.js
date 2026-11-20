@@ -136,7 +136,10 @@
     Garen: { ...none('Perseverance', 'Regeneration only'), castDebuff: { E: { armor: 0.25, dur: 6, delay: 1.5 } } },
     // Mini Gnar's W (Hyper) is passive: every 3rd hit on the same target deals 40 + 100% AP + 14% of its max health (magic).
     // A 10s fight starting at no Rage stays in Mini form, so Mega Gnar's abilities and his R (Mega only) aren't used.
-    Gnar: { name: 'Rage Gene + Hyper (W)', note: 'Every 3rd hit: 40 + 100% AP + 14% max health; stays Mini Gnar', disable: ['W', 'R'],
+    // Mega line (like K'Sante's All Out): enough Rage to land one Mini W proc, then transform and use Mega Q, W, E and R
+    // (shared cooldowns, so no Mini abilities first). The fight is run both ways and the better line is kept.
+    Gnar: { name: 'Rage Gene + Hyper (W)', note: 'Every 3rd hit: 40 + 100% AP + 14% max health; Mega Gnar when it deals more', disable: ['W', 'R'],
+      allOut: { slot: 'R', label: 'Mega Gnar', enable: ['W', 'R'], nHitsMax: 1, waitProc: true },
       everyNHits: { n: 3, label: 'W · Hyper', kind: 'ability', type: 'magic', dmg: c => 40 + c.ap + 0.14 * c.tmax } },
     Gragas: none('Happy Hour', 'Healing only'),
     Graves: { name: 'New Destiny', note: 'Shotgun pellets all hit; 2 shells then reload', autoMult: 1.99, magazine: { size: 2, reload: c => 1.6 / c.as } },
@@ -145,8 +148,12 @@
     Hecarim: { name: 'Warpath', note: 'AD from bonus move speed', stats: () => ({ ad: 17 }) },
     Heimerdinger: none('Hextech Affinity'),
     Hwei: { name: 'Signature of the Visionary', note: 'Second spell detonates his mark', everyNAbility: { n: 2, type: 'magic', dmg: c => 285 + 0.35 * c.ap } }, // game files: 285 + 35% AP at 18
-    Illaoi: { name: 'Prophet of an Elder God', note: 'Tentacle slams', onAbility: { cd: 4, type: 'physical', dmg: c => 162 + 1.2 * c.ad },
-      periodic: { every: 6, start: 2, type: 'physical', dmg: c => 162 + 1.2 * c.ad } },
+    // Tentacles (game files, level 18): a slam deals 180 + 110% AD + 40% AP, +30% from Q's passive. They never attack on
+    // their own: every W makes all of them slam, E makes them slam the spirit every 3s for 7s (77% echoes to the target),
+    // and R adds one. She starts with 3 already placed around the fight before her ultimate (her passive places one per
+    // stretch of nearby terrain, so there's no fixed cap; 3 is a full setup).
+    Illaoi: { name: 'Prophet of an Elder God', note: 'Starts with 3 Tentacles; they slam with every W and at the spirit during E; R adds one',
+      tentacles: { start: 3, slam: c => (180 + 1.1 * c.ad + 0.4 * c.ap) * 1.3, wSlot: 'W', eSlot: 'E', eEvery: 3, eDur: 7, eEcho: 0.77, rSlot: 'R', rAdd: 1, rDur: 8 } },
     Irelia: { name: 'Ionian Fervor', note: 'Max stacks: attack speed + on-hit; Q applies on-hit', onHitAbility: { Q: {} }, stats: () => ({ as: 40 }), onHit: { type: 'magic', dmg: c => 61 + 0.2 * c.bad } },
     Ivern: none('Friend of the Forest'),
     Janna: { name: 'Tailwind', note: 'Bonus damage from move speed', onHit: { type: 'magic', dmg: () => 25 } },
@@ -206,7 +213,8 @@
     Leona: none('Sunlight', 'Procs for allies'),
     Lillia: { name: 'Dream-Laden Bough', note: 'Abilities burn % max HP', onAbility: { type: 'magic', dot: 3, dmg: c => (0.05 + 0.012 * c.ap / 100) * c.tmax } }, // game data: 5% + 1.2% per 100 AP over 3s
     Lissandra: none('Iceborn Subjugation'),
-    Locke: { name: 'Silver Stake', note: 'On-hit, more vs low HP', onHit: { type: 'magic', dmg: c => (30 + 0.2 * c.bad + 0.1 * c.ap) * (1 + c.tmiss / c.tmax) } },
+    // Game files, level 18: attacks add 40 magic damage on-hit, rising to 80 as the target's health drops.
+    Locke: { name: 'Silver Stake', note: 'On-hit, more vs low HP', onHit: { type: 'magic', dmg: c => 40 * (1 + c.tmiss / c.tmax) } },
     Lucian: { name: 'Lightslinger', note: 'Double shot after abilities', afterAbility: { extraAttack: 1.0 } },
     Lulu: { name: 'Pix, Faerie Companion', note: 'Pix bolts on attacks', onHit: { type: 'magic', dmg: c => 117 + 0.15 * c.ap } },
     Lux: { name: 'Illumination', note: 'Ability marks detonate', onAbility: { type: 'magic', dmg: c => 190 + 0.2 * c.ap } },
@@ -252,10 +260,13 @@
     Orianna: { name: 'Clockwork Windup', note: 'On-hit, stacking on repeated attacks', onHit: { type: 'magic', dmg: c => (59 + 0.15 * c.ap) * 1.4 } },
     Ornn: none('Living Forge'),
     // Mortal Will: every 5 actions (attacks and abilities) empower his next Q: +70% on the close-range stab (game data).
-    // Mortal Will starts full (it builds out of combat), so he opens with an empowered Q (+70% on the thrust); then every
-    // 5 actions. R's passive (rank 3): 30% armor penetration. E and R are each used only when they add damage.
-    Pantheon: { name: 'Mortal Will', note: 'Opens with an empowered Q, then every 5 attacks/abilities; R passive 30% armor pen', empowerAfter: { actions: 5, slot: 'Q', mult: 1.7, start: true },
-      stats: () => ({ arpen: 30 }), optional: ['E', 'R'] },
+    // Standard rotation: Mortal Will starts full (it builds out of combat) and goes on W: stun plus 3 extra strikes. Those
+    // strikes and W count toward the next Mortal Will, so after one attack Q goes out empowered (+70% on the thrust); then
+    // every 5 attacks/abilities. R isn't used mid-fight (2.5s leap) but its passive gives 30% armor penetration.
+    // E (1.5s shield channel) is used only when it adds damage.
+    Pantheon: { name: 'Mortal Will', note: 'Empowered W opener, empowered Q right after, then every 5 actions; R passive 30% armor pen',
+      empowerAfter: { actions: 5, slot: 'Q', mult: 1.7, start: true, open: 'W', waitOne: true },
+      stats: () => ({ arpen: 30 }), disable: ['R'], optional: ['E'] },
     Poppy: { name: 'Iron Ambassador', note: 'Thrown buckler attack', timedAuto: { every: 7, type: 'magic', dmg: () => 180 } },
     Pyke: { name: 'Gift of the Drowned Ones', note: 'Bonus HP turns into AD', stats: c => ({ ad: c.bhp / 14, hp: -c.bhp }) },
     // W (Terrashape) enchants her for the fight: +35% attack speed and every attack deals 40 + 20% bonus AD + 45% AP magic.

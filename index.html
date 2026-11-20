@@ -407,7 +407,8 @@ function renderSubmitPanel(snapshot){
     const captcha = TURNSTILE_SITEKEY && window.turnstile && captchaId !== null ? window.turnstile.getResponse(captchaId) : undefined;
     $('#lbSubmit').disabled = true; $('#lbMsg').textContent = t('verifying');
     try {
-      const r = await LB.submit({ mode: S.mode, patch: DATA.patch, date: today(), ticket: S.ticket, log: S.draft.log, name, client: clientId, captcha });
+      // date: the day the draft started (its seed and draft rules), even if it's submitted after midnight.
+      const r = await LB.submit({ mode: S.mode, patch: DATA.patch, date: S.draft.date || today(), ticket: S.ticket, log: S.draft.log, name, client: clientId, captcha });
       Object.assign(snapshot, { rank: r.rank, lowRank: r.lowRank, of: r.of, verified: r.score, name });
       S.sub = { rank: r.rank, lowRank: r.lowRank, of: r.of, verified: r.score, name }; saveRun(); // a reload keeps the rank, not the form
       if (S.mode === 'daily') store.set('daily:'+today(), snapshot);
@@ -559,7 +560,7 @@ async function newGame(mode){
     ticket = await LB.startFree();          // server-issued seed, so Free Play scores can be verified
     seed = ticket ? `free|${ticket.seed}` : `local|${Date.now()}|${Math.random()}`;
   }
-  S = { mode, ticket, draft: P.createDraft(DATA, seed), result: null };
+  S = { mode, ticket, draft: P.createDraft(DATA, seed, { date: today() }), result: null }; // the start date picks the draft rules
   syncDraft(); saveRun();
   prefetchKits(S.offers);
   render();
@@ -571,14 +572,14 @@ async function newGame(mode){
 // is remembered too.
 function saveRun(){
   if (!S || !S.draft) return;
-  store.set('run', { patch: DATA.patch, date: today(), mode: S.mode, seed: S.draft.seed, ticket: S.ticket || null, log: S.draft.log.slice(), sub: S.sub || null });
+  store.set('run', { patch: DATA.patch, date: S.draft.date || today(), mode: S.mode, seed: S.draft.seed, ticket: S.ticket || null, log: S.draft.log.slice(), sub: S.sub || null });
 }
 function resumeRun(){
   const r = store.get('run');
   if (!r || r.patch !== DATA.patch || !Array.isArray(r.log) || !r.seed) return false;
   if (r.mode === 'daily' && (r.date !== today() || store.get('daily:'+today()))) return false; // a finished Daily shows its own screen
   let draft;
-  try { draft = P.createDraft(DATA, r.seed); for (const a of r.log) { if (a === 'r') draft.reroll(); else draft.pick(a); } } catch { return false; }
+  try { draft = P.createDraft(DATA, r.seed, { date: r.date }); for (const a of r.log) { if (a === 'r') draft.reroll(); else draft.pick(a); } } catch { return false; }
   if (animHandle) cancelAnimationFrame(animHandle);
   document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === r.mode));
   S = { mode: r.mode, ticket: r.ticket, draft, result: null, sub: r.sub, resumed: !!(draft.champ && draft.done()) };

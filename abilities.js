@@ -346,7 +346,7 @@
     // (no refund). Mortal Will empowers Q (passives.js). E is a 1.5s shield channel (strikes, then a slam) and R a 2.5s leap
     // that lands for full damage; both stop his attacks, so each is used only when it adds damage (optional, passives.js).
     Pantheon: {
-      W: { kind: 'cast', type: 'physical', calc: 'MaxHealthDamageCalc', pctOfMax: true },
+      W: { kind: 'cast', type: 'physical', calc: 'MaxHealthDamageCalc', pctOfMax: true, openCalc: 'EmpoweredDamageMultCalcModified', openHits: 3, order: 0.5 },
       Q: { kind: 'cast', type: 'physical', calc: 'TapDamageCalc', cdRefund: 'TapCooldownRefund', lowBelow: 'CritHealthThreshold', lowCalc: 'ExecuteDamageCalcModified', lowNoRefund: true },
       E: { kind: 'multi', type: 'physical', parts: [{ calc: 'DamageCalc', type: 'physical' }, { calc: 'ShieldDamageCalc', type: 'physical' }], channelBlock: 1.5 },
       R: { kind: 'cast', type: 'physical', noDamage: true, delayCalc: 'DamageCalc', delayAfter: 2.5, channelBlock: 2.5 },
@@ -372,7 +372,38 @@
     },
     Anivia: { R: { kind: 'channel', type: 'magic', perSec: 'TotalDamagePerSecond', empCalc: 'EmpoweredDamagePerSecondTooltipOnly', empAfter: 1.5, duration: 99, once: true } },
     Rumble: { R: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 'TrailDuration' } },
-    Singed: { Q: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 99, once: true } },
+    // Singed R (Insanity Potion, rank 3): +85 AP, armor and magic resist for 25s, so the whole fight.
+    Singed: { Q: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 99, once: true },
+      R: { kind: 'buff', stats: { ap: 'StatAmount', armor: 'StatAmount', mr: 'StatAmount' }, duration: 'Duration' } },
+    // Gnar: Mini abilities, or Mega ones (formCalc) in the Mega line (passives.js runs both and keeps the better). Mega W
+    // and R only exist in Mega form; R knocks the target into a wall (1.5x).
+    Gnar: {
+      Q: { kind: 'cast', type: 'physical', calc: 'MiniTotalDamage', formCalc: 'MegaTotalDamage' },
+      W: { kind: 'cast', type: 'physical', calc: 'MegaTotalDamage', formCalc: 'MegaTotalDamage' },
+      E: { kind: 'cast', type: 'physical', calc: 'MiniTotalDamage', formCalc: 'MegaTotalDamage' },
+      R: { kind: 'cast', type: 'physical', calc: 'WallDamage', formCalc: 'WallDamage' },
+    },
+    // Illaoi W: her next attack leaps for a share of the target's max health; every Tentacle slams with it (passives.js).
+    // During R its cooldown is 2s.
+    Illaoi: {
+      W: { kind: 'cast', type: 'physical', calc: 'HealthPercentTotal', pctOfMax: true, resetsAttack: true, rCd: 'CooldownDuringR' },
+      E: { kind: 'cast', type: 'physical', noDamage: true, order: 0.5 },
+      R: { kind: 'cast', type: 'physical', calc: 'DamageCalc', order: 0.3 },
+    },
+    // Zaahen: Q's next attack slashes twice, then the recast's attack hits again (1.5s later); W stabs then pulls (two hits);
+    // E's edge deals its bonus physical damage plus 6% of max health as magic.
+    Zaahen: {
+      Q: { kind: 'cast', type: 'physical', calc: 'InitialDamage', delayCalc: 'SecondHitDamage', delayAfter: 'TimeBetweenAttacks', resetsAttack: true },
+      W: { kind: 'multi', type: 'physical', parts: [{ calc: 'InitialDamage', type: 'physical' }, { calc: 'SecondaryDamage', type: 'physical' }] },
+      E: { kind: 'multi', type: 'physical', parts: [{ calc: 'BonusDamageCalc', type: 'physical' }, { pctMaxHp: 'PercentHPDamage', type: 'magic' }] },
+    },
+    // Locke: Q throws its 3 Soul Nails (all hit), then his next attack rips them out (3 x nail damage, +40% with 3).
+    // W deals no damage: attack speed (70%, fading) and a self-burn. R marks the target for 5s and seals it below 12%.
+    Locke: {
+      Q: { kind: 'multi', type: 'magic', parts: [{ calc: 'MissileDamage', type: 'magic', mult: 3 }, { calc: 'NailDamage', type: 'magic', mult: 4.2 }] },
+      W: { kind: 'cast', noDamage: true, asBonus: 35, asDur: 'BaseDuration', order: 0.4 }, // 70% fading: about 35% over 5s
+      R: { kind: 'cast', type: 'magic', calc: 'Damage', execPct: 'ExecutionThreshold', execDur: 'Duration', holdBelow: 0.45, latest: 5, order: 0.3 },
+    },
     Kennen: { R: { kind: 'hits', type: 'magic', calc: 'PerTickDamageCalculated', n: 6, over: 3 } },
     // Execute ultimates: held until the hit leaves the target under the threshold, then the execute kills it.
     // If the dummy never gets that low, it's fired near the end of the fight for its damage.
@@ -527,7 +558,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut', 'sleepDelay', 'sleepDur', 'falloff', 'apPerStack', 'venomSeconds', 'cdRefund', 'lowBelow', 'stackMax', 'stackCdCut', 'stackDur']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut', 'sleepDelay', 'sleepDur', 'falloff', 'apPerStack', 'venomSeconds', 'cdRefund', 'lowBelow', 'stackMax', 'stackCdCut', 'stackDur', 'rCd', 'execPct', 'execDur']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));
