@@ -1003,10 +1003,12 @@
             tempASUntil = t + (m.asDur || 5);
           }
           else if (m.kind === 'multi') for (const p of m.parts) // a part is a formula, a flat data value, or a share of max HP
-            first += deal(t, (p.calc ? ev(p.calc) * (p.pctOfMax ? DUMMY.hp : 1) * (p.mult || 1) : 0) + (p.flat || 0) + (p.pctMaxHp || 0) * DUMMY.hp
+            first += deal(t, (p.calc ? Math.max(0, ev(p.calc) * (p.pctOfMax ? DUMMY.hp : 1) * (p.mult || 1) - (p.minusAD ? st.totalAD : 0)) : 0) + (p.flat || 0) + (p.pctMaxHp || 0) * DUMMY.hp
               + (p.pctCurHp || 0) * dummyHp, p.type, label, 'ability'); // Xin Zhao R: % current health
           else if (m.kind === 'hits') {
-            for (let i = 0; i < m.n; i++) spellQueue.push({ at: t + (m.n > 1 ? i * m.over / (m.n - 1) : 0), label, type: m.type,
+            // firstCalc: an opening burst on cast, then the hits start startAfter seconds later (Viktor's storm ticks).
+            if (m.firstCalc) first = deal(t, ev(m.firstCalc), m.type, label, 'ability');
+            for (let i = 0; i < m.n; i++) spellQueue.push({ at: t + (m.startAfter || 0) + (m.n > 1 ? i * m.over / (m.n - 1) : 0), label, type: m.type,
               raw: () => { const b = ev(m.calc); return m.critCalc ? b + st.crit * (ev(m.critCalc) - b) : b; } });
           } else if (m.kind === 'channel') {
             const dur = Math.min(m.duration || 99, T);
@@ -1758,6 +1760,21 @@
     Zeri: {
       E: { kind: 'cast', noDamage: true, onHitBuff: 'BonusDamageTotal', onHitType: 'magic', duration: 'BuffDuration', cdPerHit: 'CDReductionPerHit', order: 0.4 },
       R: { kind: 'cast', type: 'magic', calc: 'TotalActiveDamage', asBonus: 'BaseASPercent', asDur: 7.5, onHitBuff: 'TotalBonusDamage', onHitType: 'magic', duration: 7.5, order: 0.3 },
+    },
+    // Viktor, abilities upgraded (at 18 he's normally earned the Hex Fragments from kills): Q's bolt plus its empowered
+    // next attack (the bonus over a normal attack); W (Gravity Field) is cast for its stun, so stun items trigger; E's ray is
+    // followed by the aftershock (a second hit along the same line); R's storm bursts on cast, then hits once a second (6 ticks).
+    Viktor: {
+      Q: { kind: 'multi', type: 'magic', parts: [{ calc: 'TotalMissileDamage', type: 'magic' }, { calc: 'AttackTotalDMG', type: 'magic', minusAD: true }], resetsAttack: true },
+      W: { kind: 'cast', noDamage: true, order: 0.4 },
+      E: { kind: 'cast', type: 'magic', calc: 'LaserDamage', delayCalc: 'AftershockDamage', delayAfter: 1 },
+      R: { kind: 'hits', type: 'magic', firstCalc: 'InitialBurstDamage', calc: 'SubsequentBurstDamage', n: 6, over: 5, startAfter: 1, order: 0.3 },
+    },
+    // Swain: all 5 Q bolts hit a single close target (double the first bolt). R: the demon drains every 0.5s for the whole
+    // fight (draining a champion keeps it charged), and Demonflare is cast 5s in.
+    Swain: {
+      Q: { kind: 'cast', type: 'magic', calc: 'MaxDamage' },
+      R: { kind: 'channel', type: 'magic', perSec: 'DamageCalc', duration: 99, delayCalc: 'DemonflareDamageTotal', delayAfter: 'AmpTime', order: 0.3 },
     },
     // Sona: W and E deal no damage but count toward Power Chord, so they're cast (before Q, so the chord is Staccato).
     Sona: { W: { kind: 'cast', noDamage: true, order: 0.4 }, E: { kind: 'cast', noDamage: true, order: 0.45 } },

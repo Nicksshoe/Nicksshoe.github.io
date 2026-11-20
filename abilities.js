@@ -389,6 +389,21 @@
       E: { kind: 'cast', noDamage: true, onHitBuff: 'BonusDamageTotal', onHitType: 'magic', duration: 'BuffDuration', cdPerHit: 'CDReductionPerHit', order: 0.4 },
       R: { kind: 'cast', type: 'magic', calc: 'TotalActiveDamage', asBonus: 'BaseASPercent', asDur: 7.5, onHitBuff: 'TotalBonusDamage', onHitType: 'magic', duration: 7.5, order: 0.3 },
     },
+    // Viktor, abilities upgraded (at 18 he's normally earned the Hex Fragments from kills): Q's bolt plus its empowered
+    // next attack (the bonus over a normal attack); W (Gravity Field) is cast for its stun, so stun items trigger; E's ray is
+    // followed by the aftershock (a second hit along the same line); R's storm bursts on cast, then hits once a second (6 ticks).
+    Viktor: {
+      Q: { kind: 'multi', type: 'magic', parts: [{ calc: 'TotalMissileDamage', type: 'magic' }, { calc: 'AttackTotalDMG', type: 'magic', minusAD: true }], resetsAttack: true },
+      W: { kind: 'cast', noDamage: true, order: 0.4 },
+      E: { kind: 'cast', type: 'magic', calc: 'LaserDamage', delayCalc: 'AftershockDamage', delayAfter: 1 },
+      R: { kind: 'hits', type: 'magic', firstCalc: 'InitialBurstDamage', calc: 'SubsequentBurstDamage', n: 6, over: 5, startAfter: 1, order: 0.3 },
+    },
+    // Swain: all 5 Q bolts hit a single close target (double the first bolt). R: the demon drains every 0.5s for the whole
+    // fight (draining a champion keeps it charged), and Demonflare is cast 5s in.
+    Swain: {
+      Q: { kind: 'cast', type: 'magic', calc: 'MaxDamage' },
+      R: { kind: 'channel', type: 'magic', perSec: 'DamageCalc', duration: 99, delayCalc: 'DemonflareDamageTotal', delayAfter: 'AmpTime', order: 0.3 },
+    },
     // Sona: W and E deal no damage but count toward Power Chord, so they're cast (before Q, so the chord is Staccato).
     Sona: { W: { kind: 'cast', noDamage: true, order: 0.4 }, E: { kind: 'cast', noDamage: true, order: 0.45 } },
     // Illaoi W: her next attack leaps for a share of the target's max health; every Tentacle slams with it (passives.js).

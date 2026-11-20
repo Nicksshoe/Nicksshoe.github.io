@@ -1002,10 +1002,12 @@
             tempASUntil = t + (m.asDur || 5);
           }
           else if (m.kind === 'multi') for (const p of m.parts) // a part is a formula, a flat data value, or a share of max HP
-            first += deal(t, (p.calc ? ev(p.calc) * (p.pctOfMax ? DUMMY.hp : 1) * (p.mult || 1) : 0) + (p.flat || 0) + (p.pctMaxHp || 0) * DUMMY.hp
+            first += deal(t, (p.calc ? Math.max(0, ev(p.calc) * (p.pctOfMax ? DUMMY.hp : 1) * (p.mult || 1) - (p.minusAD ? st.totalAD : 0)) : 0) + (p.flat || 0) + (p.pctMaxHp || 0) * DUMMY.hp
               + (p.pctCurHp || 0) * dummyHp, p.type, label, 'ability'); // Xin Zhao R: % current health
           else if (m.kind === 'hits') {
-            for (let i = 0; i < m.n; i++) spellQueue.push({ at: t + (m.n > 1 ? i * m.over / (m.n - 1) : 0), label, type: m.type,
+            // firstCalc: an opening burst on cast, then the hits start startAfter seconds later (Viktor's storm ticks).
+            if (m.firstCalc) first = deal(t, ev(m.firstCalc), m.type, label, 'ability');
+            for (let i = 0; i < m.n; i++) spellQueue.push({ at: t + (m.startAfter || 0) + (m.n > 1 ? i * m.over / (m.n - 1) : 0), label, type: m.type,
               raw: () => { const b = ev(m.calc); return m.critCalc ? b + st.crit * (ev(m.critCalc) - b) : b; } });
           } else if (m.kind === 'channel') {
             const dur = Math.min(m.duration || 99, T);
