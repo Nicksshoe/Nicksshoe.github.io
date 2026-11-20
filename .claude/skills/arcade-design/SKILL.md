@@ -10,6 +10,14 @@ components, motion, accessibility and legal rules. This skill is the procedure f
 
 ## 1. Before changing anything
 
+- Write a short brief first (in the chat or the commit plan), before any CSS:
+  - **Screen and goal**: which screen, and what the player does there.
+  - **Anchor**: the one thing the eye goes to first (see `DESIGN.md`, one visual anchor per screen). Nothing new may
+    compete with it.
+  - **States**: loading, empty, error, locked, long text (German, Russian), phone and desktop.
+  - **Themes**: what it looks like in arcade and in classic.
+  This is a product UI (game screens), not a marketing page: judge it by speed of scanning and clarity, not by hero
+  sections or storytelling.
 - Read `DESIGN.md`, then the parts of `index.html` you'll touch. Game CSS is one `<style>` block: base (classic) rules
   first, then the `html[data-theme=arcade]` block, then focus and reduced-motion rules at the end.
 - Decide which theme the change is for. Arcade is the default; classic (`?theme=classic`) must keep working. A new
@@ -20,7 +28,12 @@ components, motion, accessibility and legal rules. This skill is the procedure f
 
 ## 2. Build with the system
 
-- Colours only from the tokens. A new colour needs a contrast check (see `references/checks.md`) and a line in `DESIGN.md`.
+- Colours only from the tokens, never raw hex in an arcade component rule. A new colour becomes a token on
+  `html[data-theme=arcade]`, gets a contrast check (see `references/checks.md`), a `prefers-contrast: more` value if it
+  is a muted or line colour, and a row in `DESIGN.md`.
+- Fonts: never Inter, Roboto, Arial or Space Grotesk in arcade (the generic-AI faces).
+- Accessibility in markup: one `h1` (logo), `h2`/`h3` in order, a label on every field, `aria-hidden` on decorative
+  emoji, and never colour alone to carry meaning (add a word or icon).
 - Shadows: only `var(--e1)`, `var(--e2)`, `var(--e3)`. Corners: square.
 - Fonts: Bungee (weight 400) for display text, Chakra Petch for everything else. No third family. No pixel fonts.
 - Text: every visible string goes in `i18n.js` in all 7 languages, through `t('key')`. Check German and Russian lengths.
@@ -35,7 +48,10 @@ components, motion, accessibility and legal rules. This skill is the procedure f
 
 Run the local server (`.claude/serve.ps1` on port 5174) and use the browser checks in `references/checks.md`:
 
-1. Desktop and phone (375x812): pick, items, fight, results, leaderboard, How to play, report form.
+1. Run the walkthrough `(await import('/tools/ui-check.js')).run()` on desktop, on phone (375x812) and with
+   `?theme=classic`. It plays a Free Play run and checks every screen (pick, items, fight, results, How to play, report
+   form, leaderboard) for contrast, tiny text, headings, labels, alt text, sideways scroll and phone tap targets.
+   Target: `total: 0`. Then look at the screens yourself; the script can't judge taste or hierarchy.
 2. Both themes: `?theme=arcade` and `?theme=classic`.
 3. Layout shift on a fresh load: 0 (or under 0.05).
 4. Contrast of any new colour pair: 4.5:1 for text, 3:1 for large text and controls.

@@ -12,6 +12,11 @@ The visual system of potentialdamage.gg, as built. Read this before any visual c
 - One page app (`index.html`) plus Terms and Privacy pages. No build step: plain HTML, CSS and JavaScript on GitHub Pages.
 - Seven interface languages (English, German, Russian, Spanish, Portuguese, Dutch, French). Every visible string lives
   in `i18n.js`; layouts must survive German and Russian lengths.
+- Design mode: **product** (an app UI), not brand/marketing. Judge it by game-UI rules: fast to scan, one action at a
+  time, states (loading, empty, error) covered. Marketing-page advice (hero sections, scroll storytelling, long copy)
+  doesn't apply.
+- One visual anchor per screen: champion pick = the cards, item pick = the item choices, fight = the dummy and health
+  bar, results = the score, leaderboard = the rows. Nothing else on a screen competes with its anchor.
 
 ## Direction: arcade
 
@@ -36,6 +41,19 @@ default. All arcade rules are scoped to `html[data-theme=arcade]`; classic style
 | `--phys` / `--magic` / `--true` | `#ff8a2a` / `#3ef0ff` / `#ffffff` | Damage types everywhere (bars, numbers, legend) |
 | `--e1` / `--e2` / `--e3` | `3px 3px 0` / `5px 5px 0` / `8px 8px 0` | The only three shadow offsets: small (tags, buttons, cards at rest), medium (hover, tier box, phone panels), large (main panels) |
 | `--radius` | `0` | Everything is square |
+| `--hi` | `#ffffff` | Pure white highlights: portrait frames, health bar and split-bar borders, champion names |
+| `--on-gold` | `#120a00` | Text on gold fills (primary buttons, active mode, toast) |
+| `--cyan-soft` | `#3ef0ff55` | Faint cyan shadow on cards at rest |
+| `--gold-wash` | `#ffd23f14` | Background tint of your own leaderboard row |
+| `--skin` | `#c8146e` | Arcade-skin label background (white text, 5.5:1) |
+| `--track` / `--floor` / `--scan` | `#2a1f3a` / `#1a0f2a` / `#ffffff06` | Empty bar tracks / arena floor / arena scanlines |
+| `--ink-shadow` | `#000000` | Text shadow on floating damage numbers |
+
+No raw hex values in component rules: every colour in the arcade block is a token (tier colours are the one table of
+their own). `tools/ui-check.js` and a search for `#` in the arcade block catch strays.
+
+High contrast (`prefers-contrast: more`): `--muted` brightens to `#e2dbf5`, `--line` to `#8a78b0`, tracks and card
+shadows get stronger, and tags and card subtitles go bold.
 
 Tier colours (results badge, `data-tier`): Iron `#b8aca4`, Bronze `#e8945a`, Silver `#d4dde6`, Gold `#ffd23f`,
 Platinum `#4fe6d0`, Emerald `#3ddc84`, Diamond `#7aa2ff`, Master `#c77dff`, Grandmaster `#ff5468`, Challenger `#fff0a0` (glow).
@@ -46,6 +64,8 @@ Platinum `#4fe6d0`, Emerald `#3ddc84`, Diamond `#7aa2ff`, Master `#c77dff`, Gran
   timer, KO flash. One weight (400); never fake bold. **Chakra Petch** (everything else): body 400/500, labels and
   buttons 700 in capitals with 0.04em tracking.
 - No pixel fonts: they were tried and rejected as hard to read.
+- Not in the arcade theme: Inter, Roboto, Arial, Space Grotesk (the "AI default" faces). Classic keeps Inter as the
+  preserved original. The link preview image uses Arial Black only because Bungee isn't installed where it's drawn.
 - Light text on dark: body line height 1.55, long text 1.6, letter spacing 0.005em.
 - Line length: long text stops near 90 characters (footer), How to play cards stay around 45 to 75.
 - Numbers use tabular figures where they update live (clock, totals, leaderboard scores).
@@ -64,9 +84,9 @@ Platinum `#4fe6d0`, Emerald `#3ddc84`, Diamond `#7aa2ff`, Master `#c77dff`, Gran
   Hover lifts with `--e2`; pressed sinks to a 1px shadow.
 - **Pills and mode tabs** (header): 2px cyan frame, cyan capitals; the active mode is gold fill with a pink shadow.
 - **Tags** (roles, melee/ranged): 2px pink frame, pink capitals, 11px.
-- **Skin label**: champions with an Arcade, Battle Boss or Final Boss skin show that skin's art and a label in `#c8146e`
+- **Skin label**: champions with an Arcade, Battle Boss or Final Boss skin show that skin's art and a label in `--skin`
   with white text (5.5:1). The list comes from `arcade-skins.json` (`tools/update-arcade-skins.ps1`).
-- **Bars**: square ends. Stat bars use the damage-type colours; empty track `#2a1f3a`.
+- **Bars**: square ends. Stat bars use the damage-type colours; empty track `--track`.
 - **Leaderboard rows**: 2px cyan frame, rank and score in Bungee; top 3 ranks gold with a pink text shadow; your own row
   gold-framed with a pink `--e1` shadow.
 - **Tier badge**: tier colour for text and frame, `--e2` pink shadow.
@@ -88,8 +108,14 @@ Platinum `#4fe6d0`, Emerald `#3ddc84`, Diamond `#7aa2ff`, Master `#c77dff`, Gran
 - Visible keyboard focus everywhere (`:focus-visible`): 3px cyan outline in arcade, gold in classic.
 - Tap targets at least 40px tall on phones (header pills, small buttons, footer links get extra height under 560px wide);
   nothing important on hover only.
-- No layout shift while loading: the loading panel holds about a screen of height, and the header reserves space for the
-  Leaderboard button, patch and best score. Target cumulative layout shift 0.
+- No layout shift while loading: the loading panel and the stage hold at least about a screen of height (so a short
+  screen, like a resumed result, can't pull the footer up), the scrollbar gutter is always reserved, and the header
+  reserves space for the Leaderboard button, patch and best score. Target cumulative layout shift 0.
+- Structure: one `h1` (the logo), `h2` for the sidebar sections and the stage heading, `h3` inside. No skipped levels.
+- Every form field has a label (`aria-label` or `<label>`); placeholders are hints, not labels.
+- Decorative emoji in controls are `aria-hidden` so screen readers read the words, not "trophy".
+- Never colour alone: your leaderboard row also says "You", tiers show their name, damage types have text labels.
+- Checked automatically by `tools/ui-check.js` (walkthrough of every screen; see the skill).
 
 ## Assets and legal
 

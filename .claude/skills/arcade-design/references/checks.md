@@ -3,6 +3,18 @@
 Run these in the browser pane on the local server (http://localhost:5174/). Paste each block into the page's
 JavaScript console (or the browser tool's JavaScript runner).
 
+## Screen walkthrough (run first)
+
+```js
+(await import('/tools/ui-check.js')).run()   // -> { total, report: [{ screen, width, theme, issues }] }
+```
+
+Plays a Free Play run on its own (it replaces the current run, and auto-answers the "Start over" prompt), then checks
+champion pick, item pick, fight, results, How to play, report form and leaderboard. `checkScreen('name')` checks just the
+current screen. Run it at desktop width, at 375x812 (tap targets are only checked under 560px) and with
+`?theme=classic`. Elements on gradient or image backgrounds are skipped for contrast; check those by eye or with the
+colour-pair snippet below.
+
 ## Layout shift on load (target 0)
 
 Load the page fresh (new URL so nothing is cached), wait about 5 seconds, then:
