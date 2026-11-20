@@ -499,6 +499,7 @@
     };
     let pHits = 0, pAbilities = 0, pArmed = 0, pTimedArmed = false, pTimedReady = P && P.timedAuto ? (P.timedAuto.start || 0) : Infinity;
     let pAbilityReady = 0, pAfterReady = 0, pHitsReady = 0, pNReady = 0, pAutoNReady = 0, pStack = { n: 0, until: -1 };
+    let pNStacks = 0; // ability-hit stacks for a held everyNAbility passive (Talon's Wounds)
     let pAuras = P && P.aura ? -1 : null;
     let pOnHits = 0, nHitsFired = 0;
     // Gnar's Mega line: only the first Mini W proc happens before he transforms (AO.nHitsMax).
@@ -564,7 +565,13 @@
           pAfterReady = t + (P.afterAbility.cd || 0);
         }
         if (P.onAbility && t >= pAbilityReady) { fireP(t, P.onAbility); pAbilityReady = t + (P.onAbility.cd || 0); }
-        if (P.everyNAbility && pAbilities % P.everyNAbility.n === 0 && t >= pNReady) {
+        // Talon's Wounds (hold): every ability hit adds a stack (extraHits: abilities that hit twice), up to n; at n his next
+        // attack applies the bleed (onAttack). Stacks wait out the cooldown instead of being lost.
+        if (P.everyNAbility && P.everyNAbility.hold) {
+          const e = P.everyNAbility, slot = cast && cast.label ? cast.label[0] : '';
+          pNStacks = Math.min(e.n, pNStacks + 1 + ((e.extraHits || {})[slot] || 0));
+          if (pNStacks >= e.n && t >= pNReady && !e.onAttack) { pNStacks = 0; pNReady = t + (e.cd || 0); fireP(t, e); }
+        } else if (P.everyNAbility && pAbilities % P.everyNAbility.n === 0 && t >= pNReady) {
           const e = P.everyNAbility; pNReady = t + (e.cd || 0);
           if (e.echo && cast) deal(t, cast.raw * e.echo, cast.type, `${cast.label} (echo)`, 'ability');
           if (e.dmg) fireP(t, e);
@@ -646,6 +653,10 @@
       if (convNow > 0) { deal(t, autoDmg * convNow, 'true', empNow.label + ' (true)', 'split'); autoDmg *= 1 - convNow; }
       deal(t, autoDmg, 'physical', 'Basic Attacks', 'attack');
       if (P && P.brittle) brittlePop(t, 'attack'); // Ornn: the attack knocks a Brittle target back
+      // Talon: an attack on a target with 3 Wounds makes it bleed.
+      if (P && P.everyNAbility && P.everyNAbility.hold && P.everyNAbility.onAttack && pNStacks >= P.everyNAbility.n && t >= pNReady) {
+        pNStacks = 0; pNReady = t + (P.everyNAbility.cd || 0); fireP(t, P.everyNAbility);
+      }
       // Xayah: attacks after an ability leave a feather behind the target.
       if (P && P.feathers && featherCharges > 0) { featherCharges--; feathers.push(t + P.feathers.dur); }
       if (!openerDone) {

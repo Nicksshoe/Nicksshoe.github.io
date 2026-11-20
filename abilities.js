@@ -493,6 +493,13 @@
         charges: 2, chargeGap: 'QRampUpTime', cdAfterCharges: true, recastIsCast: true, resetsAttack: true },
       W: { kind: 'multi', type: 'physical', parts: [{ calc: 'BaseDamageTotal', type: 'physical' }, { calc: 'OuterEdgeTooltip', pctOfMax: true, type: 'physical' }], channelBlock: 'ChargeDuration', order: 0.32 }, // before R, so R's 4s are all attacks
     },
+    // Talon: Q from melee range crits (150%); W's blades hit going out and again on the way back (0.7s later); R's ring hits
+    // on cast and again when the blades return (his next attack ends the invisibility, so about 0.5s later).
+    Talon: {
+      Q: { kind: 'cast', type: 'physical', calc: 'CriticalDamage' },
+      W: { kind: 'cast', type: 'physical', calc: 'TotalInitialDamage', delayCalc: 'TotalReturnDamage', delayAfter: 'ReturnDelay' },
+      R: { kind: 'cast', type: 'physical', calc: 'Damage', delayCalc: 'Damage', delayAfter: 0.5 },
+    },
     // Karthus E: a toggled aura, damage every second all fight.
     Karthus: { E: { kind: 'channel', type: 'magic', perSec: 'TotalDPS', duration: 99, once: true, order: 0.3 } },
     // Kog'Maw R: 1s cooldown (rank 3); each cast within 8s of the last costs 40 more mana (up to 400), so he casts while his

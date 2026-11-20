@@ -325,7 +325,10 @@
       onAbility: { type: 'magic', dmg: c => 60 + 0.04 * c.bhp },
       periodic: { start: 1, label: 'R · Devour', kind: 'ability', type: 'magic', dmg: c => 400 + (0.15 + 0.07 * c.ap / 100) * c.tmax } },
     Taliyah: none('Rock Surfing'),
-    Talon: { name: "Blade's End", note: '3 ability hits: bleed', everyNAbility: { n: 3, cd: 6, dot: 2, type: 'physical', dmg: c => 245 + 2 * c.bad } },
+    // Each ability hit Wounds the target (W and R hit twice: out and back); his next attack on a target with 3 Wounds bleeds
+    // it for 245 + 200% bonus AD over 2s (level 18).
+    Talon: { name: "Blade's End", note: '3 Wounds from ability hits, then an attack: bleed', everyNAbility: { n: 3, cd: 6, dot: 2, hold: true, onAttack: true,
+      extraHits: { W: 1, R: 1 }, label: "Passive · Blade's End (bleed)", type: 'physical', dmg: c => 245 + 2 * c.bad } },
     Taric: { name: 'Bravado', note: 'Two empowered attacks after abilities', afterAbility: { charges: 2, type: 'magic', dmg: c => 100 + 0.15 * c.barm } },
     Teemo: { name: 'Toxic Shot (E)', note: 'On-hit poison; E is passive', disable: ['E'],
       onHit: { type: 'magic', dmg: c => 50 + 0.3 * c.ap } , everyN: { n: 1, dot: 4, type: 'magic', dmg: c => 96 + 0.4 * c.ap } },
