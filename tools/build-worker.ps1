@@ -12,3 +12,5 @@ $header += "const BUILD = '$build';`n"
 Set-Content -Path $out -Value ($header + ($parts -join "`n;`n")) -Encoding utf8
 Write-Host "Built $out ($([Math]::Round((Get-Item $out).Length / 1KB)) KB), build $build"
 Write-Host "After deploying, https://potenshall-leaderboard.jacob-bc1.workers.dev/ should show build $build"
+# The pages load the same files: refresh their fingerprints so browsers fetch the new versions right away.
+& (Join-Path $PSScriptRoot 'stamp-assets.ps1')

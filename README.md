@@ -41,6 +41,8 @@ pwsh -File tools/build-worker.ps1
 
 Then paste `worker/dist/worker.js` into the Worker's code editor in the Cloudflare dashboard and deploy. Table setup is in `worker/schema.sql`.
 
+It also runs `tools/stamp-assets.ps1`, which adds a content fingerprint to each script tag (`engine.js?v=…`) so visitors get changed files as soon as the page refreshes. Run it on its own after changing `i18n.js` or any other script without an engine change.
+
 
 ## Each patch: checklist
 
