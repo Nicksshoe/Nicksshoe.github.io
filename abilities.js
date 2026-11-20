@@ -334,7 +334,6 @@
     Quinn: { W: { kind: 'buff', stats: { as: ['AttackSpeedBonus', 100] }, duration: 3.3 } }, // after each Harrier proc
     Tristana: { Q: { kind: 'buff', stats: { as: ['AttackSpeedMod', 100] }, duration: 7 } },
     Viego: { E: { kind: 'buff', stats: { as: ['AttackSpeed', 100] }, duration: 8 } },
-    Xayah: { W: { kind: 'buff', stats: { as: 'WAttackSpeedAmount' }, duration: 'WAttackSpeedDuration' } },
     Samira: { R: { kind: 'hits', type: 'physical', calc: 'DamageCalc', critCalc: 'CriticalDamageCalc', n: 10, over: 2 } },
     Twitch: { E: { kind: 'multi', parts: [{ calc: 'MaxPhysicalDamage', type: 'physical' }, { calc: 'MaxMagicDamage', type: 'magic' }] }, // 6 stacks
       R: { kind: 'buff', stats: { ad: 'BonusAD' }, duration: 'Duration' }, // Spray and Pray: +AD for 6s
@@ -367,7 +366,38 @@
     // Bel'Veth E (Royal Maelstrom): 1.5s of strikes (6, +40% more per 100% bonus attack speed), each up to double damage
     // as the target's health drops and applying 12% of on-hit effects; held until the dummy is at half health or 8.3s.
     Belveth: { E: { kind: 'flurry', type: 'physical', calc: 'DamagePerStrike', strikesCalc: 'TotalStrikes', duration: 'TotalDuration',
-      missAmpMax: 'MissingHealthMult', onHitRatio: 'OnHitRatio', holdMissing: 0.5, latest: 8.3 } },
+      missAmpMax: 'MissingHealthMult', onHitRatio: 'OnHitRatio', critAvg: true, holdMissing: 0.5, latest: 8.3 } },
+    // Shen Q: his next 3 attacks deal 40 + 7% (+2% per 100 AP) of the target's max health (the empowered version, with the
+    // spirit blade pulled through the target) and gain 50% attack speed.
+    Shen: { Q: { kind: 'empowerAuto', type: 'magic', calc: 'BaseFlatDamage', pctCalc: 'EmpPercentHealth', charges: 3, asBonus: 'SteroidAS' } },
+    // Twisted Fate W: he locks the Blue Card (the most damage); the card replaces his next attack's damage.
+    TwistedFate: { W: { kind: 'empowerAuto', type: 'magic', calc: 'BlueDamage', replacesAttack: true } },
+    // Zoe: E's bubble puts the dummy to sleep after 1.4s; she holds Q for the sleep, and with Portal Jump (R, 5s cooldown)
+    // every Q travels far enough for its maximum damage (2.5x). The wake-up hit deals its damage again as true damage, up
+    // to E's damage. W only picks up summoner spells and items dropped by enemies, so it does nothing here.
+    Zoe: {
+      E: { kind: 'cast', type: 'magic', calc: 'TotalDamageTooltip', sleepDelay: 'DrowsyDuration', sleepDur: 'SleepDuration', sleepCap: 'BreakDamageTooltip', order: 0.5 },
+      Q: { kind: 'cast', type: 'magic', calc: 'MaxDamageTooltip', waitSleep: true, order: 0.6 },
+    },
+    // Riven: Q is three casts, each followed by an attack; R (cast at the start: +20% AD, see passives.js) ends with Wind
+    // Slash, up to triple damage at 75% missing health, held until it kills or the end.
+    Riven: {
+      Q: { kind: 'cast', type: 'physical', calc: 'FirstSlashDamage', recasts: 3, recastGap: 0.75, resetsAttack: true },
+      R: { kind: 'execute', type: 'physical', calc: 'MinDamage', missAmp: { max: 2, at: 0.75 }, holdKill: true, latest: 9.5 },
+    },
+    // Xayah: Q throws two daggers (each hits) and drops 2 feathers; R drops 5. E recalls them all (see the engine).
+    Xayah: {
+      Q: { kind: 'multi', type: 'physical', parts: [{ calc: 'TotalDamage', type: 'physical' }, { calc: 'TotalDamage', type: 'physical' }] },
+      W: { kind: 'cast', noDamage: true, asBonus: 'WAttackSpeedAmount', asDur: 'WAttackSpeedDuration', order: 0.4 },
+      E: { kind: 'recall', type: 'physical', calc: 'FeatherDamage', falloff: 'FeatherFalloff', holdFeathers: 8, latest: 9.4 },
+      R: { kind: 'cast', type: 'physical', calc: 'Damage', order: 0.3 },
+    },
+    // Heimerdinger: Q builds turrets (3 kits) that shoot for the rest of the fight (about once a second) and fire a charged
+    // beam; R upgrades his next ability: the Apex turret (the strongest single-target choice), which lasts 8s.
+    Heimerdinger: {
+      Q: { kind: 'pet', type: 'magic', calc: 'Damage', petAS: 1, petASPerLevel: 0, duration: 99, turret: true, beamCalc: 'DamageBeam', beamAt: 6 },
+      R: { kind: 'pet', type: 'magic', calc: 'QUltDamage', petAS: 1.25, petASPerLevel: 0, duration: 8, turret: true, beamCalc: 'QUltDamageBeam', beamAt: 4, order: 0.4 },
+    },
     // K'Sante Q: cooldown 3.5s, down to 2s as his bonus armor + magic resist reach 120 (game data).
     // R (All Out, see passives.js): cast first for its hit (rank 3: 150 physical); while All Out, Q's cooldown is a third shorter.
     KSante: {
@@ -467,7 +497,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut', 'sleepDelay', 'sleepDur', 'falloff']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));

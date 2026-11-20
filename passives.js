@@ -76,9 +76,10 @@
     Azir: { name: 'Arise! (W) soldiers', note: 'Attacks are sand soldier stabs (magic, AP); two soldiers out', disable: ['W'], autoMult: 0,
       onHit: { label: 'W · Soldier stabs', kind: 'ability', type: 'magic', dmg: c => (174 + 0.65 * c.ap) * 1.25 } },
     Bard: { name: "Traveler's Call", note: 'Meeps on attacks (40 chimes assumed)', onHit: { type: 'magic', dmg: c => 0.6 * (147 + 0.3 * c.ap) } },
-    // E (Royal Maelstrom) is skipped: its strikes (18 + 12% AD, up to double on a low target, 12% on-hit) deal less than
-    // the 1.5s of attacks it replaces against this dummy in every build tested (on-hit, crit, bruiser, no items).
-    Belveth: { name: 'Death in Lavender', note: 'Lavender stacks + post-ability attack speed; E skipped (attacking deals more)', stats: () => ({ as: 70 }), disable: ['E'] },
+    // E (Royal Maelstrom): strikes of 18 + 12% AD (up to double on a low target), can crit, on-hit at 12-24%. It replaces 1.5s
+    // of her attacks, so the fight is run with and without it and the better one is kept (optional).
+    // Lavender: +70% attack speed stands in for about 38 stacks at level 18 (1.85% each) plus post-ability attack speed.
+    Belveth: { name: 'Death in Lavender', note: 'Lavender stacks + post-ability attack speed; E used only when it adds damage', stats: () => ({ as: 70 }), optional: ['E'] },
     Blitzcrank: none('Mana Barrier', 'Shield only'),
     Brand: { name: 'Blaze', note: 'Burns, then detonates at 3 stacks', onAbility: { type: 'magic', dot: 4, dmg: c => 0.03 * c.tmax },
       everyNAbility: { n: 3, cd: 4, type: 'magic', dmg: c => (0.12 + 0.02 * c.ap / 100) * c.tmax } },
@@ -133,7 +134,10 @@
     Galio: { name: 'Colossal Smash', note: 'Empowered attack every few seconds', timedAuto: { every: 5, type: 'magic', dmg: c => 200 + c.ad + 0.5 * c.ap + 0.6 * c.bmr } },
     Gangplank: { name: 'Trial by Fire', note: 'Burning true-damage attack; Q applies on-hit and Spellblade', onHitAbility: { Q: { spellblade: true } }, timedAuto: { every: 12, type: 'true', dot: 2.5, dmg: c => 310 + c.bad } },
     Garen: { ...none('Perseverance', 'Regeneration only'), castDebuff: { E: { armor: 0.25, dur: 6, delay: 1.5 } } },
-    Gnar: none('Rage Gene'),
+    // Mini Gnar's W (Hyper) is passive: every 3rd hit on the same target deals 40 + 100% AP + 14% of its max health (magic).
+    // A 10s fight starting at no Rage stays in Mini form, so Mega Gnar's abilities and his R (Mega only) aren't used.
+    Gnar: { name: 'Rage Gene + Hyper (W)', note: 'Every 3rd hit: 40 + 100% AP + 14% max health; stays Mini Gnar', disable: ['W', 'R'],
+      everyNHits: { n: 3, label: 'W · Hyper', kind: 'ability', type: 'magic', dmg: c => 40 + c.ap + 0.14 * c.tmax } },
     Gragas: none('Happy Hour', 'Healing only'),
     Graves: { name: 'New Destiny', note: 'Shotgun pellets all hit; 2 shells then reload', autoMult: 1.99, magazine: { size: 2, reload: c => 1.6 / c.as } },
     Gwen: { name: 'A Thousand Cuts', note: '% max HP on attacks and abilities', onHit: { type: 'magic', dmg: c => (0.01 + 0.006 * c.ap / 100) * c.tmax },
@@ -265,7 +269,9 @@
     Rengar: { name: 'Unseen Predator', note: '5 trophies (+25% bonus AD); Ferocity empowers Q', stats: c => ({ ad: 0.25 * c.bad }),
       ferocity: { max: 4, start: 4, slot: 'Q', calc: '{d4a43abe}', asCalc: 'EmpoweredQAS', asDur: 5 },
       castDebuff: { R: { armorFlat: 25, dur: 4, auto: true } } },
-    Riven: { name: 'Runic Blade', note: 'Charged attacks after abilities', afterAbility: { charges: 1, max: 3, type: 'physical', dmg: c => 0.6 * c.ad } },
+    // R (Blade of the Exile) is used at the start: +20% attack damage for 15s, the whole fight (Wind Slash is in abilities.js).
+    Riven: { name: 'Runic Blade + Blade of the Exile', note: 'Charged attacks after abilities; R +20% AD', stats: c => ({ ad: 0.2 * c.ad }),
+      afterAbility: { charges: 1, max: 3, type: 'physical', dmg: c => 0.6 * c.ad } },
     Rumble: { name: 'Junkyard Titan', note: 'Overheated attacks (part-time)', onHit: { type: 'magic', dmg: c => 0.4 * (50 + 0.3 * c.ap + 0.06 * c.tmax) } },
     Ryze: none('Arcane Mastery'),
     Samira: { name: 'Daredevil Impulse', note: 'Melee attacks: % missing HP', onHit: { type: 'magic', dmg: c => 20 + 0.1 * c.bad + 0.08 * c.tmiss } },
@@ -301,8 +307,9 @@
     Tristana: none('Draw a Bead'),
     Trundle: { castDebuff: { R: { armor: 0.4, mr: 0.4, dur: 8, delay: 1 } }, name: "King's Tribute", note: 'R drains 30% max HP over 4s; W zone: +110% attack speed for 8s', stats: () => ({ as: 110 * 0.8 }), periodic: { start: 0.5, dot: 4, label: 'R · Subjugate', kind: 'ability', type: 'magic', dmg: c => (0.30 + 0.02 * c.ap / 100) * c.tmax } },
     Tryndamere: { name: 'Battle Fury + Bloodlust (Q)', note: 'Crit chance from fury; Q passive AD from missing health', stats: c => ({ crit: 30, ad: 80 * c.smiss }) }, // game files: up to 80 AD at rank 5, scaling with missing health
-    TwistedFate: { name: 'Stacked Deck (E)', note: 'Every 4th attack; E is passive', disable: ['E'], stats: () => ({ as: 45 }),
-      everyN: { n: 4, type: 'magic', dmg: c => 165 + 0.5 * c.ap } },
+    // E (Stacked Deck) is passive (game files, rank 5): +55% attack speed, and every 4th attack deals 165 + 40% AP + 20% bonus AD.
+    TwistedFate: { name: 'Stacked Deck (E)', note: 'Every 4th attack; E is passive', disable: ['E'], stats: () => ({ as: 55 }),
+      everyN: { n: 4, label: 'E · Stacked Deck', kind: 'ability', type: 'magic', dmg: c => 165 + 0.4 * c.ap + 0.2 * c.bad } },
     Twitch: { name: 'Deadly Venom', note: 'Stacking true-damage poison', stackDot: { max: 6, dur: 6, type: 'true', perStack: c => 6 + 0.03 * c.ap } },
     // Udyr rotates all four stances every 6s (1.5s apart): every cast triggers Bridge Between's attack speed, and Q adds
     // +68% for 4s (game data, rank 5). One stance is awakened every other rotation: Q for AD builds, R for AP builds.
@@ -336,7 +343,9 @@
       periodic: { start: 0.5, label: 'R · Stormbringer', kind: 'ability', type: 'physical', dmg: c => 700 + 2.5 * c.bad + 1.25 * c.ap } },
     // Eternal Hunger on-hit, plus Blood Hunt (W) passive: +110% attack speed against targets below 50% health (game data, rank 5).
     Warwick: { name: 'Eternal Hunger + Blood Hunt', note: 'On-hit magic; +110% attack speed while the dummy is below 50% health', lowHpAS: { below: 0.5, as: 110 }, onHit: { type: 'magic', dmg: c => 46 + 0.15 * c.bad } },
-    Xayah: none('Clean Cuts', 'Feathers are counted in her E'),
+    // Clean Cuts: after each ability her next 3 attacks (up to 5 stored) leave a feather; Q drops 2 and R 5. Feathers last 6s
+    // and E (Bladecaller) pulls them all back through the target, each after the first dealing 5% less.
+    Xayah: { name: 'Clean Cuts', note: 'Attacks after abilities, Q and R leave feathers; E recalls them all', feathers: { perCast: 3, max: 5, dur: 6, from: { Q: 2, R: 5 } } },
     Xerath: none('Mana Surge'),
     XinZhao: { name: 'Determination', note: 'Every 3rd attack', everyN: { n: 3, type: 'physical', dmg: c => 0.45 * c.ad } },
     Yasuo: { name: 'Way of the Wanderer', note: 'Double crit chance, crits deal 10% less; Q applies on-hit', onHitAbility: { Q: {} }, critChanceMult: 2, critScale: 0.9 },
@@ -353,7 +362,7 @@
     Zeri: none('Living Battery'),
     Ziggs: { name: 'Short Fuse', note: 'Empowered attack after abilities', timedAuto: { every: 12, abilityCdr: 4, type: 'magic', dmg: c => 128 + 0.5 * c.ap } },
     Zilean: none('Time in a Bottle'),
-    Zoe: { name: 'More Sparkles!', note: 'Next attack after an ability', afterAbility: { type: 'magic', dmg: c => 130 + 0.2 * c.ap } },
+    Zoe: { name: 'More Sparkles!', note: 'Next attack after an ability', disable: ['W'], afterAbility: { type: 'magic', dmg: c => 130 + 0.2 * c.ap } },
     // Plants: every Q grows 2 seeds and every E 1 into plants that attack once a second for 8s (game data: 75 + 20% AP).
     Zyra: { name: 'Garden of Thorns', note: 'Q grows 2 plants, E grows 1; plants attack for 8s (extra plants on one target deal 50%)', summon: { from: { Q: 2, E: 1 }, dur: 8, extraMult: 0.5, label: 'Plants', type: 'magic', dmg: c => 75 + 0.2 * c.ap } },
   };

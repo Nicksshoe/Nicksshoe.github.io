@@ -269,7 +269,9 @@ function getKit(id){
     const hint = champ && champ.info.magic > champ.info.attack ? 'magic' : 'physical';
     const p = Promise.all([
       P.Abilities.loadKit(id),
-      fetch(`${P.DDRAGON}/cdn/${DATA.patch}/data/${langInfo().dd || 'en_US'}/champion/${id}.json`).then(r => r.json()).catch(() => null),
+      // Ability names only: never let a slow Data Dragon reply hold up the fight (8s limit, then English data names).
+      Promise.race([fetch(`${P.DDRAGON}/cdn/${DATA.patch}/data/${langInfo().dd || 'en_US'}/champion/${id}.json`).then(r => r.json()),
+        new Promise(r => setTimeout(() => r(null), 8000))]).catch(() => null),
     ]).then(([kit, dd]) => {
       const spellNames = {};
       if (dd) (dd.data[id].spells || []).forEach((s, i) => spellNames['QWER'[i]] = s.name);

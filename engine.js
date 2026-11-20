@@ -304,6 +304,13 @@
       return form.total > normal.total ? form : normal;
     }
     const allOut = !!(AO && opts.allOut);
+    // Abilities that may cost more damage than they add (Bel'Veth's E channel replaces her attacks): the fight is run with
+    // and without them and the better one is kept.
+    const OPT = P && P.optional;
+    if (OPT && opts.optOff === undefined) {
+      const withIt = simulate(ch, items, { ...opts, optOff: false }), without = simulate(ch, items, { ...opts, optOff: true });
+      return without.total > withIt.total ? without : withIt;
+    }
     if (allOut) { extraStats.as = (extraStats.as || 0) + AO.as; extraStats.arpen = (extraStats.arpen || 0) + AO.bonusArpen; }
     let st = computeStats(ch, items, kit, extraStats, P);
     if (P && P.stats) {
@@ -330,6 +337,7 @@
     }
     const disabled = new Set((P && P.disable) || []);
     if (AO && !allOut) disabled.add(AO.slot); // without the form, the ultimate isn't cast at all
+    if (OPT && opts.optOff) for (const s of OPT) disabled.add(s);
     // ownKit: the passive table models the whole kit (form swaps, weapon/awaken rotations), so the raw slots don't cast.
     const castable = spells ? (P && P.ownKit ? [] : spells.filter(s => !disabled.has(s.slot))) : null;
     const everyN = mechOf('everyN');
@@ -500,6 +508,7 @@
     const onAbilityHit = (t, first, cast) => {
       // All Out: every ability hit also deals a share of the target's max health.
       if (allOut && !(cast && cast.noDamage)) deal(t, AO.extraPct * DUMMY.hp, 'physical', AO.label, 'ability');
+      if (P && P.feathers) featherCharges = Math.min(P.feathers.max, featherCharges + P.feathers.perCast); // Xayah's Clean Cuts
       if (P) {
         pAbilities++;
         if (P.afterAbility && t >= pAfterReady) {
@@ -581,7 +590,10 @@
       // Show Sundered Sky's guaranteed crit as its own line: the part above an average attack.
       if (sunderedShare > 0) { deal(t, autoDmg * sunderedShare, 'physical', 'Sundered Sky', 'split'); autoDmg *= 1 - sunderedShare; sunderedShare = 0; }
       if (fiendShare > 0) { deal(t, autoDmg * fiendShare, 'physical', 'Fiendhunter Bolts', 'split'); autoDmg *= 1 - fiendShare; }
+      if (empowered && empowered.replacesAttack) autoDmg = 0; // Twisted Fate's card: the card's damage instead of the attack's
       deal(t, autoDmg, 'physical', 'Basic Attacks', 'attack');
+      // Xayah: attacks after an ability leave a feather behind the target.
+      if (P && P.feathers && featherCharges > 0) { featherCharges--; feathers.push(t + P.feathers.dur); }
       if (!openerDone) {
         openerDone = true;
         if (hasAny('dmp')) deal(t, 40 + st.baseAD, 'physical', "Dead Man's Plate", 'onhit');
@@ -618,7 +630,8 @@
         if (e.cdOthersPerHit) for (const s of ['Q', 'W', 'E', 'R']) if (s !== e.slot && ready[s] > t && ready[s] !== Infinity) ready[s] = Math.max(t, ready[s] - e.cdOthersPerHit);
         const firstHit = !e.firstOnly || e.left === (e.charges || 1) - 1; // Rengar Q: only the first attack hits harder
         empRaw = firstHit ? (e.adRatio || 0) * st.totalAD + (e.bonusAdRatio || 0) * st.bonusAD + (e.apRatio || 0) * st.ap + (e.flat || 0)
-          + (e.calcFn ? e.calcFn() : 0) + (e.left <= 0 && e.finalPctMaxHp ? e.finalPctMaxHp * DUMMY.hp : 0) : 0;
+          + (e.calcFn ? e.calcFn() : 0) + (e.pctFn ? e.pctFn() * DUMMY.hp : 0) // Shen Q: flat + % of max health on each
+          + (e.left <= 0 && e.finalPctMaxHp ? e.finalPctMaxHp * DUMMY.hp : 0) : 0;
         if (empRaw > 0) deal(t, empRaw, e.type, e.label, 'ability');
         if (empRaw > 0 && t <= cloneUntil) deal(t, empRaw * cloneMult, e.type, e.label + ' (clone)', 'ability'); // the clone's next attack is empowered too
       }
@@ -689,7 +702,7 @@
         baseHp: DUMMY.baseHp, bonusHp: DUMMY.hp - DUMMY.baseHp },
       stacks: stackInfo.counter ?? 0,
     });
-    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute', 'mark', 'clone', 'pet', 'afterHits', 'knives', 'bomb', 'flurry']);
+    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute', 'mark', 'clone', 'pet', 'afterHits', 'knives', 'bomb', 'flurry', 'recall']);
     let markState = null; // Zed-style mark: stores damage dealt until it pops
     const recastLeft = {}; // recasts still available per slot
     let channelUntil = -1; // a channel that keeps the champion from attacking or casting (Aurelion Sol Q)
@@ -749,6 +762,9 @@
     // Sigils (LeBlanc Q, Mimic Q): a mark on the target that pops for its own damage when the next ability hits it.
     let sigils = [];
     let bomb = null; // Zilean's Time Bomb on the dummy: { raw, at } until it explodes (fuse) or a second bomb sets it off
+    let sleep = null; // Zoe's Sleepy Trouble Bubble: { from, until, cap }: the hit that wakes the dummy deals bonus true damage
+    // Xayah: feathers on the ground (expiry times) and how many of her next attacks leave one (Clean Cuts).
+    let feathers = [], featherCharges = 0;
     // Mel's Overwhelm: stacks on the dummy from her abilities (and the missiles after them); lost when it dies.
     const addOverwhelm = (t, slot) => {
       const ow = P && P.overwhelm; if (!ow || !ow.per[slot]) return;
@@ -793,11 +809,14 @@
         if ((ready[sp.slot] || 0) > t + 1e-9) continue;
         // Zilean's Rewind: only worth casting when it brings Time Bomb back early.
         if (sp.mech && sp.mech.whenNotReady && (ready[sp.mech.whenNotReady] || 0) <= t + 1e-9) continue;
+        // Zoe's Q waits for the bubble's sleep to set in, so it lands on a sleeping target.
+        if (sp.mech && sp.mech.waitSleep && sleep && t < sleep.from) continue;
         if (sp.mech && sp.mech.kind === 'empowerAuto') {
           if (empowered) continue; // don't waste it before the armed attack lands
           empowered = { ...sp.mech, label: `${sp.slot} · ${labels[sp.slot] || sp.name}`, slot: sp.slot, cd: sp.cooldown,
             left: sp.mech.charges || 1,
-            calcFn: sp.mech.calc ? () => root.Potenshall.Abilities.evalCalc(sp.mech.calc, sp.sp, { ...spellCtx(), rank: sp.rank }) || 0 : null };
+            calcFn: sp.mech.calc ? () => root.Potenshall.Abilities.evalCalc(sp.mech.calc, sp.sp, { ...spellCtx(), rank: sp.rank }) || 0 : null,
+            pctFn: sp.mech.pctCalc ? () => root.Potenshall.Abilities.evalCalc(sp.mech.pctCalc, sp.sp, { ...spellCtx(), rank: sp.rank }) || 0 : null };
           onAbilityHit(t, false); castDebuff(t, sp.slot);
           // Multi-charge empowers (Skarner Q): the cooldown starts when the last empowered attack lands.
           ready[sp.slot] = sp.mech.cdAfterCharges ? Infinity : t + cdOf(sp.slot, sp.cooldown);
@@ -840,16 +859,28 @@
             if (bomb && t <= bomb.at) { bomb.spent = true; first = deal(t, bomb.raw, m.type, label, 'ability') + deal(t, v, m.type, label, 'ability'); bomb = null; }
             else { const b = { raw: v, at: t + (m.fuse || 3) }; bomb = b;
               spellQueue.push({ at: b.at, label, type: m.type, raw: () => { if (b.spent) return 0; if (bomb === b) bomb = null; return b.raw; } }); }
+          } else if (m.kind === 'recall') {
+            // Xayah's E: every feather on the ground flies back through the target; each one after the first deals a bit
+            // less. Held until she has plenty, a feather is about to expire, or the fight is ending.
+            feathers = feathers.filter(x => x > t);
+            const n = feathers.length;
+            const expiring = n && Math.min(...feathers) - t < 0.6;
+            if (!n || !(n >= (m.holdFeathers || 8) || expiring || t >= (m.latest ?? 9.4))) continue;
+            const per = ev(m.calc); let sum = 0;
+            for (let i = 0; i < n; i++) sum += per * Math.max(m.floor ?? 0.25, 1 - (m.falloff || 0) * i);
+            first = deal(t + 0.25, sum, m.type, `${label} (${n} feathers)`, 'ability');
+            feathers = [];
           } else if (m.kind === 'flurry') {
             // Bel'Veth E: held for a low target (each strike deals more the lower its health), then a channel of strikes
             // (more with bonus attack speed), each applying a share of on-hit effects. She can't attack while channeling.
             const missNow = 1 - dummyHp / DUMMY.hp;
             if (!(missNow >= (m.holdMissing ?? 0) || t >= (m.latest ?? 0))) continue;
             const n = Math.max(1, Math.floor(ev(m.strikesCalc) || 6)), dur = m.duration || 1.5;
-            let acc = 0;
+            // Strikes can crit (counted at the average), and on-hit effects apply at onHitRatio, doubling as health drops (12% to 24%).
+            const critAvg = m.critAvg ? 1 + st.crit * (st.critMult - 1) : 1;
             for (let i = 0; i < n; i++) spellQueue.push({ at: t + (i + 0.5) * dur / n, label, type: m.type,
-              raw: () => ev(m.calc) * (1 + (m.missAmpMax || 0) * (1 - dummyHp / DUMMY.hp)),
-              after: tt => { acc += m.onHitRatio || 0; if (acc >= 1 - 1e-9) { acc -= 1; onHitEffects(tt, 1); } } });
+              raw: () => ev(m.calc) * critAvg * (1 + (m.missAmpMax || 0) * (1 - dummyHp / DUMMY.hp)),
+              after: tt => onHitEffects(tt, 1, (m.onHitRatio || 0) * (1 + (1 - dummyHp / DUMMY.hp))) });
             channelUntil = t + dur;
           } else if (m.kind === 'cast' && m.noDamage) first = 0; // utility casts (Katarina W drops a dagger)
           else if (m.kind === 'cast' && m.recastCalc && m.recasts && recastLeft[sp.slot] > 0) {
@@ -861,7 +892,13 @@
             const critAvg = m.critAvg ? 1 + st.crit * (st.critMult - 1) : 1;
             first = deal(t, ev(m.calc) * critAvg * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, label, 'ability');
             if (m.onHitMult) onHitEffects(t, 1, m.onHitMult);
+            // Zoe: the hit that wakes a sleeping target deals its damage again as true damage, up to the bubble's cap.
+            if (sleep && first > 0 && t >= sleep.from && t <= sleep.until) { deal(t, Math.min(first, sleep.cap), 'true', 'E · Sleep (wake-up hit)', 'ability'); sleep = null; }
           }
+          if (m.sleepDelay) sleep = { from: t + m.sleepDelay, until: t + m.sleepDelay + (m.sleepDur || 2), cap: ev(m.sleepCap || m.calc) };
+          // Xayah's Q drops feathers (and R, a fan of them).
+          if (P && P.feathers && P.feathers.from[sp.slot]) for (let i = 0; i < P.feathers.from[sp.slot]; i++) feathers.push(t + P.feathers.dur);
+          if (m.resetsAttack) nextAuto = Math.min(nextAuto, t + sp.castTime); // Riven Q: each cast is followed by an attack
           // Wuju Style: every attack deals the buff's damage for its duration.
           if (m.onHitBuff) { onHitBuffs = onHitBuffs.filter(b => b.label !== label); onHitBuffs.push({ until: t + (m.duration || 5), raw: ev(m.onHitBuff), type: m.onHitType || 'true', label }); }
           // Akali W: restores energy and raises her max energy by the same amount while the shroud lasts.
@@ -898,7 +935,9 @@
             const wolfAS = m.petAS * (1 + (m.petASPerLevel * 17 + (m.share || 0) * st.bonusASPct) / 100);
             const dur = Math.min(m.duration || 8, T), gap = 1 / wolfAS;
             for (let k = 0.25; k <= dur + 1e-9; k += gap) spellQueue.push({ at: t + k, label, type: m.type, raw: () => ev(m.calc) + ev(m.pctCalc) * dummyHp });
-            zoneUntil = t + dur;
+            // Heimerdinger's turrets also fire a charged beam (beamAt seconds after being placed).
+            if (m.beamCalc && m.beamAt < T) spellQueue.push({ at: t + m.beamAt, label: label + ' (beam)', type: m.type, raw: () => ev(m.beamCalc) });
+            if (!m.turret) zoneUntil = t + dur;
           } else if (m.kind === 'knives') {
             // Katarina R: a channel of knives, each magic + physical damage and on-hit effects at a reduced ratio
             // (every 1/ratio knives applies on-hits once). She can't attack or cast while channeling.
