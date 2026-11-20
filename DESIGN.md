@@ -90,6 +90,9 @@ Platinum `#4fe6d0`, Emerald `#3ddc84`, Diamond `#7aa2ff`, Master `#c77dff`, Gran
 - **Leaderboard rows**: 2px cyan frame, rank and score in Bungee; top 3 ranks gold with a pink text shadow; your own row
   gold-framed with a pink `--e1` shadow.
 - **Tier badge**: tier colour for text and frame, `--e2` pink shadow.
+- **Results screen** (top to bottom): tier badge and score (Bungee 64px, 44px on phones) with the facts line; Play again
+  (the one primary button) and Copy result; the leaderboard submit row between two hairlines, unframed, with outline
+  buttons; then two framed panels: damage breakdown, and one panel holding the Meta Meter and level 18 stats split by a line.
 - **Inputs**: square, 2px cyan frame, cyan focus outline.
 
 ## Motion

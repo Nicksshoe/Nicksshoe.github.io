@@ -199,7 +199,13 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 .brow .track{height:10px;background:var(--bg);border-radius:5px;overflow:hidden}
 .brow .track div{height:100%;border-radius:5px}
 .brow .v{text-align:right;font-variant-numeric:tabular-nums}
-.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+/* Results order: score, then what to do next (play again, share, submit), then the details. */
+.res-actions{margin:0 0 16px}
+.res-submit{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:14px 0;margin:0 0 18px}
+.res-submit h3{margin-top:0}
+.res-side{display:grid;gap:16px}
+.res-side>div+div{border-top:1px solid var(--line);padding-top:14px}
 @media (max-width:700px){.res-grid{grid-template-columns:1fr}}
 .statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 14px;font-size:13px}
 .statgrid div{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:3px 0}
@@ -347,7 +353,9 @@ html[data-theme=arcade] .badge[data-tier=Diamond]{--tc:#7aa2ff}
 html[data-theme=arcade] .badge[data-tier=Master]{--tc:#c77dff}
 html[data-theme=arcade] .badge[data-tier=Grandmaster]{--tc:#ff5468}
 html[data-theme=arcade] .badge[data-tier=Challenger]{--tc:#fff0a0;text-shadow:0 0 10px #ffe066}
-html[data-theme=arcade] .bignum{font:400 46px var(--pix);color:var(--gold);text-shadow:3px 3px 0 var(--pink)}
+html[data-theme=arcade] .bignum{font:400 64px var(--pix);color:var(--gold);text-shadow:4px 4px 0 var(--pink)}
+html[data-theme=arcade] .res-submit{border-color:var(--line)}
+html[data-theme=arcade] .res-side>div+div{border-top:2px solid var(--line)}
 html[data-theme=arcade] .bignum small{font:700 14px 'Chakra Petch',system-ui,sans-serif;text-transform:uppercase;color:var(--cyan);text-shadow:none;margin-left:10px;vertical-align:middle}
 html[data-theme=arcade] .facts b{color:var(--gold)}
 html[data-theme=arcade] .res-grid .panel,
@@ -394,7 +402,7 @@ html[data-theme=arcade] body{line-height:1.55;letter-spacing:.005em}
 html[data-theme=arcade] .rules li,html[data-theme=arcade] .howto p{line-height:1.6}
 @media (max-width:560px){
   html[data-theme=arcade] .logo{font-size:20px}
-  html[data-theme=arcade] .bignum{font-size:36px}
+  html[data-theme=arcade] .bignum{font-size:44px}
   html[data-theme=arcade] .bignum small{display:block;margin:8px 0 0}
   html[data-theme=arcade] .cards.champs{grid-template-columns:repeat(2,1fr);gap:10px} /* 2 per row on phones, like the mockup */
   html[data-theme=arcade] .card .nm{font-size:13px}
@@ -640,7 +648,7 @@ function renderSubmitPanel(snapshot){
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <input id="lbName" maxlength="16" aria-label="${esc(t('displayName'))}" placeholder="${esc(t('displayName'))}" value="${esc(store.get('name') || '')}" dir="ltr"
         style="flex:1;min-width:150px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:var(--text);font:inherit">
-      <button class="btn primary sm" id="lbSubmit">${t('submit')}</button>
+      <button class="btn sm" id="lbSubmit">${t('submit')}</button>
       <button class="btn sm" id="lbView">${t('viewBoard')}</button>
     </div>
     ${TURNSTILE_SITEKEY ? '<div id="lbCaptcha" style="margin-top:8px"></div>' : ''}
@@ -1098,6 +1106,11 @@ function showResults(res, isBest){
         </div>
       </div>
     </div>
+    <div class="actions res-actions">
+      <button class="btn primary" id="again">${S.mode === 'daily' ? t('free') : t('playAgain')}</button>
+      <button class="btn" id="share">${t('copy')}</button>
+    </div>
+    <div class="res-submit" id="lbPanel"></div>
     <div class="res-grid">
       <div class="panel">
         <h3>${t('breakdown')}</h3>
@@ -1107,14 +1120,14 @@ function showResults(res, isBest){
           <div class="brow"><span>${esc(srcLabel(name))}</span><div class="track"><div style="width:${v/max*100}%;background:${typeColor[dominant(name)]}"></div></div><span class="v">${fmt(v)}</span></div>`).join('')}
         </div>
       </div>
-      <div style="display:grid;gap:16px;align-content:start">
-        <div class="panel">
+      <div class="panel res-side">
+        <div>
           <h3>${t('metaMeter')}</h3>
           <div class="meter">${Array.from({length:6}, (_, i) => `<i class="${i < abs ? 'on' : ''}"></i>`).join('')}</div>
           <div class="muted" style="font-size:13px">${t('offScript', { n: abs })}</div>
           <p class="quote">${quote}</p>
         </div>
-        <div class="panel">
+        <div>
           <h3>${t('stats18')}</h3>
           <div class="statgrid">
             <div><span>${t('st_ad')}</span>${fmt(s.ad)}</div><div><span>${t('st_ap')}</span>${fmt(s.ap)}</div>
@@ -1124,11 +1137,6 @@ function showResults(res, isBest){
           </div>
         </div>
       </div>
-    </div>
-    <div class="panel" id="lbPanel" style="margin-top:16px"></div>
-    <div class="actions">
-      <button class="btn primary" id="again">${S.mode === 'daily' ? t('free') : t('playAgain')}</button>
-      <button class="btn" id="share">${t('copy')}</button>
     </div>`;
   $('#again').onclick = () => newGame('free');
   $('#share').onclick = () => share(res, tier, abs);
