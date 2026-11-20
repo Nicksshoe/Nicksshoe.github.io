@@ -457,7 +457,10 @@
     Jhin: { R: { kind: 'hits', type: 'physical', calc: 'DamageCalc', n: 4, over: 3, startAfter: 0.5, missAmpPer: 'PercentMissingAmp', lastMult: 'FourthShotMultiplier',
       channelBlock: 3.5, holdMissing: 0.5, latest: 6 } },
     Poppy: { Q: { kind: 'multi', type: 'physical', parts: [{ calc: 'BaseDamage', type: 'physical', mult: 2 }, { pctMaxHp: 'HealthDamagePercent', type: 'physical', mult: 2 }] } }, // hits, then erupts again
-    Warwick: { Q: { kind: 'multi', type: 'magic', parts: [{ calc: 'BaseBiteDamage', type: 'magic' }, { pctMaxHp: 'TargetPercentHPDamage', type: 'magic' }] } },
+    // Warwick R: suppresses and attacks 3 times while channeling (magic damage, on-hit effects each time); no attacks meanwhile.
+    Warwick: { Q: { kind: 'multi', type: 'magic', parts: [{ calc: 'BaseBiteDamage', type: 'magic' }, { pctMaxHp: 'TargetPercentHPDamage', type: 'magic' }] },
+      R: { kind: 'cast', type: 'magic', calc: 'DamageCumulative', onHitTimes: 3, channelBlock: 'RDuration' } },
+    Aatrox: { W: { kind: 'multi', type: 'physical', parts: [{ calc: 'WDamage', type: 'physical', mult: 2 }] } }, // hit, then the pull hits again (the dummy stays put)
     Vi: { Q: { kind: 'cast', type: 'physical', calc: 'MaxDamageTooltip', channelBlock: 1.25 } }, // fully charged (1.25s)
     Gragas: { W: { kind: 'multi', type: 'magic', parts: [{ calc: 'TotalDamage', type: 'magic' }, { pctMaxHp: 'MaxHPPercentDamage', type: 'magic' }] } },
     Galio: { W: { kind: 'cast', type: 'magic', calc: 'MaxTotalDamage', channelBlock: 'MaxChargeDuration' } }, // fully charged
@@ -665,6 +668,9 @@
     return m;
   }
 
+  // Damage types where the game file's tag is wrong or missing and Riot's tooltip says otherwise (found by audit.html).
+  const TYPE_FIX = { 'Shen E': 'physical', 'Tryndamere E': 'physical', 'Samira E': 'magic', 'Sion W': 'magic' };
+
   // Build a compact, ready-to-simulate view of the kit.
   function describeKit(kit, kitHint) {
     if (!kit) return null;
@@ -676,7 +682,7 @@
       const m = mech[sp.slot] ? resolveMechanic(mech[sp.slot], sp, rank) : null;
       return {
         slot: sp.slot, name: sp.name, rank, calc, sp, mech: m,
-        damaging: !m && ((Number.isFinite(probe) && probe > 1) || sp.variants.length > 0), type: (m && m.type) || damageTypeFor(sp, calc, rank, kitHint),
+        damaging: !m && ((Number.isFinite(probe) && probe > 1) || sp.variants.length > 0), type: (m && m.type) || TYPE_FIX[kit.id + ' ' + sp.slot] || damageTypeFor(sp, calc, rank, kitHint),
         // realCd: a short cooldown that really is that short (Cassiopeia E, Kassadin R), so the sanity floor doesn't apply.
         cooldown: m && m.realCd && +sp.cds[rank] > 0.25 ? +sp.cds[rank] : cooldownFor(sp, rank), castTime: Math.min(0.75, sp.castTime || 0.25),
         // Multi-charge abilities: charges, the recharge time per charge, and the short lockout between casts.

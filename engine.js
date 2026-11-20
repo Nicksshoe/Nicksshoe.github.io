@@ -1033,6 +1033,7 @@
             if (P && P.fury && !furyEmp) addFury((P.fury.perSlot || {})[sp.slot] || 0); // empowered casts don't build Fury
             if (m.stackMax && first > 0) castStacks[sp.slot] = { n: Math.min(m.stackMax, stackOf(sp.slot, t) + 1), until: t + (m.stackDur || 8) };
             if (m.onHitMult) onHitEffects(t, 1, m.onHitMult);
+            if (m.onHitTimes) onHitEffects(t, m.onHitTimes); // Warwick R: each of its attacks applies on-hit effects
             // Zoe: the hit that wakes a sleeping target deals its damage again as true damage, up to the bubble's cap.
             if (sleep && first > 0 && t >= sleep.from && t <= sleep.until) { deal(t, Math.min(first, sleep.cap), 'true', 'E · Sleep (wake-up hit)', 'ability'); sleep = null; }
           }
