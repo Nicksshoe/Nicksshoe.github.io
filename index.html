@@ -14,6 +14,22 @@
   frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Potential Damage</title>
+<!-- Link previews (Reddit, Discord, X, iMessage): tools/make-og-image.ps1 draws og.png. -->
+<meta name="description" content="Draft a random League of Legends champion and 6 random items, then see how much damage you deal to a training dummy in 10 seconds. Free, no sign-up, daily challenge and leaderboards.">
+<link rel="canonical" href="https://potentialdamage.gg/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Potential Damage">
+<meta property="og:title" content="Potential Damage: how much damage can your random build deal?">
+<meta property="og:description" content="Draft a random champion and 6 random items, then fight a 10,000 HP training dummy for 10 seconds. Free, no sign-up, daily challenge and leaderboards.">
+<meta property="og:url" content="https://potentialdamage.gg/">
+<meta property="og:image" content="https://potentialdamage.gg/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Potential Damage: draft a random champion and 6 random items. How much damage can you deal in 10 seconds?">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Potential Damage: how much damage can your random build deal?">
+<meta name="twitter:description" content="Draft a random champion and 6 random items, then fight a training dummy for 10 seconds. Free, no sign-up.">
+<meta name="twitter:image" content="https://potentialdamage.gg/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -238,7 +254,7 @@ footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size
     Potential Damage is a fan-made mini game inspired by Bausffs-style abstract builds. Ability damage uses formulas from the game files (via CommunityDragon); item passives, stacks and champion passives are approximations.
     Potential Damage isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties.
     Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
-    <div style="margin-top:8px"><a href="https://github.com/Nicksshoe/Nicksshoe.github.io/issues/new?template=report.yml" target="_blank" rel="noopener" style="color:var(--gold)">Report a bug</a> · <a href="terms.html" style="color:var(--gold)">Terms of Service</a> · <a href="privacy.html" style="color:var(--gold)">Privacy Policy</a></div>
+    <div style="margin-top:8px"><a href="#" id="reportLink" style="color:var(--gold)" data-i18n="reportBug">Report a bug</a> · <a href="terms.html" style="color:var(--gold)">Terms of Service</a> · <a href="privacy.html" style="color:var(--gold)">Privacy Policy</a></div>
   </footer>
 </div>
 
@@ -248,7 +264,7 @@ footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size
 <script src="itemgroups.js?v=4f80f7d8"></script>
 <script src="cc.js?v=b45c3f9d"></script>
 <script src="growth.js?v=ab01afcc"></script>
-<script src="i18n.js?v=2270dee0"></script>
+<script src="i18n.js?v=e315eb5a"></script>
 <script>
 (() => {
 'use strict';
@@ -468,6 +484,43 @@ function showHowTo(){
   $('#howBack').onclick = () => {
     const back = howToReturn; howToReturn = null;
     if (back) { rerender = back; back(); } else newGame(S && S.mode === 'free' ? 'free' : 'daily');
+  };
+}
+
+// Bug report (no login): free text plus what the player was looking at, sent to the leaderboard Worker's /report.
+function reportContext(){
+  if (!S || !S.champ) return `page: draft, patch ${DATA ? DATA.patch : '?'}, ${LANG}, ${innerWidth}px`;
+  const items = (S.items || []).map(i => i.name).join(', ');
+  const total = S.result ? Math.round(S.result.total) : null;
+  return `${S.mode} ${S.draft && S.draft.date || ''} · patch ${DATA.patch} · ${S.champ.name}: ${items || '(no items yet)'}${total != null ? ` · ${total} damage` : ''} · ${LANG}, ${innerWidth}px`;
+}
+function showReport(){
+  if (S && S.result && !S.finished) { if (animHandle) cancelAnimationFrame(animHandle); howToReturn = finish; }
+  else if (rerender && rerender !== showReport && rerender !== showHowTo) howToReturn = rerender;
+  rerender = showReport;
+  const kinds = ['damage', 'item', 'page', 'leaderboard', 'other'];
+  const ctx = reportContext();
+  $('#stage').innerHTML = `<div class="stage-head"><div><h2>${t('reportBug')}</h2><p>${t('reportSub')}</p></div><div class="spacer"></div>
+    <button class="btn sm" id="repBack">${t('back')}</button></div>
+    <div style="max-width:640px;display:flex;flex-direction:column;gap:4px;margin-top:6px">
+      <label class="muted" for="repKind">${t('reportKind')}</label>
+      <select id="repKind" style="width:100%;margin:6px 0 14px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:var(--text);font:inherit;box-sizing:border-box">${kinds.map(k => `<option value="${k}">${t('rk_' + k)}</option>`).join('')}</select>
+      <textarea id="repText" maxlength="1500" rows="6" style="width:100%;resize:vertical;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:var(--text);font:inherit;box-sizing:border-box" placeholder="${esc(t('reportText'))}"></textarea>
+      <p class="muted" style="font-size:12px;margin:8px 0">${esc(ctx)}</p>
+      <div class="actions"><button class="btn primary" id="repSend">${t('reportSend')}</button><span class="muted" id="repStatus" role="status"></span></div>
+    </div>`;
+  $('#repBack').onclick = () => {
+    const back = howToReturn; howToReturn = null;
+    if (back) { rerender = back; back(); } else newGame(S && S.mode === 'free' ? 'free' : 'daily');
+  };
+  $('#repSend').onclick = async () => {
+    const text = $('#repText').value.trim();
+    if (text.length < 5) { $('#repText').focus(); return; }
+    $('#repSend').disabled = true;
+    try {
+      await LB.call('/report', { kind: $('#repKind').value, text, context: ctx });
+      $('#repStatus').textContent = t('reportThanks'); $('#repText').value = '';
+    } catch (e) { $('#repStatus').textContent = t('reportFail'); $('#repSend').disabled = false; }
   };
 }
 
@@ -876,6 +929,7 @@ function toast(msg){ const el = document.createElement('div'); el.className = 't
 
 // ---------- Boot ----------
 $('#howBtn').onclick = showHowTo;
+$('#reportLink').onclick = e => { e.preventDefault(); showReport(); scrollTo({ top: 0, behavior: 'smooth' }); };
 document.querySelectorAll('#modes button').forEach(b => b.onclick = () => { if (animHandle) cancelAnimationFrame(animHandle); newGame(b.dataset.mode); });
 applyStatic();
 $('#langSel').onchange = e => setLanguage(e.target.value);
