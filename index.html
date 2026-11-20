@@ -293,7 +293,7 @@ html[data-theme=arcade]{
   --phys:#ff8a2a; --magic:#3ef0ff; --true:#ffffff; --good:#b6ff3e; --bad:#ff3e6c; --radius:0;
   --pix:Bungee,'Arial Black',sans-serif; --ui:700 13px 'Chakra Petch',system-ui,sans-serif;
   --hi:#ffffff; --on-gold:#120a00; --cyan-soft:#3ef0ff55; --gold-wash:#ffd23f14; --skin:#c8146e; --track:#2a1f3a; --floor:#1a0f2a;
-  --scan:#ffffff06; --ink-shadow:#000000;
+  --ink-shadow:#000000;
   --on-skin:#ffffff; --fill:#ffd23f; --frame:#ffd23f; --title:#ffd23f; /* gold split by job: button and stripe fills, frames, headline text */
   --e1:3px 3px 0; --e2:5px 5px 0; --e3:8px 8px 0; /* the only three shadow offsets: small (tags, buttons, cards), medium (hover, tier, phone panels), large (main panels) */
 }
@@ -306,7 +306,7 @@ html[data-theme=arcade][data-mode=light]{
   --cyan:#006b7a; --pink:#d1006a; --lime:#2a7a00;
   --phys:#b84a00; --magic:#006b7a; --true:#1b1030; --good:#2a7a00; --bad:#c2002c;
   --hi:#1b1030; --on-gold:#1b1030; --cyan-soft:#006b7a33; --gold-wash:#ffd23f55; --skin:#c8146e; --track:#efe5f5; --floor:#f3e6cc;
-  --scan:#1b103008; --ink-shadow:#fff8ec;
+  --ink-shadow:#fff8ec;
   --fill:#ffd23f; --frame:#1b1030; --title:#1b1030;
 }html[data-theme=arcade] body{background:var(--bg);font-family:'Chakra Petch',system-ui,sans-serif;
   border-top:6px solid var(--fill);box-shadow:inset 0 3px 0 var(--pink)}
@@ -380,8 +380,7 @@ html[data-theme=arcade] .passive em{color:var(--pink)}
 
 /* Fight */
 html[data-theme=arcade] .arena{border:3px solid var(--cyan);border-radius:0;
-  background:linear-gradient(transparent 0 calc(100% - 60px),var(--floor) calc(100% - 60px)),
-    repeating-linear-gradient(0deg,var(--scan) 0 2px,transparent 2px 4px),var(--bg)}
+  background:linear-gradient(transparent 0 calc(100% - 60px),var(--floor) calc(100% - 60px)),var(--bg)} /* flat floor band, no scanline texture */
 html[data-theme=arcade] .arena .attacker{border-radius:0;border-color:var(--frame)}
 html[data-theme=arcade] .hpbar{border-radius:0;border:2px solid var(--hi);box-shadow:var(--e1) var(--pink)}
 html[data-theme=arcade][data-mode=light] .hpbar{background:var(--track)}
@@ -406,7 +405,7 @@ html[data-theme=arcade] .badge[data-tier=Emerald]{--tc:#3ddc84}
 html[data-theme=arcade] .badge[data-tier=Diamond]{--tc:#7aa2ff}
 html[data-theme=arcade] .badge[data-tier=Master]{--tc:#c77dff}
 html[data-theme=arcade] .badge[data-tier=Grandmaster]{--tc:#ff5468}
-html[data-theme=arcade] .badge[data-tier=Challenger]{--tc:#fff0a0;text-shadow:0 0 10px #ffe066}
+html[data-theme=arcade] .badge[data-tier=Challenger]{--tc:#fff0a0;text-shadow:2px 2px 0 var(--pink)} /* hard offset, not a soft glow */
 html[data-theme=arcade][data-mode=light] .badge[data-tier=Iron]{--tc:#6b5f57}
 html[data-theme=arcade][data-mode=light] .badge[data-tier=Bronze]{--tc:#9c4f1b}
 html[data-theme=arcade][data-mode=light] .badge[data-tier=Silver]{--tc:#56657a}
@@ -416,7 +415,7 @@ html[data-theme=arcade][data-mode=light] .badge[data-tier=Emerald]{--tc:#137a45}
 html[data-theme=arcade][data-mode=light] .badge[data-tier=Diamond]{--tc:#2d50c4}
 html[data-theme=arcade][data-mode=light] .badge[data-tier=Master]{--tc:#7a2db8}
 html[data-theme=arcade][data-mode=light] .badge[data-tier=Grandmaster]{--tc:#c2002c}
-html[data-theme=arcade][data-mode=light] .badge[data-tier=Challenger]{--tc:#7a5900;text-shadow:0 0 10px #ffd23f}html[data-theme=arcade] .bignum{font:400 64px var(--pix);color:var(--title);text-shadow:4px 4px 0 var(--pink)}
+html[data-theme=arcade][data-mode=light] .badge[data-tier=Challenger]{--tc:#7a5900;text-shadow:2px 2px 0 var(--fill)}html[data-theme=arcade] .bignum{font:400 64px var(--pix);color:var(--title);text-shadow:4px 4px 0 var(--pink)}
 html[data-theme=arcade] .res-submit{border-color:var(--line)}
 html[data-theme=arcade] .res-side>div+div{border-top:2px solid var(--line)}
 html[data-theme=arcade] .bignum small{font:700 14px 'Chakra Petch',system-ui,sans-serif;text-transform:uppercase;color:var(--cyan);text-shadow:none;margin-left:10px;vertical-align:middle}

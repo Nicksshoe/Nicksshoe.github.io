@@ -4,4 +4,6 @@ api-key.txt
 .env
 # Local tooling
 .claude/*
-!.claude/skills/
+!.claude/skills/# Working documents (spreadsheets of site text etc.) stay off the public site
+*.xlsx
+logo-review/

@@ -46,7 +46,7 @@ default. All arcade rules are scoped to `html[data-theme=arcade]`; classic style
 | `--cyan-soft` | `#3ef0ff55` | Faint cyan shadow on cards at rest |
 | `--gold-wash` | `#ffd23f14` | Background tint of your own leaderboard row |
 | `--skin` | `#c8146e` | Arcade-skin label background (white text, 5.5:1) |
-| `--track` / `--floor` / `--scan` | `#2a1f3a` / `#1a0f2a` / `#ffffff06` | Empty bar tracks / arena floor / arena scanlines |
+| `--track` / `--floor` | `#2a1f3a` / `#1a0f2a` | Empty bar tracks / arena floor (a flat band, no scanlines) |
 | `--ink-shadow` | `#000000` | Text shadow on floating damage numbers |
 
 No raw hex values in component rules: every colour in the arcade block is a token (tier colours are the one table of
@@ -56,7 +56,7 @@ High contrast (`prefers-contrast: more`): `--muted` brightens to `#e2dbf5`, `--l
 shadows get stronger, and tags and card subtitles go bold.
 
 Tier colours (results badge, `data-tier`): Iron `#b8aca4`, Bronze `#e8945a`, Silver `#d4dde6`, Gold `#ffd23f`,
-Platinum `#4fe6d0`, Emerald `#3ddc84`, Diamond `#7aa2ff`, Master `#c77dff`, Grandmaster `#ff5468`, Challenger `#fff0a0` (glow).
+Platinum `#4fe6d0`, Emerald `#3ddc84`, Diamond `#7aa2ff`, Master `#c77dff`, Grandmaster `#ff5468`, Challenger `#fff0a0` (2px pink offset, no glow).
 
 Gold has three jobs, each its own token so light mode can treat them differently: `--fill` (primary button and active
 tab fills, top stripe), `--frame` (main panel and button frames), `--title` (logo, headings, scores, champion names).
@@ -81,7 +81,7 @@ and `theme.js` decides what new visitors get. Classic has one look and hides the
 | `--line` / `--track` / `--floor` | `#d9cbe3` / `#efe5f5` / `#f3e6cc` | Hairlines, bar tracks, arena floor |
 
 Light tier colours are darker versions of the dark ones (Iron `#6b5f57` ... Grandmaster `#c2002c`, Challenger `#7a5900`
-with a yellow glow). High-contrast tweaks apply to dark mode only. `tools/ui-check.js` must report 0 in both modes.
+with a 2px yellow offset).  High-contrast tweaks apply to dark mode only. `tools/ui-check.js` must report 0 in both modes.
 
 ## Typography
 
@@ -160,8 +160,10 @@ with a yellow glow). High-contrast tweaks apply to dark mode only. `tools/ui-che
 
 ## Don'ts (the generic-AI look we moved away from)
 
-- No gradients in the arcade theme beyond the arena floor and scanlines. The classic theme's gradients live in
-  `classic.css`, loaded only for classic players, so the default page ships flat colours.
+- No textures and no soft glows or blurs in arcade: no scanlines, grain, noise or `0 0 Npx` shadows. Every shadow is a hard
+  offset. Texture and blur on flat shapes is what makes a page read as AI-generated art. The only gradient left is the hard-stop
+  arena floor band (no blending).
+- The classic theme's gradients live in `classic.css`, loaded only for classic players, so the default page ships flat colours.
 - No gold-on-navy gradients, glassy blur panels, soft drop shadows, rounded pill everything, or purple-to-blue gradients.
 - No Inter as the arcade font, no gradient text, no emoji (not even in buttons or labels).
   Kept on purpose: the arrows on Skip and Back, and the ■□ Meta Meter squares in the copied result text.
