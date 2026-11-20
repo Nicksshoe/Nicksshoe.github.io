@@ -1452,6 +1452,9 @@
   // Champion choices for a draft started on this date (How to play shows the same number the draft will offer).
   const champChoicesFor = date => (typeof date === 'string' && date >= DRAFT_V2_FROM ? CHAMP_CHOICES_V2 : DRAFT.CHAMP_CHOICES);
   const SEEN_ITEM_WEIGHT = 0.25;
+  // Also from 2026-11-20: fewer boots in the pool (14 pairs crowded the choices). These three are no longer offered:
+  // Boots of Swiftness, Ionian Boots of Lucidity, Gluttonous Greaves (ids are stable across patches).
+  const REMOVED_ITEMS_V2 = new Set(['3009', '3158', '3008']);
 
   function createDraft(data, seed, opts = {}) {
     const rng = mulberry32(hashStr(seed));
@@ -1463,7 +1466,8 @@
     const itemOffers = (extra = []) => {
       const groups = root.Potenshall.ItemGroups || {}, owned = {};
       for (const it of d.items) for (const [g] of groups[it.id] || []) owned[g] = (owned[g] || 0) + 1;
-      const allowed = data.items.filter(it => !(groups[it.id] || []).some(([g, max]) => (owned[g] || 0) >= max));
+      const allowed = data.items.filter(it => !(v2 && REMOVED_ITEMS_V2.has(String(it.id)))
+        && !(groups[it.id] || []).some(([g, max]) => (owned[g] || 0) >= max));
       const exclude = new Set([...extra, ...d.items.map(i => i.id)]);
       if (!v2) return sample(rng, allowed, DRAFT.ITEM_CHOICES, exclude);
       const offers = sampleWeighted(rng, allowed, DRAFT.ITEM_CHOICES, exclude, it => seen.has(it.id) ? SEEN_ITEM_WEIGHT : 1);
