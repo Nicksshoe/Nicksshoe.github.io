@@ -383,6 +383,14 @@
       E: { kind: 'cast', type: 'physical', calc: 'MiniTotalDamage', formCalc: 'MegaTotalDamage' },
       R: { kind: 'cast', type: 'physical', calc: 'WallDamage', formCalc: 'WallDamage' },
     },
+    // Zeri (passives.js: Q is her attack): E for 5s makes every shot deal bonus magic damage (its cooldown drops 0.5s per
+    // shot); R deals its burst, then +30% attack speed and bonus magic damage per shot (5s, extended by hits).
+    Zeri: {
+      E: { kind: 'cast', noDamage: true, onHitBuff: 'BonusDamageTotal', onHitType: 'magic', duration: 'BuffDuration', cdPerHit: 'CDReductionPerHit', order: 0.4 },
+      R: { kind: 'cast', type: 'magic', calc: 'TotalActiveDamage', asBonus: 'BaseASPercent', asDur: 7.5, onHitBuff: 'TotalBonusDamage', onHitType: 'magic', duration: 7.5, order: 0.3 },
+    },
+    // Sona: W and E deal no damage but count toward Power Chord, so they're cast (before Q, so the chord is Staccato).
+    Sona: { W: { kind: 'cast', noDamage: true, order: 0.4 }, E: { kind: 'cast', noDamage: true, order: 0.45 } },
     // Illaoi W: her next attack leaps for a share of the target's max health; every Tentacle slams with it (passives.js).
     // During R its cooldown is 2s.
     Illaoi: {

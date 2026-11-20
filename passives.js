@@ -310,7 +310,9 @@
     // Quaking: 3 stacks burn 9% max health (at level 18) as magic damage over 4s.
     Skarner: { name: 'Threads of Vibration', note: '3 hits: 9% max HP burn over 4s', everyNHits: { n: 3, cd: 4, dot: 4, type: 'magic', dmg: c => 0.09 * c.tmax } },
     Smolder: none('Dragon Practice', 'Stacks are counted in his abilities'),
-    Sona: { name: 'Power Chord', note: 'Every 3rd ability empowers an attack', everyNAbility: { n: 3, type: 'magic', dmg: c => 220 + 0.2 * c.ap } },
+    // Power Chord: every 3rd ability empowers her next attack. She casts W and E (no damage of their own: heal/shield and
+    // speed) so it comes up, and Q last, so the chord is Staccato (+50% damage: 330 + 30% AP).
+    Sona: { name: 'Power Chord', note: 'Every 3rd ability (W and E count) empowers an attack; Q last for Staccato (+50%)', everyNAbility: { n: 3, type: 'magic', label: 'Passive · Power Chord (Staccato)', dmg: c => 1.5 * (220 + 0.2 * c.ap) } },
     Soraka: none('Salvation'),
     Swain: none('Ravenous Flock', 'Soul fragments are counted in his stats'),
     Sylas: { name: 'Petricite Burst', note: 'Next attack after an ability', afterAbility: { type: 'magic', dmg: c => 0.3 * c.ad + 0.25 * c.ap } },
@@ -379,7 +381,11 @@
     // target for the reduced pass-through amount (game data: 144 + 60% bonus AD). Shadow E slashes don't stack damage.
     Zed: { name: 'Contempt for the Weak + shadows', note: 'Below 50% HP: 10% max HP; W and R shadows repeat Q', shadows: { slot: 'Q', calc: 'PassThroughDamage', w: { start: 0.1, every: 16, dur: 5.25 }, rDur: 7.5 },
       timedAuto: { every: 10, cond: c => c.thp < 0.5 * c.tmax, type: 'magic', dmg: c => 0.1 * c.tmax } },
-    Zeri: none('Living Battery'),
+    // Zeri attacks with Q (Burst Fire, game files rank 5): each shot deals 38 + 110% AD (can crit, applies on-hit) instead of
+    // a normal attack, on her attack timer. Her attack speed is capped at 1.5; every 1% of bonus attack speed past it gives
+    // 0.6 AD (about 128% bonus attack speed reaches the cap).
+    Zeri: { name: 'Living Battery + Burst Fire (Q)', note: 'Attacks are Q shots (38 + 110% AD); attack speed capped at 1.5, extra turns into AD', disable: ['Q'],
+      asCap: 1.5, autoMult: c => (38 + 1.1 * c.ad) / c.ad, stats: c => ({ ad: 0.6 * Math.max(0, c.bas * 100 - 128) }) },
     Ziggs: { name: 'Short Fuse', note: 'Empowered attack after abilities', timedAuto: { every: 12, abilityCdr: 4, type: 'magic', dmg: c => 128 + 0.5 * c.ap } },
     Zilean: none('Time in a Bottle'),
     Zoe: { name: 'More Sparkles!', note: 'Next attack after an ability', disable: ['W'], afterAbility: { type: 'magic', dmg: c => 130 + 0.2 * c.ap } },

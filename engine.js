@@ -268,7 +268,7 @@
     // Real formula: base AS + bonus AS% x the champion's attack speed ratio (from game files when available).
     const asBase = (kit && kit.asBase) || s.attackspeed, asRatio = (kit && kit.asRatio) ?? s.attackspeed;
     // Some champions (Jhin) have a locked attack speed: bonus attack speed is converted by their passive instead.
-    const as = passive.fixedAS ? asBase : Math.min(2.5, asBase + asRatio * bonusASPct / 100);
+    const as = passive.fixedAS ? asBase : Math.min(passive.asCap || 2.5, asBase + asRatio * bonusASPct / 100); // Zeri caps at 1.5
     const baseArmor = s.armor + s.armorperlevel * L, baseMR = s.spellblock + s.spellblockperlevel * L;
     const ah = b.ah + sum('ahBonus') + sum('ahPerBonusAd') * bonusAD;
     const pen = sum('pen');
@@ -1111,7 +1111,7 @@
       if (empoweredAutos > 0) bonus += 50;
       if (empowered && empowered.asBonus) bonus += empowered.asBonus < 5 ? empowered.asBonus * 100 : empowered.asBonus; // Skarner Q
       if (P && P.asBuffNow) bonus += P.asBuffNow(pctx(t)); // timed attack speed from a hand-modeled kit (Elise's Skittering Frenzy)
-      const as = P && P.fixedAS ? st.as : Math.min(2.5, st.as + asRatioNow * bonus / 100);
+      const as = P && P.fixedAS ? st.as : Math.min((P && P.asCap) || 2.5, st.as + asRatioNow * bonus / 100);
       return 1 / (as * pr.uptime);
     };
     let nextAuto = 0.1, nextCombo = 0, comboQueue = [], ultDone = false, nextDespair = 0;
