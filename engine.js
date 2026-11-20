@@ -894,6 +894,8 @@
         if (sp.mech && sp.mech.whenNotReady && (ready[sp.mech.whenNotReady] || 0) <= t + 1e-9) continue;
         // Zoe's Q waits for the bubble's sleep to set in, so it lands on a sleeping target.
         if (sp.mech && sp.mech.waitSleep && sleep && t < sleep.from) continue;
+        // Held for a low target (Jhin R: more damage per missing health), or fired anyway at 'latest'. Bel'Veth's E checks this itself.
+        if (sp.mech && sp.mech.holdMissing != null && sp.mech.kind !== 'flurry' && 1 - dummyHp / DUMMY.hp < sp.mech.holdMissing && t < (sp.mech.latest ?? 0)) continue;
         // Ornn's R: waits until the Brittle already on the dummy has popped, so its own Brittle isn't wasted.
         if (sp.mech && sp.mech.holdWhileBrittle && brittle && t <= brittle.until) continue;
         // Locke's R: held until the dummy is low enough for its seal, or until its mark would just cover the rest of the fight.
@@ -1040,6 +1042,8 @@
             for (let k = 1; k <= Math.min(m.duration || 15, T); k++) spellQueue.push({ at: t + k, label, type: m.type, raw: () => 0, after: () => addFury(P.fury.rPerSec || 0) }); }
           // Wuju Style: every attack deals the buff's damage for its duration.
           if (m.onHitBuff) { onHitBuffs = onHitBuffs.filter(b => b.label !== label); onHitBuffs.push({ until: t + (m.duration || 5), raw: ev(m.onHitBuff), type: m.onHitType || 'true', label }); }
+          // Yorick's Maiden marks the target: his attacks deal a share of its max health for the rest of the fight.
+          if (m.onHitPctMax) onHitBuffs.push({ until: Infinity, raw: (m.onHitPctMax > 1 ? m.onHitPctMax / 100 : m.onHitPctMax) * DUMMY.hp, type: m.onHitType || m.type, label: label + ' (mark)' });
           // Akali W: restores energy and raises her max energy by the same amount while the shroud lasts.
           // Zilean's Rewind: takes seconds off his other basic abilities' cooldowns.
           if (m.cdReduce) for (const s of ['Q', 'W', 'E']) if (s !== sp.slot && ready[s] > t && ready[s] !== Infinity) ready[s] = Math.max(t, ready[s] - m.cdReduce);
@@ -1052,20 +1056,26 @@
               + (m.asPerBonusAS ? st.bonusASPct / m.asPerBonusAS : 0) + (m.apToAS ? st.ap * m.apToAS * 100 : 0); // Xin Zhao E
             tempASUntil = t + (m.asDur || 5);
           }
-          else if (m.kind === 'multi') for (const p of m.parts) // a part is a formula, a flat data value, or a share of max HP
-            first += deal(t, (p.calc ? Math.max(0, ev(p.calc) * (p.pctOfMax ? DUMMY.hp : 1) * (p.mult || 1) - (p.minusAD ? st.totalAD : 0)) : 0) + (p.flat || 0) + (p.pctMaxHp || 0) * DUMMY.hp
-              + (p.pctCurHp || 0) * dummyHp, p.type, label, 'ability'); // Xin Zhao R: % current health
+          else if (m.kind === 'multi') for (const p of m.parts) { // a part is a formula, a flat data value, or a share of max HP
+            // A formula that is a share of max health may be stored as 0.05 or as 5 (%).
+            const c = p.calc ? ev(p.calc) : 0, cv = p.pctOfMax ? (c > 1 ? c / 100 : c) * DUMMY.hp : c;
+            first += deal(t, (Math.max(0, cv * (p.mult || 1) - (p.minusAD ? st.totalAD : 0)))
+              + ((p.flat || 0) + (p.pctMaxHp || 0) * DUMMY.hp + (p.pctCurHp || 0) * dummyHp) * (p.mult || 1), p.type, label, 'ability'); // Xin Zhao R: % current health
+          }
           else if (m.kind === 'hits') {
             // firstCalc: an opening burst on cast, then the hits start startAfter seconds later (Viktor's storm ticks).
+            // missAmpPer: +x% damage per 1% missing health (Jhin R); lastMult: the last hit is stronger (Jhin's 4th shot).
             if (m.firstCalc) first = deal(t, ev(m.firstCalc), m.type, label, 'ability');
             for (let i = 0; i < m.n; i++) spellQueue.push({ at: t + (m.startAfter || 0) + (m.n > 1 ? i * m.over / (m.n - 1) : 0), label, type: m.type,
-              raw: () => { const b = ev(m.calc); return m.critCalc ? b + st.crit * (ev(m.critCalc) - b) : b; } });
+              raw: () => { const b = ev(m.calc); return (m.critCalc ? b + st.crit * (ev(m.critCalc) - b) : b)
+                * (1 + (m.missAmpPer || 0) * (1 - dummyHp / DUMMY.hp)) * (i === m.n - 1 && m.lastMult ? m.lastMult : 1); } });
           } else if (m.kind === 'channel') {
             const dur = Math.min(m.duration || 99, T);
             // Zones that execute (Aurelion Sol E): threshold in % of max HP, checked on every tick.
             const exec = m.executeCalc ? () => { const v = ev(m.executeCalc); return v > 1 ? v / 100 : v; } : null;
             for (let k = 0.5; k <= dur + 1e-9; k += 0.5) spellQueue.push({ at: t + k, label, type: m.type, exec, clone: !!m.cloneEcho,
-              raw: () => ((m.empCalc && k > m.empAfter ? ev(m.empCalc) : ev(m.perSec)) + (m.perSecPctMaxHp || 0) * DUMMY.hp) / 2 });
+              raw: () => ((m.empCalc && k > m.empAfter ? ev(m.empCalc) : ev(m.perSec)) + (m.perSecPctMaxHp || 0) * DUMMY.hp + (m.perSecFlat || 0)
+                + (m.perSecPctCalc ? (v => v > 1 ? v / 100 : v)(ev(m.perSecPctCalc)) * DUMMY.hp : 0)) / 2 }); // Amumu W: flat + % max health per second
             // Repeating bursts while channeling (Aurelion Sol Q: every 1s, magic + % max HP true per stack).
             if (m.burstEvery) for (let k = m.burstEvery; k <= dur + 1e-9; k += m.burstEvery) for (const p of m.bursts)
               spellQueue.push({ at: t + k, label, type: p.type, raw: () => ev(p.calc) * (p.pctMaxHp ? DUMMY.hp : 1) });

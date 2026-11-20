@@ -73,7 +73,7 @@ const FLAGS = {
   rarely: [1, 'Cast less than it could', 'Cast at most half as often as its cooldown allows (holds by design are fine)'],
 };
 // Words in Riot's text that usually mean a mechanic we have to model by hand. Shown as hints, not flags.
-const KEYWORDS = [['again', /\bagain\b/i], ['each', /\beach\b/i], ['stacks', /\bstack/i], ['over time', /per second|over \{\{|over \d/i],
+const KEYWORDS = [['again', /\bagain\b/i], ['each', /\beach\b/i], ['stacks', /\bstack/i], ['over time', /per second|every second|over \{\{|over \d/i],
   ['recast', /\brecast/i], ['poison', /poison/i], ['brittle', /brittle/i], ['mark', /\bmark/i], ['empowered', /empower/i],
   ['on attacks', /attacks? deal (an )?additional|on-hit/i], ['passive part', /passive:/i], ['execute', /execute/i]];
 
@@ -89,7 +89,8 @@ $('#refItems').textContent = REF_ITEMS.join(', ');
 
 // ---------- Tooltip reading ----------
 // "{{ totaldamage }} magic damage", "{{ x }}% max Health magic damage", "{{ y }} max Health physical damage"
-const DMG_RE = /\{\{\s*([A-Za-z0-9_]+)\s*\}\}(\s*%)?\s*(?:of\s+)?(?:the\s+)?(?:target'?s\s+)?(?:(max(?:imum)?|current|missing)\s+health\s+)?(physical|magic|true)\s+damage/gi;
+// Also "{{ base }} plus {{ pct }}% max Health magic damage": both parts count.
+const DMG_RE = /(?:\{\{\s*([A-Za-z0-9_]+)\s*\}\}\s*(?:plus|\+)\s*)?\{\{\s*([A-Za-z0-9_]+)\s*\}\}(\s*%)?\s*(?:of\s+)?(?:the\s+)?(?:target'?s\s+)?(?:(max(?:imum)?|current|missing)\s+health\s+)?(physical|magic|true)\s+damage/gi;
 const plain = tip => tip.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
 function readName(name, sp, ctx, rank) {
   const lc = name.toLowerCase();
@@ -101,15 +102,23 @@ function readName(name, sp, ctx, rank) {
 }
 function tooltipDamage(tip, sp, ctx, rank) {
   const out = [];
-  for (const m of plain(tip).matchAll(DMG_RE)) {
-    const [, name, pct, health, type] = m;
+  const text = plain(tip);
+  for (const m of text.matchAll(DMG_RE)) {
+    const [, baseName, name, pct, health, type] = m;
+    if (/monster|minion/i.test(name)) continue; // damage to monsters and minions only (Nunu Q)
     let v = readName(name, sp, ctx, rank);
     if (v == null) { out.push({ name, type: type.toLowerCase(), value: null }); continue; }
     if (health) {
       if (/missing/i.test(health)) continue; // depends on the fight; not comparable per cast
       v = (pct || v > 1 ? v / 100 : v) * ctx.target.maxHp;
     }
-    out.push({ name, type: type.toLowerCase(), value: v });
+    const base = baseName ? readName(baseName, sp, ctx, rank) : null;
+    if (base) v += base;
+    // "between {{ min }} and {{ max }}" / "{{ min }} - {{ max }}": compare with the minimum, allow up to the maximum.
+    const range = /(?:between|from)\s*\{\{\s*([A-Za-z0-9_]+)\s*\}\}\s*(?:and|to)\s*$|\{\{\s*([A-Za-z0-9_]+)\s*\}\}\s*-\s*$/i.exec(text.slice(Math.max(0, m.index - 60), m.index));
+    const lo = range ? readName(range[1] || range[2], sp, ctx, rank) : null;
+    if (lo != null && lo > 0 && !health) { out.push({ name: `${range[1] || range[2]} to ${name}`, type: type.toLowerCase(), value: lo, max: v }); continue; }
+    out.push({ name: baseName ? `${baseName} + ${name}` : name, type: type.toLowerCase(), value: v });
   }
   return out;
 }
@@ -134,7 +143,7 @@ async function runAll(progress) {
       const tipText = plain(dd.tooltip || '');
       const tipDmg = tooltipDamage(dd.tooltip || '', s.sp, ctx, s.rank);
       const known = tipDmg.filter(d => d.value != null && d.value > 0);
-      const expFirst = known.length ? known[0].value : null, expAll = known.reduce((a, d) => a + d.value, 0) || null;
+      const expFirst = known.length ? known[0].value : null, expAll = known.reduce((a, d) => a + (d.max || d.value), 0) || null;
       const tipTypes = new Set(tipDmg.map(d => d.type));
       const tipType = known.length ? known.slice().sort((a, b) => b.value - a.value)[0].type : tipDmg.length ? tipDmg[0].type : null;
       // An ability's always-on part (Kassadin's Nether Blade on every attack) isn't damage per cast.

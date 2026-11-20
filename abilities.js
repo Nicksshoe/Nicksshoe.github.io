@@ -374,6 +374,7 @@
     Rumble: { R: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 'TrailDuration' } },
     // Singed R (Insanity Potion, rank 3): +85 AP, armor and magic resist for 25s, so the whole fight.
     Singed: { Q: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 99, once: true },
+      E: { kind: 'multi', type: 'magic', parts: [{ calc: 'BaseDamage', type: 'magic' }, { pctMaxHp: 'MaxHPDamage', type: 'magic' }] }, // flat + % max health
       R: { kind: 'buff', stats: { ap: 'StatAmount', armor: 'StatAmount', mr: 'StatAmount' }, duration: 'Duration' } },
     // Gnar: Mini abilities, or Mega ones (formCalc) in the Mega line (passives.js runs both and keeps the better). Mega W
     // and R only exist in Mega form; R knocks the target into a wall (1.5x).
@@ -445,6 +446,35 @@
       W: { kind: 'empowerAuto', type: 'magic', calc: 'ActiveDamage', resetsAttack: true, permOnHit: 'OnHitDamage' },
       E: { kind: 'cast', type: 'magic', calc: 'TotalDamage', cutPerCast: 'ReductionPerSpellCast' },
       R: { kind: 'cast', type: 'magic', calc: 'BaseDamage', stackMax: 'MaxStacks', stackFlat: 'BonusDamage', stackDur: 'RStackDuration', realCd: true },
+    },
+    // ---- Ability audit, batch 1: abilities whose tooltip is "X plus Y% max Health" (both parts now), charged abilities at
+    // full charge, and multi-shot ultimates. Numbers are read from the game data by name.
+    Amumu: { W: { kind: 'channel', type: 'magic', perSecFlat: 'BaseDamage', perSecPctCalc: 'TotalHealthDamage', duration: 99, once: true, order: 0.3 } }, // toggle, every second
+    Evelynn: { W: { kind: 'cast', noDamage: true, order: 0.3 } }, // champions: charm + magic resist shred (passives.js); damage is monsters only
+    RekSai: { R: { kind: 'multi', type: 'physical', parts: [{ calc: 'RBaseDamageCalc', type: 'physical' }, { pctMaxHp: 'PercentHealthDamage', type: 'physical' }] } },
+    // Jhin R: 4 shots 1s apart, each +3% per 1% missing health, the 4th a crit (x2); held until the dummy is half down
+    // (or 6s in), and he can't attack while channeling.
+    Jhin: { R: { kind: 'hits', type: 'physical', calc: 'DamageCalc', n: 4, over: 3, startAfter: 0.5, missAmpPer: 'PercentMissingAmp', lastMult: 'FourthShotMultiplier',
+      channelBlock: 3.5, holdMissing: 0.5, latest: 6 } },
+    Poppy: { Q: { kind: 'multi', type: 'physical', parts: [{ calc: 'BaseDamage', type: 'physical', mult: 2 }, { pctMaxHp: 'HealthDamagePercent', type: 'physical', mult: 2 }] } }, // hits, then erupts again
+    Warwick: { Q: { kind: 'multi', type: 'magic', parts: [{ calc: 'BaseBiteDamage', type: 'magic' }, { pctMaxHp: 'TargetPercentHPDamage', type: 'magic' }] } },
+    Vi: { Q: { kind: 'cast', type: 'physical', calc: 'MaxDamageTooltip', channelBlock: 1.25 } }, // fully charged (1.25s)
+    Gragas: { W: { kind: 'multi', type: 'magic', parts: [{ calc: 'TotalDamage', type: 'magic' }, { pctMaxHp: 'MaxHPPercentDamage', type: 'magic' }] } },
+    Galio: { W: { kind: 'cast', type: 'magic', calc: 'MaxTotalDamage', channelBlock: 'MaxChargeDuration' } }, // fully charged
+    Varus: { Q: { kind: 'cast', type: 'physical', calc: 'TotalDamageMax', channelBlock: 1.25 } }, // fully charged
+    Hwei: { Q: { kind: 'multi', type: 'magic', parts: [{ calc: 'Tooltip_QQDamage', type: 'magic' }, { pctMaxHp: 'Tooltip_QQBonusDamage', type: 'magic' }] } }, // Devastating Fire
+    Jax: { E: { kind: 'multi', type: 'magic', parts: [{ calc: 'TotalDamage', type: 'magic' }, { pctMaxHp: 'PercentHealthDamage', type: 'magic' }] } },
+    Shyvana: { E: { kind: 'multi', type: 'magic', parts: [{ calc: 'Damage', type: 'magic' }, { calc: 'Calc_Max_Health_Damage', pctOfMax: true, type: 'magic' }] } },
+    Ziggs: { R: { kind: 'cast', type: 'magic', calc: 'EmpoweredDamage' } }, // centre of the blast on a dummy that doesn't move
+    Janna: { Q: { kind: 'cast', type: 'magic', calc: 'MaxDamage' } }, // fully grown tornado
+    // Cho'Gath E and Rell E: the next attack(s) deal flat + a share of max health (Cho'Gath: 3 attacks).
+    Chogath: { E: { kind: 'empowerAuto', type: 'magic', calc: 'FlatDamageCalc', pctCalc: 'MaxHealthPercentCalc', charges: 'MaximumAttacks', resetsAttack: true } },
+    Rell: { E: { kind: 'empowerAuto', type: 'magic', pctCalc: 'MaxHealthDamageCalc' } },
+    // Yorick E: the share of max health (not the minimum). R: the Maiden attacks all fight, and marks the target so
+    // Yorick's attacks deal 3% of its max health.
+    Yorick: {
+      E: { kind: 'cast', type: 'magic', calc: 'Calc_HealthDamage', pctOfMax: true },
+      R: { kind: 'pet', type: 'magic', calc: 'YorickBigGhoulDamage', petAS: 1, petASPerLevel: 0, duration: 99, turret: true, onHitPctMax: 'RMarkDamagePercent', order: 0.3 },
     },
     // Kayn at 18 as Rhaast (Darkin Slayer: max-health damage is far more against a 10,000 HP dummy than Shadow Assassin's
     // burst). Q hits twice (dash, then spin), each 65% AD + a share of max health. R deals a share of max health; he
@@ -615,9 +645,9 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut', 'sleepDelay', 'sleepDur', 'falloff', 'apPerStack', 'venomSeconds', 'cdRefund', 'lowBelow', 'stackMax', 'stackCdCut', 'stackDur', 'rCd', 'execPct', 'execDur', 'altCdCut', 'altMinCd', 'mines', 'detonateAfter', 'cutPerCast']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut', 'sleepDelay', 'sleepDur', 'falloff', 'apPerStack', 'venomSeconds', 'cdRefund', 'lowBelow', 'stackMax', 'stackCdCut', 'stackDur', 'rCd', 'execPct', 'execDur', 'altCdCut', 'altMinCd', 'mines', 'detonateAfter', 'cutPerCast', 'missAmpPer', 'lastMult', 'perSecFlat', 'onHitPctMax', 'channelBlock', 'charges']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
-      ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
+      ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: (v => v > 1 ? v / 100 : v)(dv(p.pctMaxHp)) } : {}), // stored as 0.09 or as 9 (%)
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));
     // Buff stats: a data value name, or [name, multiplier] (e.g. attack speed stored as 0.7 -> 70%), or a number.
     if (spec.stats) m.stats = Object.fromEntries(Object.entries(spec.stats).map(([k, v]) => [k, typeof v === 'number' ? v : Array.isArray(v) ? dv(v[0]) * v[1] : dv(v)]));
