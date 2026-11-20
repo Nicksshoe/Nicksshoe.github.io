@@ -238,7 +238,7 @@ footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size
     Potential Damage is a fan-made mini game inspired by Bausffs-style abstract builds. Ability damage uses formulas from the game files (via CommunityDragon); item passives, stacks and champion passives are approximations.
     Potential Damage isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties.
     Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
-    <div style="margin-top:8px"><a href="terms.html" style="color:var(--gold)">Terms of Service</a> · <a href="privacy.html" style="color:var(--gold)">Privacy Policy</a></div>
+    <div style="margin-top:8px"><a href="https://github.com/Nicksshoe/Nicksshoe.github.io/issues/new?template=report.yml" target="_blank" rel="noopener" style="color:var(--gold)">Report a bug or a wrong number</a> · <a href="terms.html" style="color:var(--gold)">Terms of Service</a> · <a href="privacy.html" style="color:var(--gold)">Privacy Policy</a></div>
   </footer>
 </div>
 
@@ -865,6 +865,7 @@ function share(res, tier, abs){
     `Potential Damage ${S.mode === 'daily' ? today() : '(' + t('free') + ')'} · ${t('patch')} ${DATA.patch}`,
     `${cName(S.champ)}: ${S.items.map(iName).join(', ')}`,
     `${fmt(res.total)} ${t('dmgIn10')} · ${t('tier_' + tier.name)} · ${t('metaMeter')} ${'🟪'.repeat(abs)}${'⬛'.repeat(6-abs)}`,
+    'https://potentialdamage.gg', // so a pasted result leads back to the game
   ].join('\n');
   const done = () => toast(t('copied'));
   if (navigator.clipboard) navigator.clipboard.writeText(lines).then(done, () => prompt(t('copyPrompt'), lines));

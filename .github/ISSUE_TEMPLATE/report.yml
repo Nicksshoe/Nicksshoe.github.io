@@ -1,0 +1,38 @@
+name: Report a bug or a wrong number
+description: Something broke, or a champion or item deals damage it shouldn't.
+title: "[Report] "
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem?
+      options:
+        - A champion's ability damage looks wrong
+        - An item's effect looks wrong
+        - The page broke or got stuck
+        - Leaderboard / score submission
+        - Something else
+    validations:
+      required: true
+  - type: input
+    id: champion
+    attributes:
+      label: Champion and ability (if any)
+      placeholder: "e.g. Ornn R"
+  - type: textarea
+    id: result
+    attributes:
+      label: Your result
+      description: Click "Copy result" on the results page and paste it here (it lists the champion, items and score).
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened, and what did you expect?
+      description: For damage, how it works in the game (a wiki link or patch note helps).
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser (for page problems)
+      placeholder: "e.g. iPhone, Safari"
