@@ -116,7 +116,8 @@ Platinum `#4fe6d0`, Emerald `#3ddc84`, Diamond `#7aa2ff`, Master `#c77dff`, Gran
   reserves space for the Leaderboard button, patch and best score. Target cumulative layout shift 0.
 - Structure: one `h1` (the logo), `h2` for the sidebar sections and the stage heading, `h3` inside. No skipped levels.
 - Every form field has a label (`aria-label` or `<label>`); placeholders are hints, not labels.
-- Decorative emoji in controls are `aria-hidden` so screen readers read the words, not "trophy".
+- No emoji anywhere in the interface or in translations. Icons are drawn inline SVG in `currentColor` with
+  `aria-hidden` (the padlock `LOCK_SVG`, the logo mark); controls say what they do in words.
 - Never colour alone: your leaderboard row also says "You", tiers show their name, damage types have text labels.
 - Checked automatically by `tools/ui-check.js` (walkthrough of every screen; see the skill).
 
@@ -136,7 +137,8 @@ Platinum `#4fe6d0`, Emerald `#3ddc84`, Diamond `#7aa2ff`, Master `#c77dff`, Gran
 - No gradients in the arcade theme beyond the arena floor and scanlines. The classic theme's gradients live in
   `classic.css`, loaded only for classic players, so the default page ships flat colours.
 - No gold-on-navy gradients, glassy blur panels, soft drop shadows, rounded pill everything, or purple-to-blue gradients.
-- No Inter as the arcade font, no gradient text, no emoji as decoration (the existing ❓🏆🔒 icons are functional).
+- No Inter as the arcade font, no gradient text, no emoji (not even in buttons or labels).
+  Kept on purpose: the arrows on Skip and Back, and the ■□ Meta Meter squares in the copied result text.
 - No cards inside cards, no numbered section labels, no "eyebrow" chips above headings.
 - No invented numbers: every figure shown comes from the game engine or the leaderboard.
 
