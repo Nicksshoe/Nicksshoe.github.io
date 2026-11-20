@@ -6,9 +6,9 @@
    Binding: DB (D1 database). The seed-signing secret is generated on first use and kept in D1.
    Optional secret: TURNSTILE_SECRET turns on the Cloudflare Turnstile bot check for score submissions. */
 
-const SITE = 'https://nicksshoe.github.io';
-// The site is moving to potentialdamage.gg; the github.io address stays allowed (it redirects there once the domain is live).
-const ALLOWED_ORIGINS = new Set([SITE, 'https://potentialdamage.gg', 'https://www.potentialdamage.gg', 'http://localhost:5173', 'http://localhost:5174']);
+// The site lives at potentialdamage.gg (GitHub Pages custom domain); nicksshoe.github.io redirects there and stays allowed.
+const SITE = 'https://potentialdamage.gg';
+const ALLOWED_ORIGINS = new Set([SITE, 'https://www.potentialdamage.gg', 'https://nicksshoe.github.io', 'http://localhost:5173', 'http://localhost:5174']);
 const NAME_RE = /^[A-Za-z0-9 _.\-]{1,16}$/;
 const CLIENT_RE = /^[A-Za-z0-9-]{8,64}$/;
 // ---------- Display-name filter: slurs, hate, harassment, sexual content, impersonation ----------
