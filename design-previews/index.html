@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Design previews — Potential Damage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,700&family=Cinzel:wght@700&family=IBM+Plex+Sans:wght@400;600&family=Pixelify+Sans:wght@500;700&family=Press+Start+2P&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root { color-scheme: dark }
+  * { box-sizing: border-box }
+  html, body { margin: 0 }
+  body {
+    min-height: 100vh; background: #090909; color: #f4f1ea;
+    font: 17px/1.45 "Source Sans 3", sans-serif;
+    display: grid; grid-template-rows: auto 1fr auto;
+  }
+  header, footer { padding: 22px 28px }
+  header { border-bottom: 1px solid #2a2a2a }
+  h1 { margin: 0 0 6px; font: 700 28px/1.1 Cinzel, serif; letter-spacing: 0.06em }
+  header p { margin: 0; max-width: 68ch; color: #d9d3c7 }
+  .current { color: #f4f1ea }
+  .board { display: grid; grid-template-columns: repeat(3, 1fr); min-height: 420px }
+  a.dir { display: flex; flex-direction: column; justify-content: space-between; gap: 18px; padding: 22px; text-decoration: none; color: inherit; min-height: 280px }
+  a.dir:focus-visible { outline: 3px solid #fff; outline-offset: -3px }
+  .kicker { font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase }
+  .dir h2 { margin: 8px 0; font-size: 34px; line-height: 1.05 }
+  .dir p { margin: 0; font-size: 16px; max-width: 36ch }
+  .open { font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; font-size: 13px }
+  .hex { background: #10192b; color: #f3ead7; box-shadow: inset 0 0 0 1px #8a7040 }
+  .hex h2 { font-family: Cinzel, serif; font-weight: 700; letter-spacing: 0.04em }
+  .hex .kicker, .hex .open { color: #c8aa6e }
+  .arc { background: #07060c; color: #fff6d8; border-top: 8px solid #ffe14a; box-shadow: inset 0 0 0 4px #ff2ea6 }
+  .arc h2 { font-family: "Press Start 2P", monospace; font-size: 18px; line-height: 1.6; color: #ffe14a; text-shadow: 3px 3px 0 #c4007a }
+  .arc p, .arc .kicker, .arc .open { font-family: "Pixelify Sans", sans-serif }
+  .arc .open { color: #39f3ff }
+  .brd { background: #12151c; color: #f4f7fb; border-top: 4px solid #2f6bff; border-left: 6px solid #e23b4a }
+  .brd h2 { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-style: italic; letter-spacing: 0.03em; text-transform: uppercase }
+  .brd .kicker, .brd .open { font-family: "IBM Plex Sans", sans-serif; letter-spacing: 0.12em }
+  .brd .open { color: #d6e4ff }
+  footer { border-top: 1px solid #2a2a2a; color: #cfc8bc; font-size: 13px; line-height: 1.5 }
+  footer a { color: #f4f1ea }
+  @media (max-width: 860px) {
+    .board { grid-template-columns: 1fr }
+    header, footer { padding: 16px }
+    .arc h2 { font-size: 15px }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>DESIGN PREVIEWS</h1>
+  <p>Three alternate looks for Potential Damage. Each one plays the real game: same draft, same damage, same leaderboard. The live page is unchanged. <a class="current" href="../index.html">Open the current design</a>.</p>
+</header>
+<nav class="board">
+  <a class="dir hex" href="a-hextech.html">
+    <div>
+      <div class="kicker">01 — Hextech client</div>
+      <h2>Item shop, not a dashboard</h2>
+      <p>Navy plates, gold corner brackets, inscribed serif titles, and a recessed six-slot tray.</p>
+    </div>
+    <div class="open">Preview this direction</div>
+  </a>
+  <a class="dir arc" href="b-arcade.html">
+    <div>
+      <div class="kicker">02 — Arcade scoreboard</div>
+      <h2>INSERT SCORE</h2>
+      <p>Pixel type, yellow and magenta hard shadows, and the damage total on a cabinet readout.</p>
+    </div>
+    <div class="open">Preview this direction</div>
+  </a>
+  <a class="dir brd" href="c-broadcast.html">
+    <div>
+      <div class="kicker">03 — Broadcast overlay</div>
+      <h2>Post-game graphic</h2>
+      <p>Sharp edges, a blue-side and red-side split, condensed headers, and tabular figures.</p>
+    </div>
+    <div class="open">Preview this direction</div>
+  </a>
+</nav>
+<footer>
+  <p>Nothing here is linked from the homepage. If this branch is merged, these pages are public at potentialdamage.gg/design-previews/. To look without publishing, serve the repo locally and open /design-previews/, or use the pull request’s preview.</p>
+  <p>Potential Damage isn’t endorsed by Riot Games and doesn’t reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.</p>
+</footer>
+</body>
+</html>
