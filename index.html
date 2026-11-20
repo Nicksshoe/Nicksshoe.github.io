@@ -111,7 +111,7 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 .stage-head p{margin:2px 0 0;color:var(--muted);font-size:14px}
 .btn{border:1px solid var(--gold);background:linear-gradient(180deg,#1e2a44,#121a2e);color:var(--gold2);padding:10px 18px;border-radius:8px;font-weight:600;
   transition:transform .08s,box-shadow .15s}
-.btn:hover:not(:disabled){box-shadow:0 0 16px #c8aa6e55}
+@media (hover:hover) and (pointer:fine){.btn:hover:not(:disabled){box-shadow:0 0 16px #c8aa6e55}}
 .btn:active:not(:disabled){transform:translateY(1px)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btn.primary{background:linear-gradient(180deg,#d8bb7c,#a3824a);color:#1a1405;border-color:#f0e6d2}
@@ -124,7 +124,7 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 .card{background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius);padding:12px;text-align:left;position:relative;
   display:flex;flex-direction:column;justify-content:flex-start;
   transition:border-color .15s,transform .15s,box-shadow .15s;animation:pop .35s both}
-.card:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:0 10px 24px #0008,0 0 0 1px var(--gold-dim)}
+@media (hover:hover) and (pointer:fine){.card:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:0 10px 24px #0008,0 0 0 1px var(--gold-dim)}}
 @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
 .card .portrait{width:100%;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#000;margin-bottom:10px}
 .card .portrait img{width:100%;height:100%;object-fit:cover}
@@ -155,7 +155,7 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 .arena .attacker img{width:100%;height:100%}
 .hpwrap{position:absolute;left:50%;top:18px;transform:translateX(-50%);width:min(420px,80%)}
 .hpbar{height:18px;border:1px solid #000;background:#1a0e0e;border-radius:3px;overflow:hidden;position:relative;box-shadow:0 0 0 1px var(--gold-dim)}
-.hpbar .fill{height:100%;background:linear-gradient(180deg,#e94a4a,#a51f1f);width:100%;transition:width .08s linear}
+.hpbar .fill{height:100%;background:linear-gradient(180deg,#e94a4a,#a51f1f);width:100%;transform-origin:left center;transition:transform .08s linear} /* scaleX, not width: smoother on phones */
 .hpbar .ticks{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 1px),#0007 calc(10% - 1px) 10%)}
 .hpmeta{display:flex;justify-content:space-between;font-size:12px;margin-top:4px;color:var(--muted)}
 .hpmeta b{color:var(--text)}
@@ -283,18 +283,18 @@ html[data-theme=arcade] .stage-head h2{font:400 22px var(--pix);color:var(--gold
 html[data-theme=arcade] .stage-head p{color:var(--cyan)}
 html[data-theme=arcade] .btn{border:2px solid var(--gold);border-radius:0;background:var(--bg);color:var(--gold);font:700 14px 'Chakra Petch',system-ui,sans-serif;text-transform:uppercase;letter-spacing:.04em;
   box-shadow:4px 4px 0 var(--pink);transition:transform .08s,box-shadow .08s}
-html[data-theme=arcade] .btn:hover:not(:disabled){box-shadow:6px 6px 0 var(--pink);transform:translate(-1px,-1px)}
+@media (hover:hover) and (pointer:fine){html[data-theme=arcade] .btn:hover:not(:disabled){box-shadow:6px 6px 0 var(--pink);transform:translate(-1px,-1px)}}
 html[data-theme=arcade] .btn:active:not(:disabled){box-shadow:1px 1px 0 var(--pink);transform:translate(3px,3px)}
 html[data-theme=arcade] .btn.primary{background:var(--gold);color:#120a00;border-color:var(--gold)}
 
 /* Cards: cyan frames; the hard shadow only on hover so a full grid stays calm */
 html[data-theme=arcade] .card{background:var(--bg);border:2px solid var(--cyan);border-radius:0;box-shadow:3px 3px 0 #3ef0ff55}
-html[data-theme=arcade] .card:hover{border-color:var(--gold);transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--pink)}
+@media (hover:hover) and (pointer:fine){html[data-theme=arcade] .card:hover{border-color:var(--gold);transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--pink)}}
 html[data-theme=arcade] .cards.champs{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px} /* 3 big cards per row, like the mockup */
 html[data-theme=arcade] .card .portrait{border-radius:0;border:2px solid #fff}
 html[data-theme=arcade] .card .nm{font:400 15px var(--pix);color:#fff;letter-spacing:.02em}
 html[data-theme=arcade] .card .portrait{position:relative}
-html[data-theme=arcade] .skin-badge{position:absolute;left:0;bottom:0;max-width:100%;background:var(--pink);color:#fff;font:700 11px 'Chakra Petch',system-ui,sans-serif;text-transform:uppercase;
+html[data-theme=arcade] .skin-badge{position:absolute;left:0;bottom:0;max-width:100%;background:#c8146e;color:#fff;font:700 11px 'Chakra Petch',system-ui,sans-serif;text-transform:uppercase;
   padding:3px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 html[data-theme=arcade] .card .sub{color:var(--cyan);font-size:13px}
 html[data-theme=arcade] .tag{border:2px solid var(--pink);border-radius:0;color:var(--pink);font:700 11px 'Chakra Petch',system-ui,sans-serif;text-transform:uppercase;letter-spacing:.03em;padding:1px 5px}
@@ -383,6 +383,26 @@ html[data-theme=arcade] footer{border-top:3px solid var(--gold);color:var(--mute
   html[data-theme=arcade] .pill,html[data-theme=arcade] .modes button{font-size:12px;padding:6px 9px}
   html[data-theme=arcade] .panel{box-shadow:5px 5px 0 var(--pink)}
 }
+
+/* Keyboard focus: a clear outline on anything you can press (only for keyboard use, not taps or clicks). */
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+html[data-theme=arcade] :focus-visible{outline:3px solid var(--cyan);outline-offset:3px}
+
+/* Reduced motion (phone or OS setting): fades stay, movement goes. Nothing slides, floats, shakes or pops. */
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeInPlace{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,0)}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0}}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  .card,.toast{animation:fadeIn .2s both}
+  .card,.btn{transition:none}
+  .card:hover,.btn:hover,.btn:active{transform:none!important}
+  .dmgnum{animation:fadeInPlace 1s forwards}
+  .arena .dummy.hit{animation:none}
+  .killflash{animation:fadeOut .9s forwards}
+  .hpbar .fill{transition:none}
+  .spinner{animation-duration:2.5s}
+}
 </style>
 </head>
 <body>
@@ -452,6 +472,8 @@ const P = window.Potenshall;
 const $ = s => document.querySelector(s);
 const { ITEM_SLOTS, CHAMP_CHOICES, ITEM_CHOICES, REROLLS } = P.DRAFT;
 const fmt = n => Math.round(n).toLocaleString();
+// Players who turned on "reduce motion" get fades instead of movement (no shake, no floating, no smooth scroll).
+const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let DATA = null;
 let S = null; // game state
@@ -965,7 +987,7 @@ async function runFight(){
     while (idx < hits.length && hits[idx].t <= now_t) {
       const h = hits[idx++];
       total += h.amt; bucket[h.type] += h.amt;
-      $('#hpfill').style.width = (h.hp / P.DUMMY.hp * 100) + '%';
+      $('#hpfill').style.transform = `scaleX(${Math.max(0, h.hp / P.DUMMY.hp)})`;
       $('#hptext').textContent = fmt(h.hp);
       if (h.killed) {
         kills++; $('#kc').textContent = kills;
@@ -987,7 +1009,7 @@ async function runFight(){
         arena.appendChild(n); setTimeout(() => n.remove(), 1000);
         bucket[type] = 0;
       }
-      dummy.classList.remove('hit'); void dummy.offsetWidth; dummy.classList.add('hit');
+      if (!reduceMotion()) { dummy.classList.remove('hit'); void dummy.offsetWidth; dummy.classList.add('hit'); } // no shake for reduced motion
     }
     $('#tot').textContent = fmt(total);
     $('#clock').textContent = now_t.toFixed(2) + 's';
@@ -1113,7 +1135,7 @@ function toast(msg){ const el = document.createElement('div'); el.className = 't
 
 // ---------- Boot ----------
 $('#howBtn').onclick = showHowTo;
-$('#reportLink').onclick = e => { e.preventDefault(); showReport(); scrollTo({ top: 0, behavior: 'smooth' }); };
+$('#reportLink').onclick = e => { e.preventDefault(); showReport(); scrollTo({ top: 0, behavior: reduceMotion() ? 'auto' : 'smooth' }); };
 document.querySelectorAll('#modes button').forEach(b => b.onclick = () => { if (animHandle) cancelAnimationFrame(animHandle); newGame(b.dataset.mode); });
 applyStatic();
 $('#langSel').onchange = e => setLanguage(e.target.value);

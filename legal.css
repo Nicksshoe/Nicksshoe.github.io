@@ -39,3 +39,5 @@ html[data-theme=arcade] th{color:var(--gold);background:#3ef0ff14}
 html[data-theme=arcade] th,html[data-theme=arcade] td{border-bottom:1px solid var(--line);padding:8px 10px}
 html[data-theme=arcade] a{color:var(--gold)}
 html[data-theme=arcade] footer{border-top:3px solid var(--gold)}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+html[data-theme=arcade] :focus-visible{outline-color:var(--cyan)}
