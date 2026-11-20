@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ability audit</title>
+<style>
+:root{--bg:#0a0f1a;--panel:#111a2b;--line:#22314d;--text:#e8e3d6;--muted:#8f9bb3;--gold:#c8a24a;--phys:#ff8a3d;--magic:#4aa8ff;--true:#f2f2f2;
+  --ok:#2fbf71;--warn:#e2a93f;--bad:#e2463f;--info:#6c8cff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,system-ui,sans-serif}
+header{padding:18px 20px 10px;border-bottom:1px solid var(--line)}
+h1{margin:0;font-size:20px;letter-spacing:.04em;color:var(--gold)}
+header p{margin:4px 0 0;color:var(--muted);font-size:13px;max-width:900px}
+main{padding:14px 20px 40px}
+.btn{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font:inherit;cursor:pointer}
+.btn.gold{border-color:var(--gold);color:var(--gold)}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.bar input{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit}
+.bar label{color:var(--muted);font-size:13px;display:flex;gap:6px;align-items:center}
+.summary{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--muted);cursor:pointer;background:none;font-family:inherit}
+.chip b{color:var(--text)}.chip.on{border-color:var(--gold);color:var(--gold)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{position:sticky;top:0;background:#0d1524;color:var(--muted);font-weight:600;white-space:nowrap}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.row{cursor:pointer}tr.row:hover td{background:#14203a}
+tr.detail td{background:#0d1524}
+tr.accepted td{opacity:.5}
+.pill{display:inline-block;border-radius:6px;padding:1px 7px;font-size:11px;font-weight:600;margin:1px 3px 1px 0;white-space:nowrap}
+.sev3{background:#e2463f22;color:var(--bad)}.sev2{background:#e2a93f22;color:var(--warn)}.sev1{background:#6c8cff22;color:var(--info)}
+.new{background:#c8a24a33;color:var(--gold)}.kw{background:#ffffff10;color:var(--muted)}
+.ph{color:var(--phys)}.mg{color:var(--magic)}.tr{color:var(--true)}
+.muted{color:var(--muted)}
+img.icon{width:22px;height:22px;border-radius:4px;vertical-align:middle;margin-right:6px}
+.tip{max-width:900px;color:var(--muted);font-size:12px;white-space:normal}
+.accept{display:flex;gap:6px;align-items:center;margin-top:8px}
+.accept input[type=text]{flex:1;max-width:520px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:inherit}
+@media (max-width:640px){main,header{padding-left:16px;padding-right:16px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Ability audit</h1>
+  <p>Compares every ability the game models with Riot's own tooltip: damage per cast (before resistances), damage type, cooldown and how often it's cast.
+    Each champion fights with a fixed reference build (<span id="refItems"></span>) so AP, AD and health ratios all show.
+    Mark a flag <b>OK</b> when the difference is intended, then save the baseline: on later patches only new or changed flags stand out.</p>
+</header>
+<main id="main"><p class="muted">Loading patch data…</p></main>
+
+<script src="engine.js"></script>
+<script src="abilities.js"></script>
+<script src="passives.js"></script>
+<script src="itemgroups.js"></script>
+<script src="cc.js"></script>
+<script src="growth.js"></script>
+<script>
+(() => {
+const P = window.Potenshall, A = P.Abilities;
+const REF_ITEMS = ["Rabadon's Deathcap", 'Bloodthirster', "Warmog's Armor"];
+const BASELINE_FILE = 'audit-baseline.json';
+const TOL_UNDER = 0.8, TOL_OVER = 1.3, DRIFT = 0.1;
+const FLAGS = {
+  under:  [3, 'Less than the tooltip', 'Deals under 80% of the tooltip per cast: wrong formula, a missing hit, or a missing ratio?'],
+  over:   [3, 'More than the tooltip', 'Deals over 130% of all the tooltip numbers combined per cast'],
+  type:   [3, 'Damage type differs', "The tooltip's damage type isn't the one we deal"],
+  cd:     [3, 'Cooldown differs', "Our cooldown isn't the game's (the 1.5s / 20s ultimate sanity floor, or a fallback)"],
+  never:  [3, 'Never cast', 'The tooltip deals damage but it was never cast'],
+  drift:  [3, 'Changed since baseline', 'Our damage vs the tooltip moved more than 10% since the saved baseline'],
+  nodata: [2, "Can't read tooltip", 'The tooltip shows damage, but its numbers are missing or not readable'],
+  rarely: [1, 'Cast less than it could', 'Cast at most half as often as its cooldown allows (holds by design are fine)'],
+};
+// Words in Riot's text that usually mean a mechanic we have to model by hand. Shown as hints, not flags.
+const KEYWORDS = [['again', /\bagain\b/i], ['each', /\beach\b/i], ['stacks', /\bstack/i], ['over time', /per second|over \{\{|over \d/i],
+  ['recast', /\brecast/i], ['poison', /poison/i], ['brittle', /brittle/i], ['mark', /\bmark/i], ['empowered', /empower/i],
+  ['on attacks', /attacks? deal (an )?additional|on-hit/i], ['passive part', /passive:/i], ['execute', /execute/i]];
+
+let DATA, DD, BASE = null, rows = null, filter = 'flagged', query = '', open = new Set(), onlyNew = false, hideOk = true;
+const LS_KEY = 'auditAccepted';
+let accepted = {};
+try { accepted = JSON.parse(localStorage.getItem(LS_KEY) || '{}') || {}; } catch {}
+const saveAccepted = () => { try { localStorage.setItem(LS_KEY, JSON.stringify(accepted)); } catch {} };
+const $ = s => document.querySelector(s);
+const fmt = n => n == null || !Number.isFinite(n) ? '–' : Math.round(n).toLocaleString('en-US');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+$('#refItems').textContent = REF_ITEMS.join(', ');
+
+// ---------- Tooltip reading ----------
+// "{{ totaldamage }} magic damage", "{{ x }}% max Health magic damage", "{{ y }} max Health physical damage"
+const DMG_RE = /\{\{\s*([A-Za-z0-9_]+)\s*\}\}(\s*%)?\s*(?:of\s+)?(?:the\s+)?(?:target'?s\s+)?(?:(max(?:imum)?|current|missing)\s+health\s+)?(physical|magic|true)\s+damage/gi;
+const plain = tip => tip.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+function readName(name, sp, ctx, rank) {
+  const lc = name.toLowerCase();
+  const ck = Object.keys(sp.calcs || {}).find(k => k.toLowerCase() === lc);
+  if (ck) { const v = A.evalCalc(ck, sp, { ...ctx, rank }); return Number.isFinite(v) ? v : null; }
+  const dk = Object.keys(sp.dv || {}).find(k => k.toLowerCase() === lc);
+  if (dk) { const a = sp.dv[dk]; return +(a[rank] ?? a[a.length - 1]) || 0; }
+  return null;
+}
+function tooltipDamage(tip, sp, ctx, rank) {
+  const out = [];
+  for (const m of plain(tip).matchAll(DMG_RE)) {
+    const [, name, pct, health, type] = m;
+    let v = readName(name, sp, ctx, rank);
+    if (v == null) { out.push({ name, type: type.toLowerCase(), value: null }); continue; }
+    if (health) {
+      if (/missing/i.test(health)) continue; // depends on the fight; not comparable per cast
+      v = (pct || v > 1 ? v / 100 : v) * ctx.target.maxHp;
+    }
+    out.push({ name, type: type.toLowerCase(), value: v });
+  }
+  return out;
+}
+
+// ---------- Run ----------
+async function runAll(progress) {
+  const items = REF_ITEMS.map(n => DATA.items.find(i => i.name === n)).filter(Boolean);
+  const out = [];
+  let i = 0;
+  for (const ch of DATA.champions) {
+    progress(++i, DATA.champions.length, ch.name);
+    let kit = null;
+    try { kit = await A.loadKit(ch.id); } catch {}
+    const spells = kit && A.describeKit(kit, ch.info.magic > ch.info.attack ? 'magic' : 'physical');
+    const r = P.simulate(ch, items, { kit, spells, audit: true });
+    const PS = (P.ChampPassives || {})[ch.id] || {};
+    const dis = new Set(PS.disable || []);
+    const ddS = (DD.data[ch.id] || {}).spells || [];
+    const ctx = r.auditCtx;
+    for (const s of (spells || [])) {
+      const idx = 'QWER'.indexOf(s.slot), dd = ddS[idx] || {};
+      const tipText = plain(dd.tooltip || '');
+      const tipDmg = tooltipDamage(dd.tooltip || '', s.sp, ctx, s.rank);
+      const known = tipDmg.filter(d => d.value != null && d.value > 0);
+      const expFirst = known.length ? known[0].value : null, expAll = known.reduce((a, d) => a + d.value, 0) || null;
+      const tipTypes = new Set(tipDmg.map(d => d.type));
+      const tipType = known.length ? known.slice().sort((a, b) => b.value - a.value)[0].type : tipDmg.length ? tipDmg[0].type : null;
+      // An ability's always-on part (Kassadin's Nether Blade on every attack) isn't damage per cast.
+      const hs = r.hits.filter(h => h.src.startsWith(s.slot + ' · ') && !/\(passive\)/.test(h.src));
+      const raw = hs.reduce((a, h) => a + (h.raw || 0), 0);
+      const byT = {}; for (const h of hs) byT[h.type] = (byT[h.type] || 0) + (h.raw || 0);
+      const ourType = Object.keys(byT).sort((a, b) => byT[b] - byT[a])[0] || null;
+      const casts = (r.castLog || []).filter(c => c.slot === s.slot).length;
+      const perCast = casts ? raw / casts : null;
+      const gameCd = +(s.sp.cds[s.rank] ?? 0);
+      const cdEff = s.cooldown * 100 / (100 + (r.stats.ah || 0));
+      const maxCasts = s.slot === 'R' ? 1 : Math.floor(10 / cdEff) + 1;
+      const handled = dis.has(s.slot) || PS.ownKit ? (dis.has(s.slot) ? 'passive table' : 'whole kit by hand') : null;
+      const flags = [];
+      const keywords = KEYWORDS.filter(([, re]) => re.test(tipText)).map(([k]) => k);
+      // Text that means several hits per cast: dealing more than one tooltip number is expected there.
+      const multiHit = keywords.some(k => ['again', 'each', 'over time', 'stacks', 'recast', 'on attacks', 'passive part', 'empowered'].includes(k));
+      if (!handled) {
+        if (tipDmg.length && !known.length) flags.push('nodata');
+        if (known.length && !casts) flags.push('never');
+        if (known.length && perCast != null) {
+          if (perCast < TOL_UNDER * expFirst) flags.push('under');
+          else if (perCast > TOL_OVER * expAll && !multiHit) flags.push('over');
+        }
+        // Mixed-type abilities (Fizz Q: physical attack + magic): only flag a type the tooltip never mentions.
+        if (tipType && ourType && !tipTypes.has(ourType) && raw > 0) flags.push('type');
+        if (gameCd > 0.25 && Math.abs(gameCd - s.cooldown) > 0.05) flags.push('cd');
+        if (casts && maxCasts >= 3 && casts <= maxCasts / 2) flags.push('rarely');
+      }
+      const ratio = perCast != null && expFirst ? perCast / expFirst : null;
+      const b = BASE && BASE.champs && BASE.champs[ch.id] && BASE.champs[ch.id][s.slot];
+      if (!handled && b && b.ratio && ratio && Math.abs(ratio / b.ratio - 1) > DRIFT) flags.push('drift');
+      out.push({ id: ch.id, name: ch.name, slot: s.slot, ability: dd.name || s.name, mech: s.mech ? s.mech.kind : s.damaging ? 'formula' : 'none',
+        handled, tipText, tipDmg, expFirst, expAll, tipType, ourType, perCast, ratio, casts, maxCasts, gameCd, ourCd: s.cooldown,
+        flags, keywords, base: b || null, riotChanged: b && b.expFirst && expFirst ? Math.abs(expFirst / b.expFirst - 1) > 0.02 : false });
+    }
+  }
+  return out;
+}
+
+const keyOf = (r, f) => `${r.id} ${r.slot} ${f}`;
+const isOk = (r, f) => !!accepted[keyOf(r, f)];
+const openFlags = r => r.flags.filter(f => !isOk(r, f));
+const isNew = (r, f) => !!BASE && !(BASE.accepted && BASE.accepted[keyOf(r, f)]) && !((r.base && r.base.flags) || []).includes(f);
+const sevOf = r => Math.max(0, ...openFlags(r).map(f => FLAGS[f][0]));
+
+function render() {
+  const counts = {}; for (const r of rows) for (const f of openFlags(r)) counts[f] = (counts[f] || 0) + 1;
+  const flagged = rows.filter(r => openFlags(r).length).length;
+  const list = rows.filter(r => (filter === 'all' || (filter === 'flagged' ? openFlags(r).length : openFlags(r).includes(filter)))
+      && (!onlyNew || openFlags(r).some(f => isNew(r, f)))
+      && (!hideOk || filter === 'all' || openFlags(r).length)
+      && (!query || r.name.toLowerCase().includes(query)))
+    .sort((a, b) => sevOf(b) - sevOf(a) || a.name.localeCompare(b.name) || 'QWER'.indexOf(a.slot) - 'QWER'.indexOf(b.slot));
+  const okCount = Object.keys(accepted).length;
+  $('#main').innerHTML = `
+    <div class="bar"><input id="q" placeholder="Search champion" value="${esc(query)}">
+      <button class="btn" id="rerun">Run again</button>
+      <button class="btn gold" id="save">Download baseline</button>
+      <label><input type="checkbox" id="onlyNew" ${onlyNew ? 'checked' : ''} ${BASE ? '' : 'disabled'}> Only new since baseline</label>
+      <span class="muted">${rows.length} abilities · patch ${esc(DATA.patch)} · ${BASE ? `baseline: patch ${esc(BASE.patch)}, saved ${esc(BASE.saved)}` : 'no baseline saved yet'} · ${okCount} marked OK</span></div>
+    <div class="summary">
+      ${[['flagged', 'Any open flag', flagged], ['all', 'All abilities', rows.length], ...Object.keys(FLAGS).map(f => [f, FLAGS[f][1], counts[f] || 0])]
+        .map(([k, l, n]) => `<button class="chip ${filter === k ? 'on' : ''}" data-f="${k}">${esc(l)} <b>${n}</b></button>`).join('')}
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Champion</th><th>Ability</th><th>Flags</th><th class="num">Tooltip / cast</th><th class="num">Ours / cast</th><th class="num">Ratio</th>
+        <th class="num">Casts</th><th class="num">Cooldown game · ours</th><th>Type tip · ours</th><th>Text hints</th></tr></thead>
+      <tbody>${list.map(r => { const k = r.id + r.slot; return `
+        <tr class="row ${r.flags.length && !openFlags(r).length ? 'accepted' : ''}" data-k="${k}">
+          <td><img class="icon" src="${P.DDRAGON}/cdn/${DATA.patch}/img/champion/${r.id}.png" alt="">${esc(r.name)}</td>
+          <td><b>${r.slot}</b> ${esc(r.ability)} <span class="muted">${esc(r.handled || r.mech)}</span></td>
+          <td>${r.flags.map(f => `<span class="pill ${isOk(r, f) ? 'kw' : 'sev' + FLAGS[f][0]}" title="${esc(FLAGS[f][2])}">${isOk(r, f) ? 'OK: ' : ''}${esc(FLAGS[f][1])}</span>${isNew(r, f) && !isOk(r, f) ? '<span class="pill new">new</span>' : ''}`).join('')}${r.riotChanged ? '<span class="pill new">Riot changed numbers</span>' : ''}</td>
+          <td class="num">${fmt(r.expFirst)}${r.expAll && r.expAll > r.expFirst * 1.01 ? ` <span class="muted">(all ${fmt(r.expAll)})</span>` : ''}</td>
+          <td class="num">${fmt(r.perCast)}</td>
+          <td class="num">${r.ratio ? r.ratio.toFixed(2) + '×' : '–'}</td>
+          <td class="num">${r.casts}${r.slot !== 'R' ? ` <span class="muted">/ ${r.maxCasts}</span>` : ''}</td>
+          <td class="num">${r.gameCd ? r.gameCd + 's' : '–'} · ${r.ourCd ? +r.ourCd.toFixed(2) + 's' : '–'}</td>
+          <td>${r.tipType ? `<span class="${r.tipType.slice(0, 2) === 'ph' ? 'ph' : r.tipType === 'magic' ? 'mg' : 'tr'}">${r.tipType}</span>` : '–'} · ${r.ourType || '–'}</td>
+          <td>${r.keywords.map(w => `<span class="pill kw">${esc(w)}</span>`).join('')}</td>
+        </tr>${open.has(k) ? `<tr class="detail"><td colspan="10"><div class="tip">${esc(r.tipText)}</div>
+          <div class="tip">Tooltip numbers: ${r.tipDmg.map(d => `${esc(d.name)} = ${d.value == null ? "can't read" : fmt(d.value)} ${esc(d.type)}`).join(' · ') || 'none'}</div>
+          ${r.flags.map(f => `<div class="accept"><label><input type="checkbox" data-ok="${esc(keyOf(r, f))}" ${isOk(r, f) ? 'checked' : ''}> OK: ${esc(FLAGS[f][1])}</label>
+            <input type="text" data-note="${esc(keyOf(r, f))}" placeholder="Why it's fine (saved with the baseline)" value="${esc(accepted[keyOf(r, f)] || '')}"></div>`).join('')}
+        </td></tr>` : ''}`; }).join('')}
+      </tbody></table></div>`;
+  $('#q').oninput = e => { query = e.target.value.toLowerCase(); render(); $('#q').focus(); $('#q').setSelectionRange(query.length, query.length); };
+  $('#rerun').onclick = () => start();
+  $('#save').onclick = downloadBaseline;
+  $('#onlyNew').onchange = e => { onlyNew = e.target.checked; render(); };
+  document.querySelectorAll('.chip').forEach(b => b.onclick = () => { filter = b.dataset.f; render(); });
+  document.querySelectorAll('tr.row').forEach(tr => tr.onclick = () => { const k = tr.dataset.k; open.has(k) ? open.delete(k) : open.add(k); render(); });
+  document.querySelectorAll('[data-ok]').forEach(cb => cb.onchange = () => {
+    const k = cb.dataset.ok;
+    if (cb.checked) accepted[k] = (document.querySelector(`[data-note="${CSS.escape(k)}"]`) || {}).value || 'OK'; else delete accepted[k];
+    saveAccepted(); render();
+  });
+  document.querySelectorAll('[data-note]').forEach(inp => inp.onchange = () => { const k = inp.dataset.note; if (accepted[k]) { accepted[k] = inp.value || 'OK'; saveAccepted(); } });
+}
+
+function baselineJSON() {
+  const champs = {};
+  for (const r of rows) (champs[r.id] = champs[r.id] || {})[r.slot] = { expFirst: r.expFirst && +r.expFirst.toFixed(1), perCast: r.perCast && +r.perCast.toFixed(1),
+    ratio: r.ratio && +r.ratio.toFixed(3), casts: r.casts, gameCd: r.gameCd, ourCd: +(+r.ourCd).toFixed(2), tipType: r.tipType, ourType: r.ourType, flags: r.flags };
+  return { patch: DATA.patch, saved: new Date().toISOString().slice(0, 10), refItems: REF_ITEMS, accepted, champs };
+}
+function downloadBaseline() {
+  const blob = new Blob([JSON.stringify(baselineJSON(), null, 1)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = BASELINE_FILE; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+async function start() {
+  rows = null;
+  $('#main').innerHTML = '<p class="muted" id="prog">Running every champion…</p>';
+  rows = await runAll((i, n, name) => { const p = $('#prog'); if (p) p.textContent = `Running every champion… ${i} / ${n} (${name})`; });
+  render();
+}
+
+Promise.all([P.loadPatchData(), fetch(BASELINE_FILE, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null)]).then(async ([d, base]) => {
+  DATA = d; BASE = base;
+  // Marks saved in the baseline count as OK; marks made in this browser since then are added on top.
+  if (BASE && BASE.accepted) accepted = { ...BASE.accepted, ...accepted };
+  DD = await fetch(`${P.DDRAGON}/cdn/${d.patch}/data/en_US/championFull.json`).then(r => r.json());
+  window.__AUDIT = { get rows() { return rows; }, baselineJSON: () => baselineJSON(), accept: (k, note) => { accepted[k] = note || 'OK'; saveAccepted(); } };
+  start();
+}).catch(e => { $('#main').innerHTML = `<p>Couldn't load patch data: ${esc(e.message)}</p>`; });
+})();
+</script>
+</body>
+</html>

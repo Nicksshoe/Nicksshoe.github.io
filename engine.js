@@ -382,6 +382,7 @@
     const cdOf = (slot, base) => base * 100 / (100 + st.ah + (slot === 'R' ? sum('ultHaste') : 0) + (hasAny('mandate') && immob.has(slot) ? 20 : 0));
     let mandateUntil = -1, horizonUntil = -1, horizonReady = 0;
     const castDebuff = (t, slot) => {
+      if (opts.audit) castLog.push({ t, slot });
       if (P && P.castDebuff && P.castDebuff[slot]) addDebuff(t, P.castDebuff[slot], slot);
       if (hasAny('mandate') && immob.has(slot)) mandateUntil = t + 4;
       // Passive stuns on every Nth ability cast (Annie's Pyromania), whichever ability lands it.
@@ -401,6 +402,7 @@
         ready[s.slot] = Math.max(t, ready[s.slot] - s.mech.cutPerCast);
     };
     let ccCasts = 0, poisonUntil = -1;
+    const castLog = []; // every ability cast (audit.html counts casts from it)
     // Ornn: Brittle on the dummy ({ from, until }). The next attack or knock-up pops it for a share of max health (magic).
     let brittle = null;
     const brittleOn = (t, delay) => { brittle = { from: t + delay, until: t + delay + (P.brittle.dur || 3) }; };
@@ -450,7 +452,7 @@
         amt *= 100 / (100 + mr);
         if (hasAny('bloodletter') && kind !== 'attack') bloodStacks = Math.min(4, bloodStacks + 1);
       }
-      record(t, amt, type, src);
+      record(t, amt, type, src, raw);
       const exec = sum('execute');
       if (exec && dummyHp > 0 && dummyHp < exec * DUMMY.hp) record(t, dummyHp, 'true', 'The Collector');
       // Passive executes: a share of max HP (P.execute), or a line that grows with stacks (Mel's Overwhelm, P.executeHp).
@@ -509,7 +511,7 @@
       if (P && P.stackDot) { pStack.n = Math.min(P.stackDot.max, pStack.n + 1); pStack.until = t + P.stackDot.dur; }
     };
 
-    function record(t, amt, type, src) {
+    function record(t, amt, type, src, raw) {
       if (markState && t <= markState.until && src !== markState.label) markState.sum += amt;
       total += amt; byType[type] += amt; bySource[src] = (bySource[src] || 0) + amt;
       dummyHp -= amt;
@@ -522,7 +524,7 @@
           ready[s] = P.killReset.pct ? t + (ready[s] - t) * (1 - P.killReset.pct) : Math.max(t, ready[s] - P.killReset.cd);
         if (P && P.killReset && P.killReset.extendAS && t <= tempASUntil) tempASUntil += P.killReset.extendAS;
       }
-      hits.push({ t, amt, type, src, hp: dummyHp, killed });
+      hits.push({ t, amt, type, src, hp: dummyHp, killed, raw }); // raw: before amps and resistances (for the ability audit)
     }
 
     // Spellblade: unique, take strongest owned.
@@ -1307,6 +1309,8 @@
         ah: st.ah, hp: st.maxHP, mana: st.maxMana, leth: st.leth,
         armorPen: 1 - st.arpenKeep, magicPen: 1 - st.mpenKeep, mpenFlat: st.mpenFlat },
       profile: pr, realKit: !!spells || !!(P && P.ownKit), passive: P ? { name: P.name, note: P.note || '' } : null,
+      castLog: opts.audit ? castLog : undefined,
+      auditCtx: opts.audit ? spellCtx() : undefined, // the stats abilities were evaluated with (audit.html)
     };
   }
 
