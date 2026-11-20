@@ -93,7 +93,7 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 
 /* Cards */
 .cards{display:grid;gap:12px}
-.cards.champs{grid-template-columns:repeat(auto-fill,minmax(135px,1fr))}
+.cards.champs{grid-template-columns:repeat(auto-fit,minmax(110px,1fr))} /* 5 or 6 choices fill one row, wrapping on small screens */
 .cards.items{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
 .card{background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius);padding:12px;text-align:left;position:relative;
   display:flex;flex-direction:column;justify-content:flex-start;
@@ -630,7 +630,7 @@ function render(){
   const st = $('#stage');
   if (!S.champ) {
     st.innerHTML = steps() + `
-      <div class="stage-head"><div><h2>${t('pickChamp')}</h2><p>${t('pickChampSub', { n: CHAMP_CHOICES, patch: DATA.patch })}</p></div>
+      <div class="stage-head"><div><h2>${t('pickChamp')}</h2><p>${t('pickChampSub', { n: S.draft.champChoices || CHAMP_CHOICES, patch: DATA.patch })}</p></div>
       <div class="spacer"></div>${resetBtn()}${rerollBtn()}</div>
       <div class="cards champs">${S.offers.map((c, i) => champCard(c, i)).join('')}</div>`;
     st.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => pickChamp(+b.dataset.pick));

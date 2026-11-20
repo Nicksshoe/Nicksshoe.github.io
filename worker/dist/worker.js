@@ -1316,8 +1316,10 @@
     return out;
   }
   // Draft rules by the day the draft started, so the game and the leaderboard server always agree on the offers.
-  // From 2026-11-21: an item that has already been offered in this draft is 4x less likely to be offered again.
+  // From 2026-11-21: an item that has already been offered in this draft is 4x less likely to be offered again, and the
+  // champion pick offers 6 champions (like the 6 item choices) instead of 5.
   const DRAFT_V2_FROM = '2026-11-21';
+  const CHAMP_CHOICES_V2 = 6;
   const SEEN_ITEM_WEIGHT = 0.25;
 
   function createDraft(data, seed, opts = {}) {
@@ -1337,13 +1339,14 @@
       for (const it of offers) seen.add(it.id);
       return offers;
     };
-    d.offers = sample(rng, data.champions, DRAFT.CHAMP_CHOICES);
+    d.champChoices = v2 ? CHAMP_CHOICES_V2 : DRAFT.CHAMP_CHOICES;
+    d.offers = sample(rng, data.champions, d.champChoices);
     d.done = () => d.items.length >= DRAFT.ITEM_SLOTS;
     d.reroll = () => {
       if (d.rerolls <= 0 || d.done()) throw new Error('No rerolls left');
       d.rerolls--; d.log.push('r');
       const shown = d.offers.map(o => o.id);
-      d.offers = d.champ ? itemOffers(shown) : sample(rng, data.champions, DRAFT.CHAMP_CHOICES, new Set(shown));
+      d.offers = d.champ ? itemOffers(shown) : sample(rng, data.champions, d.champChoices, new Set(shown));
     };
     d.pick = (i) => {
       const choice = d.offers[i];
