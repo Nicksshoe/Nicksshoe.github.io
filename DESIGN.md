@@ -127,9 +127,14 @@ Platinum `#4fe6d0`, Emerald `#3ddc84`, Diamond `#7aa2ff`, Master `#c77dff`, Gran
 - Don't imitate the League client (gold filigree frames, Beaufort-style serif, hex patterns): fan content must not look
   official.
 - Link preview image: `og.png` (1200x630, drawn in the browser by `tools/og-image.html` with the site fonts; Save writes it through the local server); bump `?v=` in the meta tags when it changes.
+- Brand mark: `favicon.svg` (a gold damage burst in a gold frame with a pink offset shadow), also inline in the header
+  logo and drawn at 180px as `icon-180.png` for phone home screens. Change all three together.
+- Every image has alt text: the champion, skin or item name. Structured data (`VideoGame` JSON-LD) sits in the page head.
 
 ## Don'ts (the generic-AI look we moved away from)
 
+- No gradients in the arcade theme beyond the arena floor and scanlines. The classic theme's gradients live in
+  `classic.css`, loaded only for classic players, so the default page ships flat colours.
 - No gold-on-navy gradients, glassy blur panels, soft drop shadows, rounded pill everything, or purple-to-blue gradients.
 - No Inter as the arcade font, no gradient text, no emoji as decoration (the existing ❓🏆🔒 icons are functional).
 - No cards inside cards, no numbered section labels, no "eyebrow" chips above headings.

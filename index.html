@@ -30,8 +30,17 @@
 <meta name="twitter:title" content="Potential Damage: how much damage can your random build deal?">
 <meta name="twitter:description" content="Draft a random champion and 6 random items, then fight a training dummy for 10 seconds. Free, no sign-up.">
 <meta name="twitter:image" content="https://potentialdamage.gg/og.png?v=4">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<script>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<!-- Structured data: tells search engines this is a free browser game. -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"Potential Damage","url":"https://potentialdamage.gg/",
+ "description":"Draft a random League of Legends champion and 6 random items, then see how much damage you deal to a training dummy in 10 seconds.",
+ "image":"https://potentialdamage.gg/og.png","genre":["Browser game","Theorycrafting"],"gamePlatform":"Web browser",
+ "applicationCategory":"Game","operatingSystem":"Any","isAccessibleForFree":true,"inLanguage":["en","de","ru","es","pt","nl","fr"],
+ "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><script>
 /* Arcade is the default look; ?theme=classic switches this browser back to the original (remembered), ?theme=arcade returns.
    Only the chosen theme's two fonts are downloaded. */
 (() => {
@@ -44,6 +53,7 @@
   fonts.href = 'https://fonts.googleapis.com/css2?' + (classic ? 'family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;700'
     : 'family=Bungee&family=Chakra+Petch:wght@400;500;600;700') + '&display=swap';
   document.head.appendChild(fonts);
+  if (classic) { const c = document.createElement('link'); c.rel = 'stylesheet'; c.href = 'classic.css'; document.head.appendChild(c); }
 })();
 </script>
 <style>
@@ -55,7 +65,7 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:radial-gradient(1200px 600px at 50% -200px,#1a2747 0%,var(--bg) 60%) fixed,var(--bg);color:var(--text);
+body{background:var(--bg);color:var(--text);
   font:15px/1.45 Inter,system-ui,sans-serif;min-height:100vh}
 button{font:inherit;color:inherit;cursor:pointer}
 img{display:block}
@@ -64,7 +74,7 @@ img{display:block}
 /* Header */
 header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16px;border-bottom:1px solid var(--line)}
 .logo{font-family:Cinzel,serif;font-weight:800;font-size:28px;letter-spacing:.06em;line-height:1;
-  background:linear-gradient(180deg,var(--gold2),var(--gold) 55%,var(--gold-dim));-webkit-background-clip:text;background-clip:text;color:transparent}
+  color:var(--gold2)}
 .logo small{display:block;font:500 11px Inter,sans-serif;letter-spacing:.18em;color:var(--muted);-webkit-text-fill-color:var(--muted);margin-top:6px;text-transform:uppercase}
 .spacer{flex:1}
 .pill{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
@@ -77,7 +87,7 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 /* Layout */
 .game{display:grid;grid-template-columns:300px 1fr;gap:20px;margin-top:20px}
 @media (max-width:860px){.game{grid-template-columns:1fr}#stage{order:-1}.logo{font-size:22px}.rules{display:none}}
-.panel{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
 .panel h3,.panel .panel-h{margin:0 0 12px;font:600 12px Inter;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
 
 /* Build sidebar */
@@ -114,12 +124,12 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 .stage-head{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
 .stage-head h2{margin:0;font:800 24px Cinzel,serif;color:var(--gold2);letter-spacing:.03em}
 .stage-head p{margin:2px 0 0;color:var(--muted);font-size:14px}
-.btn{border:1px solid var(--gold);background:linear-gradient(180deg,#1e2a44,#121a2e);color:var(--gold2);padding:10px 18px;border-radius:8px;font-weight:600;
+.btn{border:1px solid var(--gold);background:#18223a;color:var(--gold2);padding:10px 18px;border-radius:8px;font-weight:600;
   transition:transform .08s,box-shadow .15s}
 @media (hover:hover) and (pointer:fine){.btn:hover:not(:disabled){box-shadow:0 0 16px #c8aa6e55}}
 .btn:active:not(:disabled){transform:translateY(1px)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
-.btn.primary{background:linear-gradient(180deg,#d8bb7c,#a3824a);color:#1a1405;border-color:#f0e6d2}
+.btn.primary{background:#c4a46a;color:#1a1405;border-color:#f0e6d2}
 .btn.sm{padding:7px 12px;font-size:13px}
 
 /* Cards */
@@ -152,7 +162,7 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 
 /* Fight */
 .arena{position:relative;height:340px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);
-  background:radial-gradient(400px 200px at 50% 95%,#2c3a22 0%,transparent 70%),linear-gradient(180deg,#0b1222,#121c30 70%,#1a2414)}
+  background:#0f182a}
 .arena .dummy{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);width:150px}
 .arena .dummy.hit{animation:shake .12s}
 @keyframes shake{25%{transform:translateX(calc(-50% - 4px)) rotate(-2deg)}75%{transform:translateX(calc(-50% + 4px)) rotate(2deg)}}
@@ -160,7 +170,7 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 .arena .attacker img{width:100%;height:100%}
 .hpwrap{position:absolute;left:50%;top:18px;transform:translateX(-50%);width:min(420px,80%)}
 .hpbar{height:18px;border:1px solid #000;background:#1a0e0e;border-radius:3px;overflow:hidden;position:relative;box-shadow:0 0 0 1px var(--gold-dim)}
-.hpbar .fill{height:100%;background:linear-gradient(180deg,#e94a4a,#a51f1f);width:100%;transform-origin:left center;transition:transform .08s linear} /* scaleX, not width: smoother on phones */
+.hpbar .fill{height:100%;background:#d03535;width:100%;transform-origin:left center;transition:transform .08s linear} /* scaleX, not width: smoother on phones */
 .hpbar .ticks{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 1px),#0007 calc(10% - 1px) 10%)}
 .hpmeta{display:flex;justify-content:space-between;font-size:12px;margin-top:4px;color:var(--muted)}
 .hpmeta b{color:var(--text)}
@@ -187,7 +197,7 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 .result-hero{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center;margin-bottom:18px}
 @media (max-width:560px){.result-hero{grid-template-columns:1fr}}
 .badge{width:130px;height:130px;border-radius:50%;display:grid;place-items:center;text-align:center;border:3px solid var(--c);
-  background:radial-gradient(circle,var(--c) -60%,transparent 70%);font:800 15px Cinzel,serif;color:var(--gold2);box-shadow:0 0 30px -6px var(--c)}
+  background:transparent;font:800 15px Cinzel,serif;color:var(--gold2);box-shadow:0 0 30px -6px var(--c)}
 .bignum{font:800 54px Inter;line-height:1;font-variant-numeric:tabular-nums;color:var(--gold2)}
 .bignum small{font-size:16px;font-weight:600;color:var(--muted);margin-left:6px}
 .facts{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:14px;color:var(--muted)}
@@ -212,7 +222,7 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 .statgrid span{color:var(--muted)}
 .meter{display:flex;gap:4px;margin:8px 0}
 .meter i{flex:1;height:10px;border-radius:2px;background:var(--line)}
-.meter i.on{background:linear-gradient(90deg,#b05ce6,#ff5ab4)}
+.meter i.on{background:#d35ad0}
 .quote{font-style:italic;color:var(--gold2);font-size:14px}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--gold);color:#1a1405;padding:10px 18px;border-radius:8px;font-weight:600;
@@ -244,7 +254,8 @@ footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size
 .lb-champ{font-size:12px;margin-left:6px}
 .lb-score{font-variant-numeric:tabular-nums}
 .lb-you{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border:1px solid currentColor;padding:0 5px;margin-left:4px;color:var(--gold)} /* your row says so in words, not only colour */
-h1.logo{margin:0}
+h1.logo{margin:0;display:flex;align-items:center;gap:10px}
+.logo-mark{width:1.15em;height:1.15em;flex:none}
 .lb-lock{text-align:center;padding:28px 12px;border:1px dashed var(--line);border-radius:10px}
 .lb-select{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit}
 
@@ -447,7 +458,7 @@ html[data-theme=arcade] :focus-visible{outline:3px solid var(--cyan);outline-off
 <body>
 <div class="wrap">
   <header>
-    <h1 class="logo">POTENTIAL DAMAGE</h1>
+    <h1 class="logo"><svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect x="6" y="6" width="56" height="56" fill="#ff3ea5"/><rect x="2" y="2" width="56" height="56" fill="#0c0614" stroke="#ffd23f" stroke-width="4"/><polygon points="30,9 33.4,21.7 44.8,15.2 38.3,26.6 51,30 38.3,33.4 44.8,44.8 33.4,38.3 30,51 26.6,38.3 15.2,44.8 21.7,33.4 9,30 21.7,26.6 15.2,15.2 26.6,21.7" fill="#ffd23f"/><rect x="25" y="25" width="10" height="10" fill="#3ef0ff"/></svg>POTENTIAL DAMAGE</h1>
     <div class="spacer"></div>
     <div class="modes" id="modes">
       <button data-mode="daily" class="on" data-i18n="daily">Daily</button>
@@ -815,16 +826,17 @@ async function showBoard(mode, order, freePeriod){
     const dailyOpen = !!store.get('daily:'+today());
     const masked = r => !dailyOpen && r.mode === 'daily' && r.date === today();
     const champName = id => { const c = DATA.champions.find(x => x.id === id); return c ? cName(c) : id; };
+    const itemName = id => { const it = DATA.items.find(x => String(x.id) === String(id)); return it ? iName(it) : String(id); };
     // All-time rows: mode and patch go under the score, so a long name can't push them out of view.
     const tag = r => mode !== 'all' ? '' : `<div class="muted" style="font-size:11px;white-space:nowrap;margin-top:2px">${r.mode === 'daily' ? t('daily') : t('freeTag')} · ${t('patch')} ${esc(r.patch || '?')}</div>`;
     $('#boardBody').innerHTML = rows.length ? `<div class="lb-list">${rows.map((r, i) => `
       <div class="lb-row${r.mine ? ' mine' : ''}${i < 3 ? ' top' : ''}">
         <b class="lb-rank">${i + 1}</b>
         ${masked(r) ? `<div class="lb-face lb-masked" title="${esc(t('lockTitle'))}">🔒</div>`
-          : `<img class="lb-face" src="${img.champ(r.champ)}" alt="">`}
+          : `<img class="lb-face" src="${img.champ(r.champ)}" alt="${esc(champName(r.champ))}">`}
         <div style="min-width:0"><div class="lb-name">${esc(r.name)}${r.mine ? ` <span class="lb-you">${t('you')}</span>` : ''}</div>
           <div class="lb-items">${masked(r) ? `<span class="muted" style="font-size:12px">${t('lockTitle')}</span>`
-            : `${String(r.items).split(',').map(id => `<img src="${img.item(id)}" alt="">`).join('')}
+            : `${String(r.items).split(',').map(id => `<img src="${img.item(id)}" alt="${esc(itemName(id))}">`).join('')}
           <span class="muted lb-champ">${esc(champName(r.champ))}</span>`}</div></div>
         <div style="text-align:end"><b class="lb-score">${fmt(r.score)}</b>${tag(r)}</div></div>`).join('')}</div>`
       : `<p class="muted">${t('noScores')}</p>`;
@@ -905,7 +917,7 @@ function renderSidebar(snapshot){
   const items = snapshot ? snapshot.items.map(id => DATA.items.find(i => i.id === id)).filter(Boolean) : S.items;
   const rerolls = snapshot ? snapshot.rerolls : S.rerolls;
   $('#champSlot').innerHTML = champ
-    ? `<img src="${img.champ(champ.id)}" alt=""><div><div class="nm">${cName(champ)}</div><div class="tt">${cTitle(champ)}</div></div>`
+    ? `<img src="${img.champ(champ.id)}" alt="${esc(cName(champ))}"><div><div class="nm">${cName(champ)}</div><div class="tt">${cTitle(champ)}</div></div>`
     : `<div class="ph">?</div><div class="muted">${t('chooseChamp')}</div>`;
   $('#itemSlots').innerHTML = Array.from({length: ITEM_SLOTS}, (_, i) => {
     const it = items[i];
@@ -958,7 +970,7 @@ const rerollBtn = () => `<button class="btn sm" id="rerollBtn" ${S.rerolls ? '' 
 function champCard(c, i){
   const bar = (label, v, color) => `<div class="bar"><span>${label}</span><i style="--w:${v*10}%;--c:${color}"></i></div>`;
   return `<button class="card" data-pick="${i}" style="animation-delay:${i*50}ms">
-    <div class="portrait"><img src="${img.tile(c.id)}" alt="" onerror="this.onerror=null;this.src='${P.DDRAGON}/cdn/${DATA.patch}/img/champion/${c.id}.png'">${arcadeSkin(c.id) ? `<span class="skin-badge">${esc(arcadeSkin(c.id).name)}</span>` : ''}</div>
+    <div class="portrait"><img src="${img.tile(c.id)}" alt="${esc(arcadeSkin(c.id) ? arcadeSkin(c.id).name : cName(c))}" onerror="this.onerror=null;this.src='${P.DDRAGON}/cdn/${DATA.patch}/img/champion/${c.id}.png'">${arcadeSkin(c.id) ? `<span class="skin-badge">${esc(arcadeSkin(c.id).name)}</span>` : ''}</div>
     <div class="nm">${cName(c)}</div><div class="sub">${cTitle(c)}</div>
     <div class="tags">${c.tags.map(tg => `<span class="tag">${t('tag_' + tg)}</span>`).join('')}<span class="tag">${t(c.ranged ? 'ranged' : 'melee')}</span></div>
     <div class="bars">${bar(t('attack'), c.info.attack, 'var(--phys)')}${bar(t('magic'), c.info.magic, 'var(--magic)')}${bar(t('defense'), c.info.defense, 'var(--good)')}</div>
@@ -971,7 +983,7 @@ function itemCard(it, i){
   const lines = iLines(it).map(l => l.replace(/([\d.]+%?)/, '<b>$1</b>'));
   const pas = iPassives(it);
   return `<button class="card" data-pick="${i}" style="animation-delay:${i*50}ms">
-    <div class="item-top"><img src="${img.item(it.id)}" alt=""><div><div class="nm">${iName(it)}</div><div class="gold">${fmt(it.gold)}g${it.boots ? ` · <span style="color:var(--gold2)">${t('boots')}</span>` : ''}</div></div></div>
+    <div class="item-top"><img src="${img.item(it.id)}" alt="${esc(iName(it))}"><div><div class="nm">${iName(it)}</div><div class="gold">${fmt(it.gold)}g${it.boots ? ` · <span style="color:var(--gold2)">${t('boots')}</span>` : ''}</div></div></div>
     <ul class="statlist">${lines.map(l => `<li>${l}</li>`).join('')}</ul>
     ${pas.length || passive ? `<div class="passive">${pas.slice(0,2).join(' · ')}${passive && passive.tip && LANG === 'en' ? `<br><em>${passive.tip}</em>` : ''}</div>` : ''}
   </button>`;
@@ -1007,7 +1019,7 @@ async function runFight(){
       <div class="clock" id="clock">0.00s</div>
       <div class="hpwrap"><div class="hpbar"><div class="fill" id="hpfill"></div><div class="ticks"></div></div>
         <div class="hpmeta"><span><b id="hptext">10,000</b> / 10,000</span><span>${t('total')} <b id="tot">0</b></span></div></div>
-      <div class="attacker"><img src="${img.champ(S.champ.id)}" alt=""></div>
+      <div class="attacker"><img src="${img.champ(S.champ.id)}" alt="${esc(cName(S.champ))}"></div>
       <div class="dummy" id="dummy">${DUMMY_SVG}</div>
     </div>
     <div class="fight-controls"><button class="btn sm" id="skip">${t('skip')}</button>

@@ -1,0 +1,11 @@
+/* The classic (gold and navy) theme's gradients. Loaded only when a player picks ?theme=classic (see the theme script in
+   index.html), so the default arcade page ships flat colours only. index.html holds flat fallbacks for each rule. */
+html:not([data-theme=arcade]) body{background:radial-gradient(1200px 600px at 50% -200px,#1a2747 0%,var(--bg) 60%) fixed,var(--bg)}
+html:not([data-theme=arcade]) .logo{background:linear-gradient(180deg,var(--gold2),var(--gold) 55%,var(--gold-dim));-webkit-background-clip:text;background-clip:text;color:transparent}
+html:not([data-theme=arcade]) .panel{background:linear-gradient(180deg,var(--panel),var(--bg2))}
+html:not([data-theme=arcade]) .btn{background:linear-gradient(180deg,#1e2a44,#121a2e)}
+html:not([data-theme=arcade]) .btn.primary{background:linear-gradient(180deg,#d8bb7c,#a3824a)}
+html:not([data-theme=arcade]) .arena{background:radial-gradient(400px 200px at 50% 95%,#2c3a22 0%,transparent 70%),linear-gradient(180deg,#0b1222,#121c30 70%,#1a2414)}
+html:not([data-theme=arcade]) .hpbar .fill{background:linear-gradient(180deg,#e94a4a,#a51f1f)}
+html:not([data-theme=arcade]) .badge{background:radial-gradient(circle,var(--c) -60%,transparent 70%)}
+html:not([data-theme=arcade]) .meter i.on{background:linear-gradient(90deg,#b05ce6,#ff5ab4)}
