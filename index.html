@@ -427,7 +427,7 @@ html[data-theme=arcade] .rules li,html[data-theme=arcade] .howto p{line-height:1
 
 /* Phones: every control at least 40px tall so it's easy to tap (both themes). */
 @media (max-width:560px){
-  .pill,.modes button,.btn.sm{min-height:40px;display:inline-flex;align-items:center;justify-content:center}
+  .pill,.modes button,.btn.sm{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:.35em} /* flex drops the space between label and number: gap puts it back */
   .settings select{min-height:36px}
   footer a{display:inline-block;padding:13px 2px}
 }
