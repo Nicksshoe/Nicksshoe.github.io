@@ -409,6 +409,7 @@ function renderSubmitPanel(snapshot){
     try {
       const r = await LB.submit({ mode: S.mode, patch: DATA.patch, date: today(), ticket: S.ticket, log: S.draft.log, name, client: clientId, captcha });
       Object.assign(snapshot, { rank: r.rank, lowRank: r.lowRank, of: r.of, verified: r.score, name });
+      S.sub = { rank: r.rank, lowRank: r.lowRank, of: r.of, verified: r.score, name }; saveRun(); // a reload keeps the rank, not the form
       if (S.mode === 'daily') store.set('daily:'+today(), snapshot);
       panel.innerHTML = rankHtml(snapshot); bindViewBoard();
     } catch (e) {
@@ -494,7 +495,9 @@ async function showBoard(mode, order, freePeriod){
     <button class="btn sm" id="lbBack">${t('back')}</button></div>${tabs}<div id="boardBody"><div class="loading" style="min-height:160px"><div class="spinner"></div></div></div>`;
   st.querySelectorAll('[data-b]').forEach(b => b.onclick = () => showBoard(b.dataset.b, order));
   st.querySelectorAll('[data-o]').forEach(b => b.onclick = () => showBoard(mode, b.dataset.o, freePeriod));
-  $('#lbBack').onclick = () => newGame(S && S.mode === 'free' ? 'free' : 'daily');
+  store.set('view', { board: mode, order, period: freePeriod || null });
+  // Back returns to the run you were on (rebuilt from the saved picks); only with no run saved does it start a new one.
+  $('#lbBack').onclick = () => { store.set('view', null); if (!resumeRun()) newGame(S && S.mode === 'free' ? 'free' : 'daily'); };
   if (mode === 'free') {
     LB.call('/periods').then(({ periods }) => {
       const sel = $('#lbPatch'); if (!sel) return;
@@ -557,21 +560,45 @@ async function newGame(mode){
     seed = ticket ? `free|${ticket.seed}` : `local|${Date.now()}|${Math.random()}`;
   }
   S = { mode, ticket, draft: P.createDraft(DATA, seed), result: null };
-  syncDraft();
+  syncDraft(); saveRun();
   prefetchKits(S.offers);
   render();
 }
 
+// ---------- Resume after a reload ----------
+// The current run is saved after every action as its seed plus the picks made (the same thing the leaderboard replays),
+// so a reload rebuilds the exact draft. Only for this patch, and a Daily only on its own day. The open leaderboard view
+// is remembered too.
+function saveRun(){
+  if (!S || !S.draft) return;
+  store.set('run', { patch: DATA.patch, date: today(), mode: S.mode, seed: S.draft.seed, ticket: S.ticket || null, log: S.draft.log.slice(), sub: S.sub || null });
+}
+function resumeRun(){
+  const r = store.get('run');
+  if (!r || r.patch !== DATA.patch || !Array.isArray(r.log) || !r.seed) return false;
+  if (r.mode === 'daily' && (r.date !== today() || store.get('daily:'+today()))) return false; // a finished Daily shows its own screen
+  let draft;
+  try { draft = P.createDraft(DATA, r.seed); for (const a of r.log) { if (a === 'r') draft.reroll(); else draft.pick(a); } } catch { return false; }
+  if (animHandle) cancelAnimationFrame(animHandle);
+  document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === r.mode));
+  S = { mode: r.mode, ticket: r.ticket, draft, result: null, sub: r.sub, resumed: !!(draft.champ && draft.done()) };
+  syncDraft();
+  if (!S.champ) prefetchKits(S.offers);
+  store.set('view', null);
+  render();
+  return true;
+}
+
 function reroll(){
   if (S.rerolls <= 0) return;
-  S.draft.reroll(); syncDraft();
+  S.draft.reroll(); syncDraft(); saveRun();
   if (!S.champ) prefetchKits(S.offers);
   render();
 }
 
 function prefetchKits(list){ list.forEach(c => getKit(c.id)); }
-function pickChamp(i){ S.draft.pick(i); syncDraft(); render(); }
-function pickItem(i){ S.draft.pick(i); syncDraft(); render(); }
+function pickChamp(i){ S.draft.pick(i); syncDraft(); saveRun(); render(); }
+function pickItem(i){ S.draft.pick(i); syncDraft(); saveRun(); render(); }
 
 // ---------- Rendering ----------
 function renderSidebar(snapshot){
@@ -671,6 +698,7 @@ async function runFight(){
   $("#stage").innerHTML = `<div class="loading"><div><div class="spinner"></div>${t('loadingKit', { champ: cName(S.champ) })}</div></div>`;
   const kitInfo = await getKit(S.champ.id);
   const res = P.simulate(S.champ, S.items, { ...kitInfo, stacks: STACKS && STACKS.champions });
+  if (S.resumed) { S.resumed = false; S.result = res; finish(); return; } // reloaded after the fight: straight to the results
   S.result = res;
   const st = $('#stage');
   st.innerHTML = steps().replace(/class=""/g, 'class="done"') + `
@@ -740,7 +768,7 @@ function finish(){
   const best = store.get('best') || 0;
   const isBest = res.total > best;
   if (isBest) store.set('best', Math.round(res.total));
-  const snapshot = { champ: S.champ.id, items: S.items.map(i => i.id), rerolls: S.rerolls, total: Math.round(res.total), log: S.draft.log };
+  const snapshot = { champ: S.champ.id, items: S.items.map(i => i.id), rerolls: S.rerolls, total: Math.round(res.total), log: S.draft.log, ...(S.sub || {}) };
   if (S.mode === 'daily') store.set('daily:'+today(), snapshot);
   renderSidebar();
   showResults(res, isBest);
@@ -856,7 +884,11 @@ Promise.all([P.loadPatchData(), fetch("stacks.json").then(r => r.ok ? r.json() :
   window.__POTENSHALL_DATA = d;
   loadSponsor();
   await loadLocalizedNames();
-  newGame('daily');
+  // After a reload: back to the saved run (and the leaderboard if it was open), else today's Daily.
+  // (With a board open, only the board is reopened; its Back button rebuilds the saved run.)
+  const view = store.get('view');
+  if (view && view.board && LB.enabled) showBoard(view.board, view.order, view.period || undefined);
+  else if (!resumeRun()) newGame('daily');
 }).catch(err => {
   console.error(err);
   $('#stage').innerHTML = `<div class="loading"><div><h2 style="font-family:Cinzel">${t('ddError')}</h2><p class="muted">${t('ddErrorSub')} (${esc(err.message)})</p></div></div>`;
