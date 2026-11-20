@@ -428,6 +428,34 @@
       R: { kind: 'cast', type: 'magic', calc: 'Damage', execPct: 'ExecutionThreshold', execDur: 'Duration', holdBelow: 0.45, latest: 5, order: 0.3 },
     },
     Kennen: { R: { kind: 'hits', type: 'magic', calc: 'PerTickDamageCalculated', n: 6, over: 3 } },
+    // Taliyah Q: 5 rocks on one target (each after the first deals 60% less: the game's 2.6x tooltip), which leaves Worked
+    // Ground under the dummy; standing on it, the next Q is a single boulder (1.8x) with half the cooldown and uses it up,
+    // so normal volleys and boulders alternate. E scatters stones; W shoves the dummy through them, so every stone
+    // detonates (the game's full-field tooltip, 2.5x) and stuns. W deals no damage itself.
+    Taliyah: {
+      Q: { kind: 'cast', type: 'magic', calc: 'MaxDamageTooltip', altCalc: 'BigRockDamage', altCdCut: 'WorkedGroundCDR', altMinCd: 'MinimumWorkedGroundCD' },
+      E: { kind: 'cast', type: 'magic', calc: 'ScatterDamage', mineCalc: 'MaxDetonationDamageTooltip', mines: 'MineLifetime', order: 0.5 },
+      W: { kind: 'cast', noDamage: true, detonates: 'E', detonateAfter: 'KnockupDelay', order: 0.6 },
+    },
+    // Kassadin: R's cooldown is 2s at rank 3 (the generic 20s ultimate floor doesn't apply); each recast within 15s adds
+    // a stack (max 4) of bonus damage. W: every attack deals its passive magic damage, and the active empowers the next
+    // attack. E: any ability cast takes 0.75s off its cooldown.
+    Kassadin: {
+      Q: { kind: 'cast', type: 'magic', calc: 'TotalDamage' },
+      W: { kind: 'empowerAuto', type: 'magic', calc: 'ActiveDamage', resetsAttack: true, permOnHit: 'OnHitDamage' },
+      E: { kind: 'cast', type: 'magic', calc: 'TotalDamage', cutPerCast: 'ReductionPerSpellCast' },
+      R: { kind: 'cast', type: 'magic', calc: 'BaseDamage', stackMax: 'MaxStacks', stackFlat: 'BonusDamage', stackDur: 'RStackDuration', realCd: true },
+    },
+    // Kayn at 18 as Rhaast (Darkin Slayer: max-health damage is far more against a 10,000 HP dummy than Shadow Assassin's
+    // burst). Q hits twice (dash, then spin), each 65% AD + a share of max health. R deals a share of max health; he
+    // bursts out after the 0.5s minimum, and can't attack while inside.
+    Kayn: {
+      Q: { kind: 'multi', type: 'physical', parts: [{ calc: 'DarkinFlatDamage', type: 'physical', mult: 2 }, { calc: 'DarkinPercentDamage', type: 'physical', pctOfMax: true, mult: 2 }] },
+      R: { kind: 'cast', type: 'physical', calc: 'SlayerDamage', pctOfMax: true, channelBlock: 0.5 },
+    },
+    // Cassiopeia: E's real cooldown is 0.75s, and against a poisoned target (Q's poison, W's cloud: passives.js) it adds
+    // its bonus damage. Q and W go first so the fangs land on a poisoned dummy.
+    Cassiopeia: { E: { kind: 'cast', type: 'magic', calc: 'BasicDamage', poisonCalc: 'BonusPoisonedDamage', realCd: true, order: 1.5 } },
     // Execute ultimates: held until the hit leaves the target under the threshold, then the execute kills it.
     // If the dummy never gets that low, it's fired near the end of the fight for its damage.
     //   execute: threshold (share of max HP or a data value) / thresholdCalc (absolute HP from a formula); calc: damage
@@ -581,7 +609,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut', 'sleepDelay', 'sleepDur', 'falloff', 'apPerStack', 'venomSeconds', 'cdRefund', 'lowBelow', 'stackMax', 'stackCdCut', 'stackDur', 'rCd', 'execPct', 'execDur']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut', 'sleepDelay', 'sleepDur', 'falloff', 'apPerStack', 'venomSeconds', 'cdRefund', 'lowBelow', 'stackMax', 'stackCdCut', 'stackDur', 'rCd', 'execPct', 'execDur', 'altCdCut', 'altMinCd', 'mines', 'detonateAfter', 'cutPerCast']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));
@@ -602,7 +630,8 @@
       return {
         slot: sp.slot, name: sp.name, rank, calc, sp, mech: m,
         damaging: !m && ((Number.isFinite(probe) && probe > 1) || sp.variants.length > 0), type: (m && m.type) || damageTypeFor(sp, calc, rank, kitHint),
-        cooldown: cooldownFor(sp, rank), castTime: Math.min(0.75, sp.castTime || 0.25),
+        // realCd: a short cooldown that really is that short (Cassiopeia E, Kassadin R), so the sanity floor doesn't apply.
+        cooldown: m && m.realCd && +sp.cds[rank] > 0.25 ? +sp.cds[rank] : cooldownFor(sp, rank), castTime: Math.min(0.75, sp.castTime || 0.25),
         // Multi-charge abilities: charges, the recharge time per charge, and the short lockout between casts.
         ...chargesFor(sp, rank),
         // Energy/mana cost at this rank (the game lists costs from rank 1, unlike cooldowns).

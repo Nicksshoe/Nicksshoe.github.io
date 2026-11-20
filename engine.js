@@ -386,8 +386,15 @@
       if (hasAny('mandate') && immob.has(slot)) mandateUntil = t + 4;
       // Passive stuns on every Nth ability cast (Annie's Pyromania), whichever ability lands it.
       if (P && P.ccEveryNAbility && ++ccCasts % P.ccEveryNAbility === 0 && hasAny('mandate')) mandateUntil = t + 4;
+      // Poisons (Cassiopeia Q and W): the dummy stays poisoned this many seconds after the cast.
+      if (P && P.poison && P.poison[slot]) poisonUntil = Math.max(poisonUntil, t + P.poison[slot]);
+      // Kassadin's Force Pulse: every ability cast takes time off its cooldown.
+      for (const s of castable || []) if (s.mech && s.mech.cutPerCast && s.slot !== slot && ready[s.slot] > t && ready[s.slot] !== Infinity)
+        ready[s.slot] = Math.max(t, ready[s.slot] - s.mech.cutPerCast);
     };
-    let ccCasts = 0;
+    let ccCasts = 0, poisonUntil = -1;
+    let mines = null; // Taliyah's E stones on the ground: { until, raw } until W shoves the dummy through them
+    const altNext = {}; // Taliyah Q: the next cast is the Worked Ground boulder
 
     const comboCD = pr.cd * 100 / (100 + st.ah);
     const comboDamage = () => {
@@ -790,6 +797,8 @@
       let cd = sp.cooldown;
       if (m.stackMax) cd = Math.max(0.5, cd - (m.stackCdCut || 0) * stackOf(sp.slot, t));
       if (m.cdRefund && !(m.lowNoRefund && low)) cd *= 1 - m.cdRefund;
+      // Taliyah Q: the boulder (cast on Worked Ground) has a shorter cooldown; volleys and boulders alternate.
+      if (m.altCalc) { if (altNext[sp.slot]) cd = Math.max(m.altMinCd || 0, cd * (1 - (m.altCdCut || 0))); altNext[sp.slot] = !altNext[sp.slot]; }
       return cd;
     };
     const onUltimate = t => {
@@ -823,6 +832,11 @@
       for (const s of live) deal(t, s.raw, s.type, s.label + ' (mark)', 'ability');
     };
     const castOrder = castable ? [...castable].sort((a, b) => castRank(a) - castRank(b)) : [];
+    // Passive on-hit damage from an ability (Kassadin's Nether Blade): every attack, all fight.
+    for (const s of castOrder) if (s.mech && s.mech.permOnHit) {
+      const v = root.Potenshall.Abilities.evalCalc(s.mech.permOnHit, s.sp, { ...spellCtx(), rank: s.rank });
+      if (Number.isFinite(v) && v > 0) onHitBuffs.push({ until: Infinity, raw: v, type: s.mech.type || 'magic', label: `${s.slot} · ${labels[s.slot] || s.name} (passive)` });
+    }
     // Rengar's Ferocity: +1 per ability cast; at max his next ability is empowered. He always spends it on empowered Q,
     // which ignores Q's cooldown: the next attack deals the empowered bonus and he gains attack speed.
     const FER = P && P.ferocity;
@@ -940,7 +954,14 @@
               raw: () => ev(m.calc) * critAvg * (1 + (m.missAmpMax || 0) * (1 - dummyHp / DUMMY.hp)),
               after: tt => onHitEffects(tt, 1, (m.onHitRatio || 0) * (1 + (1 - dummyHp / DUMMY.hp))) });
             channelUntil = t + dur;
-          } else if (m.kind === 'cast' && m.noDamage) first = 0; // utility casts (Katarina W drops a dagger)
+          } else if (m.kind === 'cast' && m.noDamage) {
+            first = 0; // utility casts (Katarina W drops a dagger)
+            // Taliyah W: knocks the dummy through E's stones, which detonate (and stun) when the knock lands.
+            if (m.detonates && mines && t <= mines.until) {
+              const mn = mines; mines = null;
+              spellQueue.push({ at: t + (m.detonateAfter || 0.5), label: mn.label, type: m.type || 'magic', raw: () => mn.raw, after: tt => castDebuff(tt, m.detonates) });
+            }
+          }
           else if (m.kind === 'cast' && m.recastCalc && m.recasts && recastLeft[sp.slot] > 0) {
             // Akali R2: the recast scales with the target's missing health, up to recastMaxMult at recastFullAt health left.
             const miss = 1 - dummyHp / DUMMY.hp, full = 1 - (m.recastFullAt || 0.3);
@@ -962,8 +983,14 @@
             if (P && P.fury && m.empCalc && fury >= 50 && (sp.slot === P.fury.prefer || fury >= 100 || (ready[P.fury.prefer] || 0) - t > 3)) {
               calcName = m.empCalc; fury -= 50; furyEmp = true; lab += ' (Fury)';
             }
-            if (m.stackMax) mult *= 1 + stackOf(sp.slot, t) * ev(m.stackAmpCalc) / 100; // Hecarim: +damage per Rampage stack
-            first = deal(t, ev(calcName) * mult * critAvg * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, lab, 'ability');
+            if (m.stackMax && m.stackAmpCalc) mult *= 1 + stackOf(sp.slot, t) * ev(m.stackAmpCalc) / 100; // Hecarim: +damage per Rampage stack
+            if (m.altCalc && altNext[sp.slot]) { calcName = m.altCalc; lab += ' (boulder)'; } // Taliyah Q on Worked Ground
+            let extra = 0;
+            if (m.stackFlat) extra += stackOf(sp.slot, t) * ev(m.stackFlat); // Kassadin R: flat damage per stack
+            if (m.poisonCalc && t <= poisonUntil) extra += ev(m.poisonCalc); // Cassiopeia E vs a poisoned target
+            first = deal(t, (ev(calcName) * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1) + extra) * mult * critAvg, m.type, lab, 'ability');
+            // Taliyah E: the stones stay on the ground; W shoves the dummy through all of them.
+            if (m.mineCalc) mines = { until: t + (m.mines || 4), raw: ev(m.mineCalc), label: label + ' (stones detonate)' };
             if (castLow && m.lowBonusCalc) first += deal(t, ev(m.lowBonusCalc) * mult, m.type, lab, 'ability'); // Qiyana's Rock Q vs low health
             if (P && P.fury && !furyEmp) addFury((P.fury.perSlot || {})[sp.slot] || 0); // empowered casts don't build Fury
             if (m.stackMax && first > 0) castStacks[sp.slot] = { n: Math.min(m.stackMax, stackOf(sp.slot, t) + 1), until: t + (m.stackDur || 8) };

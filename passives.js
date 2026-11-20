@@ -90,7 +90,8 @@
     Camille: { name: 'Adaptive Defenses', note: 'Q empowered attacks, the second part true damage', timedAuto: { every: 4, label: 'Q · Precision Protocol', kind: 'ability', dmg: c => ({ physical: 0.3 * c.ad, true: 0.5 * c.ad }) },
       // R (Hextech Ultimatum) cast at the start: attacks deal 15 + 8% current HP magic for 4s.
       onHit: { cond: c => c.t >= 0.5 && c.t <= 4.5, label: 'R · Hextech Ultimatum', kind: 'ability', type: 'magic', dmg: c => 15 + 0.08 * c.thp } },
-    Cassiopeia: none('Serpentine Grace'),
+    // Q poisons for 3s; W's cloud lasts 5s and poisons for 1s more (game data), so E's poisoned bonus applies.
+    Cassiopeia: { ...none('Serpentine Grace'), poison: { Q: 3, W: 6 } },
     Chogath: none('Carnivore', 'Healing only'),
     Corki: { castDebuff: { E: { armorFlat: 20, mrFlat: 20, dur: 4 } }, name: 'Hextech Munitions', note: 'Attacks deal 80% magic damage', autoSplit: { magic: 0.8 } },
     Darius: { name: 'Hemorrhage', note: 'Stacking bleed; Noxian Might at 5 stacks', stackDot: { max: 5, dur: 5, type: 'physical', perStack: c => (30 + 0.3 * c.bad) / 5 },
@@ -192,7 +193,7 @@
       daggers: { from: { Q: 1.1, W: 1.25 }, type: 'magic', dmg: c => 240 + 0.6 * c.bad + c.ap, onHit: true, eReduce: 7.68 },
       killReset: { cd: 15, slots: ['Q', 'W', 'E'] } },
     Kayle: { castDebuff: { Q: { armor: 0.15, mr: 0.15, dur: 4 } }, name: 'Divine Ascent', note: 'Exalted at 16: attack waves + attack speed', stats: () => ({ as: 30 }), onHit: { type: 'magic', dmg: c => 50 + 0.25 * c.ap + 0.1 * c.bad } },
-    Kayn: none('The Darkin Scythe'),
+    Kayn: none('The Darkin Scythe', 'Rhaast (Darkin Slayer): Q and R deal max-health damage; the healing does not add damage'),
     Kennen: none('Mark of the Storm'),
     Khazix: { name: 'Unseen Threat', note: 'Attack out of stealth', timedAuto: { every: 10, type: 'magic', dmg: c => 150 + 0.5 * c.bad } }, // game data: 50% bonus AD
     Kindred: none('Mark of the Kindred', 'Marks are counted in her abilities'),
