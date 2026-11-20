@@ -189,7 +189,13 @@
     KogMaw: { castDebuff: { Q: { armor: 0.32, mr: 0.32, dur: 4 } }, name: 'Bio-Arcane Barrage (W)', note: 'W on-hit % max HP (8s of the fight) + Q attack speed; W is modeled here', disable: ['W'],
       stats: () => ({ as: 26 }), onHit: { type: 'magic', dmg: c => 0.8 * (0.06 + 0.01 * c.ap / 100) * c.tmax } },
     // Game files: the mark deals 12 + 1-2% (by level: 2% at 18) of the target's max health; it doesn't scale with resists.
-    KSante: { name: 'Dauntless Instinct', note: 'Abilities mark: next attack 12 + 2% max HP; W deals % max HP', afterAbility: { type: 'physical', dmg: c => 12 + 0.02 * c.tmax },
+    // All Out (R, rank 3, game files): for its 15s (the whole fight) +80% attack speed, 50% bonus armor penetration (the
+    // dummy's armor is bonus armor, as in Practice Tool), and attacks, abilities and the passive deal +1% max health; it costs
+    // 35% max health and 85% of his bonus armor and magic resist. The engine runs the fight with and without it and keeps
+    // the better one (a full tank usually does more without it).
+    KSante: { name: 'Dauntless Instinct', note: 'Abilities mark: next attack 12 + 2% max HP; W deals % max HP; All Out when it deals more',
+      allOut: { slot: 'R', label: 'R · All Out', as: 80, bonusArpen: 50, extraPct: 0.01, healthLost: 0.35, defensesLost: 0.85 },
+      afterAbility: { type: 'physical', dmg: c => 12 + 0.02 * c.tmax + (c.ps.allOut ? 0.01 * c.tmax : 0) },
       periodic: { every: 10, start: 0.5, ability: true, label: 'W · Path Maker', kind: 'ability', type: 'physical', dmg: c => 205 + 0.08 * c.tmax } },
     Leblanc: none('Mirror Image'),
     LeeSin: { name: 'Flurry', note: 'Attack speed after abilities', stats: () => ({ as: 25 }) },

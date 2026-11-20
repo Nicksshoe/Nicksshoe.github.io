@@ -297,12 +297,26 @@
     // Champion passive (passives.js). Stat passives are applied in a second pass because many scale with
     // the champion's own stats (e.g. Jhin turns bonus attack speed and crit into AD).
     const P = opts.noPassive ? null : ((root.Potenshall.ChampPassives || {})[ch.id] || null);
+    // Ultimate forms that last the whole fight and trade stats (K'Sante's All Out): the fight is run both ways and the
+    // champion uses the form only when it deals more, as a player picking the stronger line would.
+    const AO = P && P.allOut;
+    if (AO && opts.allOut === undefined) {
+      const normal = simulate(ch, items, { ...opts, allOut: false }), form = simulate(ch, items, { ...opts, allOut: true });
+      return form.total > normal.total ? form : normal;
+    }
+    const allOut = !!(AO && opts.allOut);
+    if (allOut) { extraStats.as = (extraStats.as || 0) + AO.as; extraStats.arpen = (extraStats.arpen || 0) + AO.bonusArpen; }
     let st = computeStats(ch, items, kit, extraStats, P);
     if (P && P.stats) {
       const add = P.stats(passiveCtx(st, DUMMY.hp, 0, ch));
       const merged = { ...extraStats };
       for (const [k, v] of Object.entries(add)) merged[k] = (merged[k] || 0) + (v || 0);
       st = computeStats(ch, items, kit, merged, P);
+    }
+    if (allOut) { // loses a share of max health and most of his bonus armor and magic resist
+      const lost = st.maxHP * AO.healthLost;
+      st.maxHP -= lost; st.bonusHP = Math.max(0, st.bonusHP - lost);
+      st.bonusArmor *= 1 - AO.defensesLost; st.bonusMR *= 1 - AO.defensesLost;
     }
     const pr = profile(ch);
     if (spells) {
@@ -316,6 +330,7 @@
       pr.autoAmp = 1 + (pr.autoAmp - 1) / 2; pr.onHitAp = 0;
     }
     const disabled = new Set((P && P.disable) || []);
+    if (AO && !allOut) disabled.add(AO.slot); // without the form, the ultimate isn't cast at all
     // ownKit: the passive table models the whole kit (form swaps, weapon/awaken rotations), so the raw slots don't cast.
     const castable = spells ? (P && P.ownKit ? [] : spells.filter(s => !disabled.has(s.slot))) : null;
     const everyN = mechOf('everyN');
@@ -484,6 +499,8 @@
     let heartsteelDone = false, stormsurgeAt = null, stormsurgeDone = false, titanicReady = 0;
 
     const onAbilityHit = (t, first, cast) => {
+      // All Out: every ability hit also deals a share of the target's max health.
+      if (allOut && !(cast && cast.noDamage)) deal(t, AO.extraPct * DUMMY.hp, 'physical', AO.label, 'ability');
       if (P) {
         pAbilities++;
         if (P.afterAbility && t >= pAfterReady) {
@@ -521,6 +538,8 @@
 
     // Ability buffs that add damage to every attack while they last (Master Yi's Wuju Style): { until, raw, type, label }.
     let onHitBuffs = [];
+    // All Out: his attacks deal a share of the target's max health for the whole fight (the form lasts 15s).
+    if (allOut) { onHitBuffs.push({ until: Infinity, raw: AO.extraPct * DUMMY.hp, type: 'physical', label: AO.label }); pState.allOut = true; }
     // mult: on-hit effectiveness (Master Yi's Alpha Strike applies on-hit effects at 75%).
     const onHitEffects = (t, times, mult = 1) => {
       const hit = (amt, type, src) => deal(t, amt * mult, type, src, 'onhit');
@@ -908,7 +927,8 @@
           if (opening) castDebuff(t, sp.slot);
           ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : m.recasts && recastLeft[sp.slot] > 0 ? t + (m.recastGap || 1)
             : afterCharge(sp, t, t + cdOf(sp.slot, m.zoneCd && t < zoneUntil ? m.zoneCd // Kindred Q: shorter inside her zone
-              : m.resistCdCap ? Math.max(m.resistCdMin, sp.cooldown - (sp.cooldown - m.resistCdMin) * Math.min(1, (st.bonusArmor + st.bonusMR) / m.resistCdCap)) // K'Sante Q
+              : m.resistCdCap ? Math.max(m.resistCdMin, sp.cooldown - (sp.cooldown - m.resistCdMin) * Math.min(1, (st.bonusArmor + st.bonusMR) / m.resistCdCap))
+                * (allOut && m.allOutCdCut ? 1 - m.allOutCdCut : 1) // K'Sante Q: shorter with resists, and a third shorter in All Out
               : sp.cooldown));
           // Olaf Q: he walks to the axe and picks it up (pickup seconds later); the cooldown drops to pickupCd from the throw.
           if (m.pickup) { const castAt = t; spellQueue.push({ at: t + m.pickup, label, type: m.type, raw: () => 0,
@@ -1571,7 +1591,11 @@
     Belveth: { E: { kind: 'flurry', type: 'physical', calc: 'DamagePerStrike', strikesCalc: 'TotalStrikes', duration: 'TotalDuration',
       missAmpMax: 'MissingHealthMult', onHitRatio: 'OnHitRatio', holdMissing: 0.5, latest: 8.3 } },
     // K'Sante Q: cooldown 3.5s, down to 2s as his bonus armor + magic resist reach 120 (game data).
-    KSante: { Q: { kind: 'cast', type: 'physical', calc: 'BaseDamage', resistCdMin: 'MinCD', resistCdCap: 'DefenseCapforCooldown' } },
+    // R (All Out, see passives.js): cast first for its hit (rank 3: 150 physical); while All Out, Q's cooldown is a third shorter.
+    KSante: {
+      Q: { kind: 'cast', type: 'physical', calc: 'BaseDamage', resistCdMin: 'MinCD', resistCdCap: 'DefenseCapforCooldown', allOutCdCut: 'RCooldownReduction' },
+      R: { kind: 'multi', parts: [{ flat: 'BaseDamage', type: 'physical' }], type: 'physical', order: 0.1 },
+    },
     Leblanc: {
       Q: { kind: 'cast', type: 'magic', calc: 'Damage', sigil: 'MarkDamage', sigilDur: 'MarkDuration', order: 0.5 },
       R: { kind: 'cast', type: 'magic', calc: 'RQ1Damage', sigil: 'RQ2Damage', sigilDur: 'RQMarkDuration', order: 0.6 },
@@ -1665,7 +1689,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));
@@ -1916,7 +1940,13 @@
     KogMaw: { castDebuff: { Q: { armor: 0.32, mr: 0.32, dur: 4 } }, name: 'Bio-Arcane Barrage (W)', note: 'W on-hit % max HP (8s of the fight) + Q attack speed; W is modeled here', disable: ['W'],
       stats: () => ({ as: 26 }), onHit: { type: 'magic', dmg: c => 0.8 * (0.06 + 0.01 * c.ap / 100) * c.tmax } },
     // Game files: the mark deals 12 + 1-2% (by level: 2% at 18) of the target's max health; it doesn't scale with resists.
-    KSante: { name: 'Dauntless Instinct', note: 'Abilities mark: next attack 12 + 2% max HP; W deals % max HP', afterAbility: { type: 'physical', dmg: c => 12 + 0.02 * c.tmax },
+    // All Out (R, rank 3, game files): for its 15s (the whole fight) +80% attack speed, 50% bonus armor penetration (the
+    // dummy's armor is bonus armor, as in Practice Tool), and attacks, abilities and the passive deal +1% max health; it costs
+    // 35% max health and 85% of his bonus armor and magic resist. The engine runs the fight with and without it and keeps
+    // the better one (a full tank usually does more without it).
+    KSante: { name: 'Dauntless Instinct', note: 'Abilities mark: next attack 12 + 2% max HP; W deals % max HP; All Out when it deals more',
+      allOut: { slot: 'R', label: 'R · All Out', as: 80, bonusArpen: 50, extraPct: 0.01, healthLost: 0.35, defensesLost: 0.85 },
+      afterAbility: { type: 'physical', dmg: c => 12 + 0.02 * c.tmax + (c.ps.allOut ? 0.01 * c.tmax : 0) },
       periodic: { every: 10, start: 0.5, ability: true, label: 'W · Path Maker', kind: 'ability', type: 'physical', dmg: c => 205 + 0.08 * c.tmax } },
     Leblanc: none('Mirror Image'),
     LeeSin: { name: 'Flurry', note: 'Attack speed after abilities', stats: () => ({ as: 25 }) },

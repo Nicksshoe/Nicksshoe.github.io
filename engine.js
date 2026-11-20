@@ -296,12 +296,26 @@
     // Champion passive (passives.js). Stat passives are applied in a second pass because many scale with
     // the champion's own stats (e.g. Jhin turns bonus attack speed and crit into AD).
     const P = opts.noPassive ? null : ((root.Potenshall.ChampPassives || {})[ch.id] || null);
+    // Ultimate forms that last the whole fight and trade stats (K'Sante's All Out): the fight is run both ways and the
+    // champion uses the form only when it deals more, as a player picking the stronger line would.
+    const AO = P && P.allOut;
+    if (AO && opts.allOut === undefined) {
+      const normal = simulate(ch, items, { ...opts, allOut: false }), form = simulate(ch, items, { ...opts, allOut: true });
+      return form.total > normal.total ? form : normal;
+    }
+    const allOut = !!(AO && opts.allOut);
+    if (allOut) { extraStats.as = (extraStats.as || 0) + AO.as; extraStats.arpen = (extraStats.arpen || 0) + AO.bonusArpen; }
     let st = computeStats(ch, items, kit, extraStats, P);
     if (P && P.stats) {
       const add = P.stats(passiveCtx(st, DUMMY.hp, 0, ch));
       const merged = { ...extraStats };
       for (const [k, v] of Object.entries(add)) merged[k] = (merged[k] || 0) + (v || 0);
       st = computeStats(ch, items, kit, merged, P);
+    }
+    if (allOut) { // loses a share of max health and most of his bonus armor and magic resist
+      const lost = st.maxHP * AO.healthLost;
+      st.maxHP -= lost; st.bonusHP = Math.max(0, st.bonusHP - lost);
+      st.bonusArmor *= 1 - AO.defensesLost; st.bonusMR *= 1 - AO.defensesLost;
     }
     const pr = profile(ch);
     if (spells) {
@@ -315,6 +329,7 @@
       pr.autoAmp = 1 + (pr.autoAmp - 1) / 2; pr.onHitAp = 0;
     }
     const disabled = new Set((P && P.disable) || []);
+    if (AO && !allOut) disabled.add(AO.slot); // without the form, the ultimate isn't cast at all
     // ownKit: the passive table models the whole kit (form swaps, weapon/awaken rotations), so the raw slots don't cast.
     const castable = spells ? (P && P.ownKit ? [] : spells.filter(s => !disabled.has(s.slot))) : null;
     const everyN = mechOf('everyN');
@@ -483,6 +498,8 @@
     let heartsteelDone = false, stormsurgeAt = null, stormsurgeDone = false, titanicReady = 0;
 
     const onAbilityHit = (t, first, cast) => {
+      // All Out: every ability hit also deals a share of the target's max health.
+      if (allOut && !(cast && cast.noDamage)) deal(t, AO.extraPct * DUMMY.hp, 'physical', AO.label, 'ability');
       if (P) {
         pAbilities++;
         if (P.afterAbility && t >= pAfterReady) {
@@ -520,6 +537,8 @@
 
     // Ability buffs that add damage to every attack while they last (Master Yi's Wuju Style): { until, raw, type, label }.
     let onHitBuffs = [];
+    // All Out: his attacks deal a share of the target's max health for the whole fight (the form lasts 15s).
+    if (allOut) { onHitBuffs.push({ until: Infinity, raw: AO.extraPct * DUMMY.hp, type: 'physical', label: AO.label }); pState.allOut = true; }
     // mult: on-hit effectiveness (Master Yi's Alpha Strike applies on-hit effects at 75%).
     const onHitEffects = (t, times, mult = 1) => {
       const hit = (amt, type, src) => deal(t, amt * mult, type, src, 'onhit');
@@ -907,7 +926,8 @@
           if (opening) castDebuff(t, sp.slot);
           ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : m.recasts && recastLeft[sp.slot] > 0 ? t + (m.recastGap || 1)
             : afterCharge(sp, t, t + cdOf(sp.slot, m.zoneCd && t < zoneUntil ? m.zoneCd // Kindred Q: shorter inside her zone
-              : m.resistCdCap ? Math.max(m.resistCdMin, sp.cooldown - (sp.cooldown - m.resistCdMin) * Math.min(1, (st.bonusArmor + st.bonusMR) / m.resistCdCap)) // K'Sante Q
+              : m.resistCdCap ? Math.max(m.resistCdMin, sp.cooldown - (sp.cooldown - m.resistCdMin) * Math.min(1, (st.bonusArmor + st.bonusMR) / m.resistCdCap))
+                * (allOut && m.allOutCdCut ? 1 - m.allOutCdCut : 1) // K'Sante Q: shorter with resists, and a third shorter in All Out
               : sp.cooldown));
           // Olaf Q: he walks to the axe and picks it up (pickup seconds later); the cooldown drops to pickupCd from the throw.
           if (m.pickup) { const castAt = t; spellQueue.push({ at: t + m.pickup, label, type: m.type, raw: () => 0,

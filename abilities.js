@@ -369,7 +369,11 @@
     Belveth: { E: { kind: 'flurry', type: 'physical', calc: 'DamagePerStrike', strikesCalc: 'TotalStrikes', duration: 'TotalDuration',
       missAmpMax: 'MissingHealthMult', onHitRatio: 'OnHitRatio', holdMissing: 0.5, latest: 8.3 } },
     // K'Sante Q: cooldown 3.5s, down to 2s as his bonus armor + magic resist reach 120 (game data).
-    KSante: { Q: { kind: 'cast', type: 'physical', calc: 'BaseDamage', resistCdMin: 'MinCD', resistCdCap: 'DefenseCapforCooldown' } },
+    // R (All Out, see passives.js): cast first for its hit (rank 3: 150 physical); while All Out, Q's cooldown is a third shorter.
+    KSante: {
+      Q: { kind: 'cast', type: 'physical', calc: 'BaseDamage', resistCdMin: 'MinCD', resistCdCap: 'DefenseCapforCooldown', allOutCdCut: 'RCooldownReduction' },
+      R: { kind: 'multi', parts: [{ flat: 'BaseDamage', type: 'physical' }], type: 'physical', order: 0.1 },
+    },
     Leblanc: {
       Q: { kind: 'cast', type: 'magic', calc: 'Damage', sigil: 'MarkDamage', sigilDur: 'MarkDuration', order: 0.5 },
       R: { kind: 'cast', type: 'magic', calc: 'RQ1Damage', sigil: 'RQ2Damage', sigilDur: 'RQMarkDuration', order: 0.6 },
@@ -463,7 +467,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));
