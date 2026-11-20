@@ -453,6 +453,12 @@
       Q: { kind: 'multi', type: 'physical', parts: [{ calc: 'DarkinFlatDamage', type: 'physical', mult: 2 }, { calc: 'DarkinPercentDamage', type: 'physical', pctOfMax: true, mult: 2 }] },
       R: { kind: 'cast', type: 'physical', calc: 'SlayerDamage', pctOfMax: true, channelBlock: 0.5 },
     },
+    // Ornn (Brittle in passives.js): E after Q so he rams the pillar for the knock-up; R is two passes of the elemental
+    // (summoned, then redirected by the headbutt 1s later), magic damage, held while the dummy is still Brittle.
+    Ornn: {
+      E: { kind: 'cast', type: 'physical', calc: 'TotalDamage', order: 1.1 },
+      R: { kind: 'cast', type: 'magic', calc: 'RDamageCalc', delayCalc: 'RDamageCalc', delayAfter: 1, holdWhileBrittle: true, order: 1.2 },
+    },
     // Cassiopeia: E's real cooldown is 0.75s, and against a poisoned target (Q's poison, W's cloud: passives.js) it adds
     // its bonus damage. Q and W go first so the fangs land on a poisoned dummy.
     Cassiopeia: { E: { kind: 'cast', type: 'magic', calc: 'BasicDamage', poisonCalc: 'BonusPoisonedDamage', realCd: true, order: 1.5 } },

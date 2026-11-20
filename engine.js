@@ -386,6 +386,14 @@
       if (hasAny('mandate') && immob.has(slot)) mandateUntil = t + 4;
       // Passive stuns on every Nth ability cast (Annie's Pyromania), whichever ability lands it.
       if (P && P.ccEveryNAbility && ++ccCasts % P.ccEveryNAbility === 0 && hasAny('mandate')) mandateUntil = t + 4;
+      // Ornn's Brittle: a knock-up (E into his pillar, the R headbutt) pops it; W and R apply it (the R recast reapplies it).
+      const B = P && P.brittle;
+      if (B) {
+        if (B.consume.includes(slot)) brittlePop(t, slot + ' knock-up');
+        if (slot in B.from) brittleOn(t, B.from[slot]);
+        if (slot === B.recastSlot) spellQueue.push({ at: t + B.recastAt, label: slot, type: 'magic', raw: () => 0,
+          after: tt => { brittlePop(tt, slot + ' knock-up'); brittleOn(tt, 0); } });
+      }
       // Poisons (Cassiopeia Q and W): the dummy stays poisoned this many seconds after the cast.
       if (P && P.poison && P.poison[slot]) poisonUntil = Math.max(poisonUntil, t + P.poison[slot]);
       // Kassadin's Force Pulse: every ability cast takes time off its cooldown.
@@ -393,6 +401,17 @@
         ready[s.slot] = Math.max(t, ready[s.slot] - s.mech.cutPerCast);
     };
     let ccCasts = 0, poisonUntil = -1;
+    // Ornn: Brittle on the dummy ({ from, until }). The next attack or knock-up pops it for a share of max health (magic).
+    let brittle = null;
+    const brittleOn = (t, delay) => { brittle = { from: t + delay, until: t + delay + (P.brittle.dur || 3) }; };
+    const brittlePop = (t, how) => {
+      const B = P && P.brittle;
+      if (!B || !brittle || t < brittle.from || t > brittle.until) return;
+      brittle = null;
+      const s = (castable || []).find(x => x.slot === B.slot); if (!s) return;
+      const v = root.Potenshall.Abilities.evalCalc(B.calc, s.sp, { ...spellCtx(), rank: s.rank });
+      if (Number.isFinite(v) && v > 0) deal(t, Math.min(v, 1) * DUMMY.hp, 'magic', `Passive · Brittle (${how})`, 'ability');
+    };
     let mines = null; // Taliyah's E stones on the ground: { until, raw } until W shoves the dummy through them
     const altNext = {}; // Taliyah Q: the next cast is the Worked Ground boulder
 
@@ -614,6 +633,7 @@
       if (fiendShare > 0) { deal(t, autoDmg * fiendShare, 'physical', 'Fiendhunter Bolts', 'split'); autoDmg *= 1 - fiendShare; }
       if (empowered && empowered.replacesAttack) autoDmg = 0; // Twisted Fate's card: the card's damage instead of the attack's
       deal(t, autoDmg, 'physical', 'Basic Attacks', 'attack');
+      if (P && P.brittle) brittlePop(t, 'attack'); // Ornn: the attack knocks a Brittle target back
       // Xayah: attacks after an ability leave a feather behind the target.
       if (P && P.feathers && featherCharges > 0) { featherCharges--; feathers.push(t + P.feathers.dur); }
       if (!openerDone) {
@@ -872,6 +892,8 @@
         if (sp.mech && sp.mech.whenNotReady && (ready[sp.mech.whenNotReady] || 0) <= t + 1e-9) continue;
         // Zoe's Q waits for the bubble's sleep to set in, so it lands on a sleeping target.
         if (sp.mech && sp.mech.waitSleep && sleep && t < sleep.from) continue;
+        // Ornn's R: waits until the Brittle already on the dummy has popped, so its own Brittle isn't wasted.
+        if (sp.mech && sp.mech.holdWhileBrittle && brittle && t <= brittle.until) continue;
         // Locke's R: held until the dummy is low enough for its seal, or until its mark would just cover the rest of the fight.
         if (sp.mech && sp.mech.holdBelow && dummyHp > sp.mech.holdBelow * DUMMY.hp && t < (sp.mech.latest ?? 0)) continue;
         // Pantheon: one action short of Mortal Will, Q waits for the next attack so it goes out empowered.

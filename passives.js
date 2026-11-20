@@ -259,7 +259,10 @@
     Olaf: { castDebuff: { Q: { armor: 0.2, dur: 4 } }, name: 'Berserker Rage + Ragnarok', note: 'Attack speed from missing health; R: +30 AD + 25% AD',
       stats: c => ({ as: 100 * Math.min(1, c.smiss / 0.7), ad: 30 + 0.25 * c.ad }) },
     Orianna: { name: 'Clockwork Windup', note: 'On-hit, stacking on repeated attacks', onHit: { type: 'magic', dmg: c => (59 + 0.15 * c.ap) * 1.4 } },
-    Ornn: none('Living Forge'),
+    // Brittle: W's last flame (0.75s in) and R apply it for 3s; the next attack or knock-up (E into his pillar, the R
+    // headbutt 1s after the cast, which reapplies it) deals W's share of max health as magic damage (17% at level 18).
+    Ornn: { ...none('Living Forge', 'Brittle: attacks and knock-ups pop it for 17% max health'),
+      brittle: { slot: 'W', calc: 'BrittlePercentMaxHPCalc', from: { W: 0.75, R: 0 }, consume: ['E'], recastSlot: 'R', recastAt: 1, dur: 3 } },
     // Mortal Will: every 5 actions (attacks and abilities) empower his next Q: +70% on the close-range stab (game data).
     // Standard rotation: Mortal Will starts full (it builds out of combat) and goes on W: stun plus 3 extra strikes. Those
     // strikes and W count toward the next Mortal Will, so after one attack Q goes out empowered (+70% on the thrust); then
