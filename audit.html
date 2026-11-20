@@ -71,6 +71,9 @@ const FLAGS = {
   drift:  [3, 'Changed since baseline', 'Our damage vs the tooltip moved more than 10% since the saved baseline'],
   nodata: [2, "Can't read tooltip", 'The tooltip shows damage, but its numbers are missing or not readable'],
   rarely: [1, 'Cast less than it could', 'Cast at most half as often as its cooldown allows (holds by design are fine)'],
+  partial: [2, 'Less than a full cast', "Under 80% of everything one cast can do on a still dummy in melee range: a second hit, an 'again', or a stronger 'instead' version missing?"],
+  pmissing: [3, 'Passive damage missing', "Riot's passive text describes damage, but the passive dealt none in the fight"],
+  phand: [1, 'Passive: hand-set numbers', 'The passive damage uses numbers written by hand (not read from the game data): check them against the wiki'],
 };
 // Words in Riot's text that usually mean a mechanic we have to model by hand. Shown as hints, not flags.
 const KEYWORDS = [['again', /\bagain\b/i], ['each', /\beach\b/i], ['stacks', /\bstack/i], ['over time', /per second|every second|over \{\{|over \d/i],
@@ -103,8 +106,15 @@ function readName(name, sp, ctx, rank) {
 function tooltipDamage(tip, sp, ctx, rank) {
   const out = [];
   const text = plain(tip);
+  let prevEnd = 0;
   for (const m of text.matchAll(DMG_RE)) {
     const [, baseName, name, pct, health, type] = m;
+    // How this number relates to the one before it: an upgrade that replaces it ("instead", "increased to", "or ... at
+    // the edge"), and whether this hit lands a second time ("again", "deals the damage again").
+    const between = text.slice(prevEnd, m.index), after = text.slice(m.index + m[0].length).split(/[.!]/)[0];
+    const alt = prevEnd > 0 && /\binstead\b|increased to|\bor\b|empowered|\bbelow\b|\bif\b/i.test(between);
+    const again = /\bagain\b/i.test(after) || /\bagain\b/i.test(between.split(/[.!]/).pop() || '');
+    prevEnd = m.index + m[0].length;
     if (/monster|minion/i.test(name)) continue; // damage to monsters and minions only (Nunu Q)
     let v = readName(name, sp, ctx, rank);
     if (v == null) { out.push({ name, type: type.toLowerCase(), value: null }); continue; }
@@ -117,10 +127,23 @@ function tooltipDamage(tip, sp, ctx, rank) {
     // "between {{ min }} and {{ max }}" / "{{ min }} - {{ max }}": compare with the minimum, allow up to the maximum.
     const range = /(?:between|from)\s*\{\{\s*([A-Za-z0-9_]+)\s*\}\}\s*(?:and|to)\s*$|\{\{\s*([A-Za-z0-9_]+)\s*\}\}\s*-\s*$/i.exec(text.slice(Math.max(0, m.index - 60), m.index));
     const lo = range ? readName(range[1] || range[2], sp, ctx, rank) : null;
-    if (lo != null && lo > 0 && !health) { out.push({ name: `${range[1] || range[2]} to ${name}`, type: type.toLowerCase(), value: lo, max: v }); continue; }
-    out.push({ name: baseName ? `${baseName} + ${name}` : name, type: type.toLowerCase(), value: v });
+    if (lo != null && lo > 0 && !health) { out.push({ name: `${range[1] || range[2]} to ${name}`, type: type.toLowerCase(), value: lo, max: v, alt, again }); continue; }
+    out.push({ name: baseName ? `${baseName} + ${name}` : name, type: type.toLowerCase(), value: v, alt, again });
   }
   return out;
+}
+// Everything one cast can deal on a dummy that stands still in melee range: every hit listed, the stronger of two
+// versions ("instead", "or"), the top of a range, and a hit that lands "again" counted twice.
+function fullCast(list) {
+  const hits = [];
+  for (const d of list) {
+    if (d.value == null || !(d.value > 0)) continue;
+    const v = d.max || d.value;
+    if (d.alt && hits.length) hits[hits.length - 1] = Math.max(hits[hits.length - 1], v); else hits.push(v);
+    // "again" adds a hit only when the tooltip doesn't already list the repeat as its own number (Talon R, Poppy Q do).
+    if (d.again && !list.some(o => o !== d && o.name === d.name)) hits.push(v);
+  }
+  return hits.reduce((a, b) => a + b, 0) || null;
 }
 
 // ---------- Run ----------
@@ -144,6 +167,7 @@ async function runAll(progress) {
       const tipDmg = tooltipDamage(dd.tooltip || '', s.sp, ctx, s.rank);
       const known = tipDmg.filter(d => d.value != null && d.value > 0);
       const expFirst = known.length ? known[0].value : null, expAll = known.reduce((a, d) => a + (d.max || d.value), 0) || null;
+      const expFull = fullCast(known);
       const tipTypes = new Set(tipDmg.map(d => d.type));
       const tipType = known.length ? known.slice().sort((a, b) => b.value - a.value)[0].type : tipDmg.length ? tipDmg[0].type : null;
       // An ability's always-on part (Kassadin's Nether Blade on every attack) isn't damage per cast.
@@ -166,6 +190,7 @@ async function runAll(progress) {
         if (known.length && !casts) flags.push('never');
         if (known.length && perCast != null) {
           if (perCast < TOL_UNDER * expFirst) flags.push('under');
+          else if (expFull && perCast < TOL_UNDER * expFull) flags.push('partial');
           else if (perCast > TOL_OVER * expAll && !multiHit) flags.push('over');
         }
         // Mixed-type abilities (Fizz Q: physical attack + magic): only flag a type the tooltip never mentions.
@@ -177,11 +202,34 @@ async function runAll(progress) {
       const b = BASE && BASE.champs && BASE.champs[ch.id] && BASE.champs[ch.id][s.slot];
       if (!handled && b && b.ratio && ratio && Math.abs(ratio / b.ratio - 1) > DRIFT) flags.push('drift');
       out.push({ id: ch.id, name: ch.name, slot: s.slot, ability: dd.name || s.name, mech: s.mech ? s.mech.kind : s.damaging ? 'formula' : 'none',
-        handled, tipText, tipDmg, expFirst, expAll, tipType, ourType, perCast, ratio, casts, maxCasts, gameCd, ourCd: s.cooldown,
+        handled, tipText, tipDmg, expFirst, expAll, expFull, tipType, ourType, perCast, ratio, casts, maxCasts, gameCd, ourCd: s.cooldown,
         flags, keywords, base: b || null, riotChanged: b && b.expFirst && expFirst ? Math.abs(expFirst / b.expFirst - 1) > 0.02 : false });
     }
+    out.push(passiveRow(ch, PS, r));
   }
   return out;
+}
+
+// ---------- Passives ----------
+// Riot's passive text rarely has numbers, so this checks two things: text that describes damage while ours deals none,
+// and passives whose damage comes from numbers written by hand in passives.js (to check against the wiki once).
+const PASSIVE_DMG = /\bdamage\b|\bbleed|\bburn|\bexplod|\bdetonat|true damage|max(imum)? health/i;
+const HAND_KEYS = ['onHit', 'everyN', 'everyNAbility', 'everyNHits', 'onAbility', 'afterAbility', 'periodic', 'timedAuto', 'stackDot', 'aura', 'execute', 'executeHp', 'magicEcho', 'onHitAbility'];
+function passiveRow(ch, PS, r) {
+  const pdd = (DD.data[ch.id] || {}).passive || {};
+  const text = plain(pdd.description || '');
+  const dealt = Object.entries(r.bySource).filter(([k]) => k.startsWith('Passive')).reduce((a, [, v]) => a + v, 0);
+  const hand = HAND_KEYS.filter(k => PS[k] && (typeof PS[k] !== 'object' || Object.values(PS[k]).some(v => typeof v === 'function') || PS[k].dmg));
+  const flags = [];
+  const mentionsDamage = PASSIVE_DMG.test(text.replace(/[^.]*\b(take|taking|takes) (reduced|less)[^.]*\.?/gi, ''));
+  if (!PS.ownKit && mentionsDamage && !(dealt > 0)) flags.push('pmissing');
+  if (dealt > 0 && hand.length) flags.push('phand');
+  const b = BASE && BASE.champs && BASE.champs[ch.id] && BASE.champs[ch.id].P;
+  return { id: ch.id, name: ch.name, slot: 'P', ability: pdd.name || PS.name || 'Passive', passive: true,
+    mech: PS.ownKit ? 'whole kit by hand' : hand.length ? 'hand-set: ' + hand.join(', ') : (PS.stats ? 'stats only' : 'none'),
+    handled: null, tipText: text + (PS.note ? `  ·  Ours: ${PS.note}` : ''), tipDmg: [], expFirst: null, expAll: null, expFull: null,
+    tipType: null, ourType: null, perCast: dealt || null, ratio: null, casts: 0, maxCasts: 0, gameCd: 0, ourCd: 0,
+    flags, keywords: KEYWORDS.filter(([, re]) => re.test(text)).map(([k]) => k), base: b || null, riotChanged: false };
 }
 
 const keyOf = (r, f) => `${r.id} ${r.slot} ${f}`;
@@ -218,7 +266,7 @@ function render() {
           <td><b>${r.slot}</b> ${esc(r.ability)} <span class="muted">${esc(r.handled || r.mech)}</span></td>
           <td>${r.flags.map(f => `<span class="pill ${isOk(r, f) ? 'kw' : 'sev' + FLAGS[f][0]}" title="${esc(FLAGS[f][2])}">${isOk(r, f) ? 'OK: ' : ''}${esc(FLAGS[f][1])}</span>${isNew(r, f) && !isOk(r, f) ? '<span class="pill new">new</span>' : ''}`).join('')}${r.riotChanged ? '<span class="pill new">Riot changed numbers</span>' : ''}</td>
           <td class="num">${fmt(r.expFirst)}${r.expAll && r.expAll > r.expFirst * 1.01 ? ` <span class="muted">(all ${fmt(r.expAll)})</span>` : ''}</td>
-          <td class="num">${fmt(r.perCast)}</td>
+          <td class="num">${fmt(r.perCast)}${r.passive && r.perCast ? ' <span class="muted">in the fight</span>' : ''}</td>
           <td class="num">${r.ratio ? r.ratio.toFixed(2) + '×' : '–'}</td>
           <td class="num">${r.casts}${r.slot !== 'R' ? ` <span class="muted">/ ${r.maxCasts}</span>` : ''}</td>
           <td class="num">${r.gameCd ? r.gameCd + 's' : '–'} · ${r.ourCd ? +r.ourCd.toFixed(2) + 's' : '–'}</td>
