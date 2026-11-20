@@ -395,6 +395,13 @@ html[data-theme=arcade] .rules li,html[data-theme=arcade] .howto p{line-height:1
   html[data-theme=arcade] .panel{box-shadow:var(--e2) var(--pink)}
 }
 
+/* Phones: every control at least 40px tall so it's easy to tap (both themes). */
+@media (max-width:560px){
+  .pill,.modes button,.btn.sm{min-height:40px;display:inline-flex;align-items:center;justify-content:center}
+  .settings select{min-height:36px}
+  footer a{display:inline-block;padding:13px 2px}
+}
+
 /* Keyboard focus: a clear outline on anything you can press (only for keyboard use, not taps or clicks). */
 :focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 html[data-theme=arcade] :focus-visible{outline:3px solid var(--cyan);outline-offset:3px}

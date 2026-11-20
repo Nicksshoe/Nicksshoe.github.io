@@ -3,4 +3,5 @@
 api-key.txt
 .env
 # Local tooling
-.claude/
+.claude/*
+!.claude/skills/
