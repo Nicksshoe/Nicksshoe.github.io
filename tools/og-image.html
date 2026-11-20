@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OG image</title>
+<!-- Draws og.png (1200x630), the image link previews show (Reddit, Discord, X...), with the site's own fonts.
+     Open on the local server (http://localhost:5174/tools/og-image.html) and press Save: .claude/serve.ps1 writes og.png.
+     Then bump ?v= on the og:image and twitter:image tags in index.html. Text stays central: previews crop the edges. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@600;700&display=block">
+<style>
+  body{margin:0;padding:16px;background:#222;color:#eee;font:14px system-ui}
+  canvas{max-width:100%;height:auto;display:block;margin-bottom:12px}
+</style>
+</head>
+<body>
+<canvas id="c" width="1200" height="630"></canvas>
+<button id="save">Save og.png</button> <span id="msg"></span>
+<script>
+const C = { bg:'#0c0614', gold:'#ffd23f', cyan:'#3ef0ff', pink:'#ff3ea5', text:'#f4f0ff' };
+const W = 1200, H = 630, cv = document.getElementById('c'), g = cv.getContext('2d');
+
+// Fit text to a width by shrinking the font size.
+function fit(text, font, size, maxW) { do { g.font = font.replace('{s}', size); } while (g.measureText(text).width > maxW && --size > 10); return size; }
+function line(text, font, size, color, y, { shadow = 0, maxW = 1000, spacing = '0px' } = {}) {
+  g.letterSpacing = spacing; fit(text, font, size, maxW);
+  if (shadow) { g.fillStyle = C.pink; g.fillText(text, W / 2 + shadow, y + shadow); }
+  g.fillStyle = color; g.fillText(text, W / 2, y);
+}
+
+async function draw() {
+  await Promise.all(['72px Bungee', '700 34px "Chakra Petch"', '600 34px "Chakra Petch"'].map(f => document.fonts.load(f)));
+  g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
+  // Top stripe (yellow, then pink), like the site.
+  g.fillStyle = C.gold; g.fillRect(0, 0, W, 14);
+  g.fillStyle = C.pink; g.fillRect(0, 14, W, 6);
+  // Frame: hard pink offset shadow behind a yellow border (the --e3 look).
+  g.fillStyle = C.pink; g.fillRect(70, 92, 1076, 480);
+  g.fillStyle = C.bg; g.fillRect(58, 80, 1076, 480);
+  g.strokeStyle = C.gold; g.lineWidth = 6; g.strokeRect(61, 83, 1070, 474);
+
+  g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+  line('POTENTIAL DAMAGE', '{s}px Bungee', 84, C.gold, 250, { shadow: 6, maxW: 980 });
+  line('Draft a random champion and 6 random items.', '600 {s}px "Chakra Petch"', 38, C.text, 345);
+  line('How much damage can you deal in 10 seconds?', '700 {s}px "Chakra Petch"', 38, C.cyan, 400);
+  line('POTENTIALDAMAGE.GG  ·  FREE, NO SIGN-UP', '700 {s}px "Chakra Petch"', 24, C.gold, 490, { spacing: '2px' });
+  document.body.dataset.ready = '1';
+}
+draw();
+
+document.getElementById('save').onclick = async () => {
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+  const res = await fetch('/og.png', { method: 'PUT', body: blob });
+  document.getElementById('msg').textContent = res.ok ? 'Saved og.png' : 'Save failed (' + res.status + '): use the local server';
+};
+</script>
+</body>
+</html>

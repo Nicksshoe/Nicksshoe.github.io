@@ -65,7 +65,7 @@ Platinum `#4fe6d0`, Emerald `#3ddc84`, Diamond `#7aa2ff`, Master `#c77dff`, Gran
   buttons 700 in capitals with 0.04em tracking.
 - No pixel fonts: they were tried and rejected as hard to read.
 - Not in the arcade theme: Inter, Roboto, Arial, Space Grotesk (the "AI default" faces). Classic keeps Inter as the
-  preserved original. The link preview image uses Arial Black only because Bungee isn't installed where it's drawn.
+  preserved original. The link preview image uses the same two fonts.
 - Light text on dark: body line height 1.55, long text 1.6, letter spacing 0.005em.
 - Line length: long text stops near 90 characters (footer), How to play cards stay around 45 to 75.
 - Numbers use tabular figures where they update live (clock, totals, leaderboard scores).
@@ -123,7 +123,7 @@ Platinum `#4fe6d0`, Emerald `#3ddc84`, Diamond `#7aa2ff`, Master `#c77dff`, Gran
 - Keep Riot's "isn't endorsed by Riot Games" notice in every page footer.
 - Don't imitate the League client (gold filigree frames, Beaufort-style serif, hex patterns): fan content must not look
   official.
-- Link preview image: `og.png` (1200x630, drawn by `tools/make-og-image.ps1`); bump `?v=` in the meta tags when it changes.
+- Link preview image: `og.png` (1200x630, drawn in the browser by `tools/og-image.html` with the site fonts; Save writes it through the local server); bump `?v=` in the meta tags when it changes.
 
 ## Don'ts (the generic-AI look we moved away from)
 
