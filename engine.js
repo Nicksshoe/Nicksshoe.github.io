@@ -1449,6 +1449,8 @@
   // champion pick offers 6 champions (like the 6 item choices) instead of 5.
   const DRAFT_V2_FROM = '2026-11-21';
   const CHAMP_CHOICES_V2 = 6;
+  // Champion choices for a draft started on this date (How to play shows the same number the draft will offer).
+  const champChoicesFor = date => (typeof date === 'string' && date >= DRAFT_V2_FROM ? CHAMP_CHOICES_V2 : DRAFT.CHAMP_CHOICES);
   const SEEN_ITEM_WEIGHT = 0.25;
 
   function createDraft(data, seed, opts = {}) {
@@ -1496,7 +1498,7 @@
   }
 
   const api = { DDRAGON, DUMMY, FIGHT_SECONDS, SELF_HP, TIERS, PASSIVES, DRAFT, loadPatchData, buildChampionPool, buildItemPool,
-    parseStats, computeStats, simulate, tierFor, abstractness, itemFlavor, createDraft, replayDraft };
+    parseStats, computeStats, simulate, tierFor, abstractness, itemFlavor, createDraft, replayDraft, champChoicesFor };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.Potenshall = api;
 })(typeof window !== 'undefined' ? window : globalThis);

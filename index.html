@@ -464,7 +464,7 @@ function showHowTo(){
   const parts = ['goal', 'draft', 'fight', 'modes', 'score', 'meta'];
   $('#stage').innerHTML = `<div class="stage-head"><div><h2>${t('howTo')}</h2><p>${t('howToSub')}</p></div><div class="spacer"></div>
     <button class="btn sm" id="howBack">${t('back')}</button></div>
-    <div class="howto">${parts.map(k => `<section><h3>${t('h_' + k)}</h3><p>${t('p_' + k)}</p></section>`).join('')}</div>`;
+    <div class="howto">${parts.map(k => `<section><h3>${t('h_' + k)}</h3><p>${t('p_' + k, { n: P.champChoicesFor ? P.champChoicesFor(today()) : CHAMP_CHOICES })}</p></section>`).join('')}</div>`;
   $('#howBack').onclick = () => {
     const back = howToReturn; howToReturn = null;
     if (back) { rerender = back; back(); } else newGame(S && S.mode === 'free' ? 'free' : 'daily');
