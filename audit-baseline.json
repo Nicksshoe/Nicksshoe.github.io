@@ -96,7 +96,43 @@
   "Yone Q partial": "Q3 deals the same damage; per cast is one thrust",
   "Yunara W partial": "Damage per second while the bead lingers; counted for the time it lasts",
   "Yuumi Q partial": "Empowered only when cast while attached to an ally",
-  "Zeri W partial": "The laser crit needs a wall behind the target"
+  "Zeri W partial": "The laser crit needs a wall behind the target",
+  "Anivia P pmissing": "Rebirth: revive only",
+  "Ashe P pmissing": "Frost Shot's bonus is in her basic attacks (crits become bonus damage on slowed targets)",
+  "Camille P pmissing": "Shield only",
+  "Fizz P pmissing": "Damage reduction only",
+  "Garen P pmissing": "Regeneration only",
+  "Hecarim P pmissing": "AD from move speed (counted in stats)",
+  "Kayn P pmissing": "Form choice: Rhaast is modeled in his Q and R",
+  "Kled P pmissing": "Skaarl (mount health): no damage",
+  "Leblanc P pmissing": "Mirror Image deals no damage",
+  "Leona P pmissing": "Sunlight procs only for allies",
+  "Lissandra P pmissing": "Frozen Thrall needs an enemy champion death",
+  "Malphite P pmissing": "Shield only",
+  "Malzahar P pmissing": "Void Shift: damage reduction only",
+  "Maokai P pmissing": "Sap Magic heals (the wiki and game data show no damage)",
+  "Milio P pmissing": "Buffs allies",
+  "Morgana P pmissing": "Healing only",
+  "Neeko P pmissing": "Disguise: no damage (her 20% magic pen opening is in stats)",
+  "Nunu P pmissing": "Willump's cleave only hits other enemies",
+  "Pyke P pmissing": "Regeneration; bonus HP to AD is in stats",
+  "Rell P pmissing": "Bonus magic damage from her resists: values differ between sources, so not added yet",
+  "Rengar P pmissing": "Brush leap and Ferocity (modeled on his Q)",
+  "Ryze P pmissing": "Bonus mana scaling is in his ability formulas",
+  "Sejuani P pmissing": "Frost Armor (resists) only",
+  "Sion P pmissing": "Revive passive: no damage while alive",
+  "Smolder P pmissing": "Dragon Practice stacks are counted in his abilities",
+  "Swain P pmissing": "Healing and max health only",
+  "Syndra P pmissing": "Splinters upgrade her abilities (counted in their formulas)",
+  "Trundle P pmissing": "Healing on kills only (his R and W are modeled in this entry)",
+  "MonkeyKing P pmissing": "Armor and regeneration only",
+  "Yasuo P pmissing": "Crit chance and shield (crit doubling is modeled)",
+  "Yone P pmissing": "Every second attack magic damage and crit doubling are in his basic attacks",
+  "Yunara P pmissing": "Crit bonus magic damage is modeled on her attacks",
+  "Zaahen P pmissing": "AD stacks counted in stats",
+  "Zac P pmissing": "Heal and revive only (his W damage is in this entry)",
+  "Zed P pmissing": "Below 50% health only: the reference fight's dummy doesn't drop that low",
+  "Zeri P pmissing": "Living Battery is modeled as her Q shots"
  },
  "champs": {
   "Aatrox": {
@@ -146,16 +182,14 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 400,
+    "perCast": 666.7,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Ahri": {
@@ -251,8 +285,8 @@
    },
    "R": {
     "expFirst": 420.7,
-    "perCast": 800.2,
-    "ratio": 1.902,
+    "perCast": 799.4,
+    "ratio": 1.9,
     "casts": 1,
     "gameCd": 60,
     "ourCd": 60,
@@ -264,16 +298,14 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 807.4,
+    "perCast": 781.3,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Akshan": {
@@ -330,9 +362,7 @@
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Alistar": {
@@ -367,9 +397,7 @@
     "ourCd": 10,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "R": {
     "expFirst": null,
@@ -404,9 +432,7 @@
     "ourCd": 10,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "W": {
     "expFirst": 190,
@@ -516,9 +542,7 @@
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Anivia": {
@@ -553,9 +577,7 @@
     "ourCd": 4,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "R": {
     "expFirst": 81.1,
@@ -865,16 +887,14 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 353.5,
+    "perCast": 556.3,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Azir": {
@@ -1582,7 +1602,7 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": null,
+    "perCast": 314.1,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
@@ -1590,7 +1610,7 @@
     "tipType": null,
     "ourType": null,
     "flags": [
-     "pmissing"
+     "phand"
     ]
    }
   },
@@ -1700,16 +1720,14 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 501.8,
+    "perCast": 456.8,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "DrMundo": {
@@ -1875,7 +1893,7 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 220.2,
+    "perCast": 275.2,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
@@ -2197,9 +2215,7 @@
     "ourCd": 3,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "E": {
     "expFirst": 440.5,
@@ -2247,9 +2263,7 @@
     "ourCd": 7,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "W": {
     "expFirst": 110.7,
@@ -2288,16 +2302,14 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 483,
+    "perCast": 381.1,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Gangplank": {
@@ -2349,16 +2361,14 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 390,
+    "perCast": 330,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Garen": {
@@ -2487,9 +2497,7 @@
     "ourCd": 6,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "W": {
     "expFirst": 958.3,
@@ -2546,9 +2554,7 @@
     "ourCd": 6,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "W": {
     "expFirst": 361.4,
@@ -2638,9 +2644,7 @@
     "ourCd": 80,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "P": {
     "expFirst": null,
@@ -2835,9 +2839,7 @@
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Illaoi": {
@@ -2955,9 +2957,7 @@
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Ivern": {
@@ -3593,9 +3593,7 @@
     "ourCd": 36,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "P": {
     "expFirst": null,
@@ -3619,9 +3617,7 @@
     "ourCd": 6,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "W": {
     "expFirst": null,
@@ -3809,8 +3805,8 @@
    },
    "E": {
     "expFirst": 76.8,
-    "perCast": 83.6,
-    "ratio": 1.089,
+    "perCast": 81.8,
+    "ratio": 1.065,
     "casts": 2,
     "gameCd": 6,
     "ourCd": 6,
@@ -3831,16 +3827,14 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 475.5,
+    "perCast": 432.8,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Kayn": {
@@ -4008,16 +4002,14 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 95,
+    "perCast": 87,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Kindred": {
@@ -4386,9 +4378,7 @@
     "ourCd": 4,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "W": {
     "expFirst": 219.1,
@@ -4528,9 +4518,7 @@
     "ourCd": 6,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "R": {
     "expFirst": 401.4,
@@ -4545,16 +4533,14 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 249.5,
+    "perCast": 104.8,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Lucian": {
@@ -4624,9 +4610,7 @@
     "ourCd": 7,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "W": {
     "expFirst": null,
@@ -4670,9 +4654,7 @@
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Lux": {
@@ -4722,16 +4704,14 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 559.5,
+    "perCast": 622.9,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Malphite": {
@@ -4838,9 +4818,7 @@
     "ourCd": 80,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "P": {
     "expFirst": null,
@@ -5130,9 +5108,7 @@
     "ourCd": 14,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "R": {
     "expFirst": 187.7,
@@ -5154,9 +5130,7 @@
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Mordekaiser": {
@@ -5213,9 +5187,7 @@
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Morgana": {
@@ -5427,9 +5399,7 @@
     "ourCd": 12,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "R": {
     "expFirst": null,
@@ -5503,16 +5473,14 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 40.7,
+    "perCast": 101.4,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Neeko": {
@@ -6100,9 +6068,7 @@
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Pyke": {
@@ -6213,7 +6179,7 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 79,
+    "perCast": 51.2,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
@@ -6274,16 +6240,14 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 131.1,
+    "perCast": 101.3,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Rakan": {
@@ -6742,8 +6706,8 @@
    },
    "R": {
     "expFirst": 265.5,
-    "perCast": 370,
-    "ratio": 1.394,
+    "perCast": 365.9,
+    "ratio": 1.378,
     "casts": 1,
     "gameCd": 60,
     "ourCd": 60,
@@ -6755,16 +6719,14 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 234,
+    "perCast": 175.5,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Rumble": {
@@ -6970,9 +6932,7 @@
     "ourCd": 5,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "E": {
     "expFirst": 373.3,
@@ -7125,9 +7085,7 @@
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Sett": {
@@ -7177,7 +7135,7 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 173.3,
+    "perCast": 172,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
@@ -7243,9 +7201,7 @@
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Shen": {
@@ -7597,9 +7553,7 @@
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Smolder": {
@@ -7647,9 +7601,7 @@
     "ourCd": 100,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "P": {
     "expFirst": null,
@@ -7712,16 +7664,14 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 380.7,
+    "perCast": 410.7,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Soraka": {
@@ -7756,9 +7706,7 @@
     "ourCd": 16,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "R": {
     "expFirst": null,
@@ -7854,9 +7802,7 @@
     "ourCd": 6,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "W": {
     "expFirst": 316.4,
@@ -7937,9 +7883,7 @@
     "ourCd": 15,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "R": {
     "expFirst": 193.8,
@@ -8013,7 +7957,7 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 600,
+    "perCast": 936.7,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
@@ -8092,9 +8036,7 @@
     "ourCd": 6,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "W": {
     "expFirst": 122,
@@ -8127,22 +8069,18 @@
     "ourCd": 60,
     "tipType": "physical",
     "ourType": "physical",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "P": {
     "expFirst": null,
-    "perCast": 270,
+    "perCast": 298.7,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Taric": {
@@ -8192,16 +8130,14 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 100,
+    "perCast": 93,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Teemo": {
@@ -8960,9 +8896,7 @@
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Vex": {
@@ -9522,9 +9456,7 @@
     "ourCd": 10,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "E": {
     "expFirst": 266,
@@ -9810,9 +9742,7 @@
     "ourCd": 6,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "W": {
     "expFirst": 367.5,
@@ -10031,9 +9961,7 @@
     "ourCd": 90,
     "tipType": "magic",
     "ourType": "magic",
-    "flags": [
-     "drift"
-    ]
+    "flags": []
    },
    "P": {
     "expFirst": null,
@@ -10216,16 +10144,14 @@
    },
    "P": {
     "expFirst": null,
-    "perCast": 318.8,
+    "perCast": 366.8,
     "ratio": null,
     "casts": 0,
     "gameCd": 0,
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Zilean": {
@@ -10341,9 +10267,7 @@
     "ourCd": 0,
     "tipType": null,
     "ourType": null,
-    "flags": [
-     "phand"
-    ]
+    "flags": []
    }
   },
   "Zyra": {

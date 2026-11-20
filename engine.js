@@ -471,7 +471,12 @@
     const PSRC = P ? `Passive · ${P.name}` : 'Passive';
     const pState = {}; // per-fight state a passive table keeps (Elise's spiderlings, Frenzy and Rappel windows)
     let rendSpears = 0, rendReady = 0; // Kalista: spears in the dummy (attacks, Guinsoo's extra hits, Pierce); lost when it dies
-    const pctx = t => Object.assign(passiveCtx(st, dummyHp, t, ch), { ps: pState });
+    // pk(name): a formula from the champion's passive game data (abilities.js parseKit), evaluated with the fight's stats;
+    // pv(name): one of its data values. 0 when the kit or the name is missing.
+    const kitPassive = kit && kit.passive;
+    const pk = name => { if (!kitPassive) return 0; const v = root.Potenshall.Abilities.evalCalc(name, kitPassive, { ...spellCtx(), rank: 1 }); return Number.isFinite(v) ? v : 0; };
+    const pv = name => { const a = kitPassive && kitPassive.dv[name]; return a ? +(a[1] ?? a[0]) || 0 : 0; };
+    const pctx = t => Object.assign(passiveCtx(st, dummyHp, t, ch), { ps: pState, pk, pv });
     // A passive damage spec returns a number (of spec.type) or { physical, magic, true }.
     const dealP = (t, spec, fn, kind, label) => {
       const out = fn(pctx(t));

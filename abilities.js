@@ -109,9 +109,18 @@
       };
     }).filter(Boolean);
 
+    // The passive's game data (formulas and data values from every spell object under its Passive folder, merged), so
+    // passives.js can read numbers by name (c.pk('BleedDamage')) instead of hand-typing them.
+    const passive = { champ: champId, slot: 'P', name: 'Passive', dv: {}, calcs: {}, eff: [], cds: [] };
+    for (const [k, v] of Object.entries(byPath)) {
+      if (!/passive/i.test(k)) continue;
+      const sp = v.mSpell || {};
+      for (const d of sp.DataValues || []) if (d.name && d.values && !(d.name in passive.dv)) passive.dv[d.name] = d.values;
+      for (const [n, c] of Object.entries(sp.mSpellCalculations || {})) if (!(n in passive.calcs)) passive.calcs[n] = c;
+    }
     const num = f => (f && typeof f === 'object' ? f.baseValue : f);
     return {
-      spells,
+      spells, passive,
       asBase: num(rec.attackSpeedModifiable),
       // An explicit 0 ratio is real (bonus attack speed does nothing), so only fall back when it's missing.
       asRatio: num(rec.attackSpeedRatioModifiable) ?? num(rec.attackSpeedModifiable),
@@ -200,7 +209,7 @@
         return v + per * (ctx.self.level - lvl);
       }
       case 'ByCharLevelFormulaCalculationPart': {
-        const vals = part.mValues || [];
+        const vals = part.mValues || part.values || []; // passives store the table as 'values' (Lux, Sett, Kha'Zix)
         return +(vals[ctx.self.level - 1] ?? vals[vals.length - 1] ?? 0);
       }
       case 'BuffCounterByNamedDataValueCalculationPart':
@@ -214,6 +223,8 @@
         return e && e.length ? +(e[ctx.rank] ?? e[e.length - 1]) || 0 : 0;
       }
       case '{8a96ea3c}': return Math.max(...(part.mSubparts || []).map(sub), 0);  // max of sub-parts
+      // A data value plus another data value per level after the first (Irelia's passive: 10 + 3 per level = 61 at 18).
+      case '{b22609db}': return dvAt(part['{91d404a5}']) + dvAt(part['{b2cd0eb0}']) * (ctx.self.level - 1);
       case '{ba007871}': { const v = (part.mSubparts || []).map(sub); return v.length ? Math.min(...v) : 0; } // min of sub-parts
       case REF: return evalCalc(part.mSpellCalculationKey, sp, ctx, depth + 1);
       default:

@@ -224,7 +224,9 @@ function passiveRow(ch, PS, r) {
   const pdd = (DD.data[ch.id] || {}).passive || {};
   const text = plain(pdd.description || '');
   const dealt = Object.entries(r.bySource).filter(([k]) => k.startsWith('Passive')).reduce((a, [, v]) => a + v, 0);
-  const hand = HAND_KEYS.filter(k => PS[k] && (typeof PS[k] !== 'object' || Object.values(PS[k]).some(v => typeof v === 'function') || PS[k].dmg));
+  // Hand-set: a damage formula that doesn't read the passive's game data (c.pk / c.pv).
+  const handFn = v => typeof v === 'function' && !/\bc\.p[kv]\(/.test(String(v));
+  const hand = HAND_KEYS.filter(k => PS[k] && (handFn(PS[k]) || (typeof PS[k] === 'object' && Object.values(PS[k]).some(handFn))));
   const flags = [];
   const mentionsDamage = PASSIVE_DMG.test(text.replace(/[^.]*\b(take|taking|takes) (reduced|less)[^.]*\.?/gi, ''));
   if (!PS.ownKit && mentionsDamage && !(dealt > 0)) flags.push('pmissing');
