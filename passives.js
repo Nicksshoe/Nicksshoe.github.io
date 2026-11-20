@@ -76,7 +76,9 @@
     Azir: { name: 'Arise! (W) soldiers', note: 'Attacks are sand soldier stabs (magic, AP); two soldiers out', disable: ['W'], autoMult: 0,
       onHit: { label: 'W · Soldier stabs', kind: 'ability', type: 'magic', dmg: c => (174 + 0.65 * c.ap) * 1.25 } },
     Bard: { name: "Traveler's Call", note: 'Meeps on attacks (40 chimes assumed)', onHit: { type: 'magic', dmg: c => 0.6 * (147 + 0.3 * c.ap) } },
-    Belveth: { name: 'Death in Lavender', note: 'Lavender stacks + post-ability attack speed', stats: () => ({ as: 70 }) },
+    // E (Royal Maelstrom) is skipped: its strikes (18 + 12% AD, up to double on a low target, 12% on-hit) deal less than
+    // the 1.5s of attacks it replaces against this dummy in every build tested (on-hit, crit, bruiser, no items).
+    Belveth: { name: 'Death in Lavender', note: 'Lavender stacks + post-ability attack speed; E skipped (attacking deals more)', stats: () => ({ as: 70 }), disable: ['E'] },
     Blitzcrank: none('Mana Barrier', 'Shield only'),
     Brand: { name: 'Blaze', note: 'Burns, then detonates at 3 stacks', onAbility: { type: 'magic', dot: 4, dmg: c => 0.03 * c.tmax },
       everyNAbility: { n: 3, cd: 4, type: 'magic', dmg: c => (0.12 + 0.02 * c.ap / 100) * c.tmax } },
@@ -186,7 +188,8 @@
     Kled: none('Skaarl the Cowardly Lizard'),
     KogMaw: { castDebuff: { Q: { armor: 0.32, mr: 0.32, dur: 4 } }, name: 'Bio-Arcane Barrage (W)', note: 'W on-hit % max HP (8s of the fight) + Q attack speed; W is modeled here', disable: ['W'],
       stats: () => ({ as: 26 }), onHit: { type: 'magic', dmg: c => 0.8 * (0.06 + 0.01 * c.ap / 100) * c.tmax } },
-    KSante: { name: 'Dauntless Instinct', note: 'Abilities mark: next attack % max HP; W deals % max HP', afterAbility: { type: 'physical', dmg: c => (0.01 + 0.01 * (c.barm + c.bmr) / 100) * c.tmax },
+    // Game files: the mark deals 12 + 1-2% (by level: 2% at 18) of the target's max health; it doesn't scale with resists.
+    KSante: { name: 'Dauntless Instinct', note: 'Abilities mark: next attack 12 + 2% max HP; W deals % max HP', afterAbility: { type: 'physical', dmg: c => 12 + 0.02 * c.tmax },
       periodic: { every: 10, start: 0.5, ability: true, label: 'W · Path Maker', kind: 'ability', type: 'physical', dmg: c => 205 + 0.08 * c.tmax } },
     Leblanc: none('Mirror Image'),
     LeeSin: { name: 'Flurry', note: 'Attack speed after abilities', stats: () => ({ as: 25 }) },
@@ -203,7 +206,13 @@
     // Highlander (R) passive: a kill cuts Q, W and E's remaining cooldowns by 70% and extends the ultimate by 7s.
     MasterYi: { name: 'Double Strike', note: 'Every 4th attack strikes twice; kills extend Highlander and refresh abilities',
       killReset: { pct: 0.7, slots: ['Q', 'W', 'E'], extendAS: 7 }, everyN: { n: 4, extraOnHit: true, type: 'physical', dmg: c => 0.5 * c.ad * avgCrit(c) } },
-    Mel: { name: 'Searing Brilliance', note: 'Bonus projectiles after abilities; Overwhelm execute', afterAbility: { type: 'magic', dmg: c => 3 * (30 + 0.025 * c.ap) }, execute: 0.05 },
+    // Game files, level 18: after an ability her next attack fires 3 missiles of 30 + 4% AP. Overwhelm: her abilities and
+    // missiles stack it (Q's 10 projectiles, E's hits; 5s, refreshed); the dummy is executed below 80 + 10% AP plus
+    // 5 + 0.75% AP per stack. W only reflects incoming attacks, so it does nothing to the dummy.
+    Mel: { name: 'Searing Brilliance + Overwhelm', note: 'Missiles after abilities; Overwhelm stacks execute and power up R', disable: ['W'],
+      afterAbility: { type: 'magic', dmg: c => 3 * (30 + 0.04 * c.ap) },
+      overwhelm: { per: { Q: 13, E: 7, A: 1 }, dur: 5 }, // A: each basic attack
+      executeHp: c => { const n = c.ps.ow && c.t <= c.ps.ow.until ? c.ps.ow.n : 0; return n ? 80 + 0.1 * c.ap + n * (5 + 0.0075 * c.ap) : 0; } },
     Milio: none('Fired Up!', 'Buffs allies'),
     MissFortune: { name: 'Love Tap', note: 'First attack on a new target', timedAuto: { once: true, type: 'physical', dmg: c => c.ad } },
     MonkeyKing: none('Stone Skin'),

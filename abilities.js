@@ -128,10 +128,16 @@
       case 0: return ofTarget ? 0 : s.ap;
       case 1: return pick(s.armor, s.baseArmor, s.bonusArmor);
       case 2: return pick(s.ad, s.baseAD, s.bonusAD);
+      // Codes checked against what Riot's formulas use them for across every champion (patch 16.23):
+      // 4 attack speed (Bel'Veth E strikes, Aphelios, Akshan; bonus = % bonus attack speed as a fraction),
+      // 6 magic resist (Galio, Rammus, Sejuani, K'Sante), 7 move speed (dash speeds, Hecarim), 8 crit chance
+      // (Caitlyn headshots, Ashe), 9 crit damage. 3 and 5 aren't used by damage formulas.
       case 3: return pick(s.as, s.baseAS, s.bonusAS);
+      case 4: return formula === 2 ? (s.bonusASRatio ?? s.bonusAS ?? 0) : formula === 1 ? s.baseAS : s.as;
       case 5: return pick(s.mr, s.baseMR, s.bonusMR);
-      case 6: return s.ms || 0;
-      case 7: return s.crit || 0;
+      case 6: return pick(s.mr, s.baseMR, s.bonusMR);
+      case 7: return formula === 2 ? (s.bonusMs || 0) : (s.ms || 0);
+      case 8: return s.crit || 0;
       case 9: return s.critMult || 1.75;
       case 11: return pick(s.maxHp, s.baseHp, s.bonusHp);  // health (some kits)
       case 12: return pick(s.maxHp, s.baseHp, s.bonusHp);
@@ -239,7 +245,7 @@
   }
 
   // A neutral level-18 test character, used to probe formulas.
-  const PROBE_SELF = { level: 18, ap: 300, ad: 300, baseAD: 100, bonusAD: 200, as: 1.5, baseAS: 0.65, bonusAS: 1,
+  const PROBE_SELF = { level: 18, ap: 300, ad: 300, baseAD: 100, bonusAD: 200, as: 1.5, baseAS: 0.65, bonusAS: 1, bonusASRatio: 1,
     armor: 150, baseArmor: 100, bonusArmor: 50, mr: 100, baseMR: 50, bonusMR: 50, maxHp: 4000, baseHp: 2500, bonusHp: 1500,
     crit: 0.5, critMult: 1.75, mana: 1500, baseMana: 1200, bonusMana: 300, ms: 400, lethality: 20 };
   const PROBE_TARGET = { maxHp: 10000, curHp: 10000, missingHp: 0, armor: 200, mr: 100 };
@@ -349,6 +355,21 @@
     // LeBlanc: Q, then R copying it (Mimic: RQ), then W and E. Each Sigil (Q, RQ) pops for its mark damage when the next
     // ability hits; E's chain deals its second hit after the 1.5s tether. order: cast priority (lower first).
     //   sigil: mark formula, popped by the next ability hit within sigilDur; delayCalc/delayAfter: a later second hit.
+    // Mel R (Golden Eclipse): flat damage plus more per Overwhelm stack on the target, so it's held until it kills
+    // (counting Overwhelm's execute line) or fired at the end with every stack built up.
+    Mel: { R: { kind: 'execute', type: 'magic', calc: 'UltFlatDamage', perStack: 'UltStackDamage', holdKill: true, latest: 9.5 } },
+    // Zilean: Time Bomb explodes after 3s, or at once (both bombs) when a second one lands; Rewind takes 10s off Q's
+    // cooldown, so he throws Q, Rewinds and throws a second Q to set both off.
+    Zilean: {
+      Q: { kind: 'bomb', type: 'magic', calc: 'TotalDamage', fuse: 'FuseDuration' },
+      W: { kind: 'cast', noDamage: true, cdReduce: 'CooldownReduction', whenNotReady: 'Q' },
+    },
+    // Bel'Veth E (Royal Maelstrom): 1.5s of strikes (6, +40% more per 100% bonus attack speed), each up to double damage
+    // as the target's health drops and applying 12% of on-hit effects; held until the dummy is at half health or 8.3s.
+    Belveth: { E: { kind: 'flurry', type: 'physical', calc: 'DamagePerStrike', strikesCalc: 'TotalStrikes', duration: 'TotalDuration',
+      missAmpMax: 'MissingHealthMult', onHitRatio: 'OnHitRatio', holdMissing: 0.5, latest: 8.3 } },
+    // K'Sante Q: cooldown 3.5s, down to 2s as his bonus armor + magic resist reach 120 (game data).
+    KSante: { Q: { kind: 'cast', type: 'physical', calc: 'BaseDamage', resistCdMin: 'MinCD', resistCdCap: 'DefenseCapforCooldown' } },
     Leblanc: {
       Q: { kind: 'cast', type: 'magic', calc: 'Damage', sigil: 'MarkDamage', sigilDur: 'MarkDuration', order: 0.5 },
       R: { kind: 'cast', type: 'magic', calc: 'RQ1Damage', sigil: 'RQ2Damage', sigilDur: 'RQMarkDuration', order: 0.6 },
@@ -442,7 +463,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));

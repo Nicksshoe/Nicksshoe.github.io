@@ -393,7 +393,9 @@
       record(t, amt, type, src);
       const exec = sum('execute');
       if (exec && dummyHp > 0 && dummyHp < exec * DUMMY.hp) record(t, dummyHp, 'true', 'The Collector');
-      if (P && P.execute && dummyHp > 0 && dummyHp < P.execute * DUMMY.hp) record(t, dummyHp, 'true', PSRC);
+      // Passive executes: a share of max HP (P.execute), or a line that grows with stacks (Mel's Overwhelm, P.executeHp).
+      const pExec = P ? (P.executeHp ? P.executeHp(pctx(t)) : P.execute ? P.execute * DUMMY.hp : 0) : 0;
+      if (pExec > 0 && dummyHp > 0 && dummyHp < pExec) record(t, dummyHp, 'true', PSRC);
       return amt;
     }
 
@@ -450,7 +452,7 @@
       dummyHp -= amt;
       const killed = dummyHp <= 0;
       if (killed) {
-        kills++; if (firstKill === null) firstKill = t; dummyHp = DUMMY.hp; rendSpears = 0;
+        kills++; if (firstKill === null) firstKill = t; dummyHp = DUMMY.hp; rendSpears = 0; pState.ow = null; bomb = null;
         // Takedown resets (Katarina's Voracity): a dummy kill takes seconds off her ability cooldowns.
         // Master Yi's Highlander: a kill cuts the remaining cooldowns by a share (pct) and extends the ultimate's attack speed.
         if (P && P.killReset) for (const s of P.killReset.slots) if (ready[s] > t && ready[s] !== Infinity)
@@ -613,6 +615,7 @@
       // stacks like Vayne's Silver Bolts and Kai'Sa's plasma.
       const phantom = hasAny('guinsoo') && autoCount % 3 === 0 ? 1 : 0;
       if (P && P.rend) rendSpears += 1 + phantom; // Guinsoo's extra hit lodges a second spear
+      addOverwhelm(t, 'A'); // Mel's attacks stack Overwhelm too
       onHitTimes += phantom;
       if (sbArmed) {
         sbArmed = false;
@@ -657,7 +660,7 @@
     const ready = {}; let castLock = 0, bastionReady = 0;
     const spellCtx = () => ({
       self: { level: 18, ap: st.ap, ad: st.totalAD, baseAD: st.baseAD, bonusAD: st.bonusAD,
-        as: st.as, baseAS: st.asBase, bonusAS: st.as - st.asBase,
+        as: st.as, baseAS: st.asBase, bonusAS: st.as - st.asBase, bonusASRatio: st.bonusASPct / 100,
         armor: st.baseArmor + st.bonusArmor, baseArmor: st.baseArmor, bonusArmor: st.bonusArmor,
         mr: st.baseMR + st.bonusMR, baseMR: st.baseMR, bonusMR: st.bonusMR,
         maxHp: st.maxHP, baseHp: st.baseHP, bonusHp: st.bonusHP, curHp: SELF_HP * st.maxHP, missingHp: (1 - SELF_HP) * st.maxHP,
@@ -667,7 +670,7 @@
         baseHp: DUMMY.baseHp, bonusHp: DUMMY.hp - DUMMY.baseHp },
       stacks: stackInfo.counter ?? 0,
     });
-    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute', 'mark', 'clone', 'pet', 'afterHits', 'knives']);
+    const SPELL_MECHS = new Set(['cast', 'channel', 'hits', 'multi', 'execute', 'mark', 'clone', 'pet', 'afterHits', 'knives', 'bomb', 'flurry']);
     let markState = null; // Zed-style mark: stores damage dealt until it pops
     const recastLeft = {}; // recasts still available per slot
     let channelUntil = -1; // a channel that keeps the champion from attacking or casting (Aurelion Sol Q)
@@ -720,9 +723,20 @@
     };
     // Abilities flagged 'first' (e.g. Zed R) are cast before anything else.
     // and abilities flagged 'last' (channels like Aurelion Sol Q) after everything else.
-    const castRank = s => s.mech && s.mech.order != null ? s.mech.order : s.mech && s.mech.first ? 0 : s.mech && s.mech.last ? 2 : 1;
+    // Executes are checked first: they only fire when they kill (or at their 'latest'), so they never delay another cast,
+    // but a killing blow is never held back behind one (Darius R the moment the dummy drops into range).
+    const castRank = s => s.mech && s.mech.order != null ? s.mech.order : s.mech && s.mech.kind === 'execute' && !s.mech.noHold ? -1
+      : s.mech && s.mech.first ? 0 : s.mech && s.mech.last ? 2 : 1;
     // Sigils (LeBlanc Q, Mimic Q): a mark on the target that pops for its own damage when the next ability hits it.
     let sigils = [];
+    let bomb = null; // Zilean's Time Bomb on the dummy: { raw, at } until it explodes (fuse) or a second bomb sets it off
+    // Mel's Overwhelm: stacks on the dummy from her abilities (and the missiles after them); lost when it dies.
+    const addOverwhelm = (t, slot) => {
+      const ow = P && P.overwhelm; if (!ow || !ow.per[slot]) return;
+      const live = pState.ow && t <= pState.ow.until ? pState.ow.n : 0;
+      pState.ow = { n: live + ow.per[slot], until: t + (ow.dur || 5) };
+    };
+    const overwhelmStacks = t => pState.ow && t <= pState.ow.until ? pState.ow.n : 0;
     const popSigils = t => {
       const live = sigils.filter(s => t <= s.until); sigils = [];
       for (const s of live) deal(t, s.raw, s.type, s.label + ' (mark)', 'ability');
@@ -758,6 +772,8 @@
         if (!canAfford(sp, t)) continue; // energy champions wait for enough energy
         if (useEnergy && sp.mech && sp.mech.whenEnergyBelow && energyNow(t) >= sp.mech.whenEnergyBelow) continue; // Akali W: refill when low
         if ((ready[sp.slot] || 0) > t + 1e-9) continue;
+        // Zilean's Rewind: only worth casting when it brings Time Bomb back early.
+        if (sp.mech && sp.mech.whenNotReady && (ready[sp.mech.whenNotReady] || 0) <= t + 1e-9) continue;
         if (sp.mech && sp.mech.kind === 'empowerAuto') {
           if (empowered) continue; // don't waste it before the armed attack lands
           empowered = { ...sp.mech, label: `${sp.slot} · ${labels[sp.slot] || sp.name}`, slot: sp.slot, cd: sp.cooldown,
@@ -788,14 +804,34 @@
             if (m.missAmp) raw *= 1 + m.missAmp.max * Math.min(1, miss / DUMMY.hp / (m.missAmp.at || 1));
             if (m.missPct) raw += m.missPct * miss;
             if (m.aboveMult && dummyHp > thrHp) raw *= m.aboveMult;
+            if (m.perStack) raw += evx(m.perStack) * overwhelmStacks(t); // Mel R: more damage per Overwhelm stack
             raw = Number.isFinite(raw) && raw > 0 ? Math.min(raw, 6000) : 0;
             const est = raw * mitigation(m.type, t);
-            const go = m.noHold || t >= (m.latest ?? 0) || (thrHp > 0 && dummyHp - est < thrHp) || (m.holdKill && est >= dummyHp);
+            // A passive execute (Mel's Overwhelm) finishes the dummy once it's under that line, so that counts as a kill.
+            const passiveLine = P && P.executeHp ? P.executeHp(pctx(t)) : 0;
+            const go = m.noHold || t >= (m.latest ?? 0) || (thrHp > 0 && dummyHp - est < thrHp) || (m.holdKill && est >= dummyHp - passiveLine);
             if (!go) continue;
             const killsBefore = kills;
             first = deal(t, raw, m.type, label, 'ability');
             if (thrHp > 0 && dummyHp > 0 && dummyHp < thrHp) record(t, dummyHp, 'true', label.replace(/ · .*/, ' · Execute'));
             resetNow = !!m.resetOnKill && kills > killsBefore;
+          } else if (m.kind === 'bomb') {
+            // Zilean's Time Bomb: explodes after its fuse, or right away (with the first one) when a second bomb lands.
+            const v = ev(m.calc);
+            if (bomb && t <= bomb.at) { bomb.spent = true; first = deal(t, bomb.raw, m.type, label, 'ability') + deal(t, v, m.type, label, 'ability'); bomb = null; }
+            else { const b = { raw: v, at: t + (m.fuse || 3) }; bomb = b;
+              spellQueue.push({ at: b.at, label, type: m.type, raw: () => { if (b.spent) return 0; if (bomb === b) bomb = null; return b.raw; } }); }
+          } else if (m.kind === 'flurry') {
+            // Bel'Veth E: held for a low target (each strike deals more the lower its health), then a channel of strikes
+            // (more with bonus attack speed), each applying a share of on-hit effects. She can't attack while channeling.
+            const missNow = 1 - dummyHp / DUMMY.hp;
+            if (!(missNow >= (m.holdMissing ?? 0) || t >= (m.latest ?? 0))) continue;
+            const n = Math.max(1, Math.floor(ev(m.strikesCalc) || 6)), dur = m.duration || 1.5;
+            let acc = 0;
+            for (let i = 0; i < n; i++) spellQueue.push({ at: t + (i + 0.5) * dur / n, label, type: m.type,
+              raw: () => ev(m.calc) * (1 + (m.missAmpMax || 0) * (1 - dummyHp / DUMMY.hp)),
+              after: tt => { acc += m.onHitRatio || 0; if (acc >= 1 - 1e-9) { acc -= 1; onHitEffects(tt, 1); } } });
+            channelUntil = t + dur;
           } else if (m.kind === 'cast' && m.noDamage) first = 0; // utility casts (Katarina W drops a dagger)
           else if (m.kind === 'cast' && m.recastCalc && m.recasts && recastLeft[sp.slot] > 0) {
             // Akali R2: the recast scales with the target's missing health, up to recastMaxMult at recastFullAt health left.
@@ -810,6 +846,9 @@
           // Wuju Style: every attack deals the buff's damage for its duration.
           if (m.onHitBuff) { onHitBuffs = onHitBuffs.filter(b => b.label !== label); onHitBuffs.push({ until: t + (m.duration || 5), raw: ev(m.onHitBuff), type: m.onHitType || 'true', label }); }
           // Akali W: restores energy and raises her max energy by the same amount while the shroud lasts.
+          // Zilean's Rewind: takes seconds off his other basic abilities' cooldowns.
+          if (m.cdReduce) for (const s of ['Q', 'W', 'E']) if (s !== sp.slot && ready[s] > t && ready[s] !== Infinity) ready[s] = Math.max(t, ready[s] - m.cdReduce);
+          addOverwhelm(t, sp.slot);
           if (m.energyMax) { energyNow(t); energyMaxBonus = m.energyMax; energyMaxUntil = t + (m.duration || 5); energy += m.energyMax; }
           // Temporary attack speed from a cast (Wukong E); game data stores 60% as 0.6.
           if (m.asCalc) { const a = ev(m.asCalc); tempAS = a < 5 ? a * 100 : a; tempASUntil = t + (m.asDur || 4); } // Kindred Q
@@ -867,7 +906,9 @@
           if (sp.slot === 'R' && opening) onUltimate(t);
           if (opening) castDebuff(t, sp.slot);
           ready[sp.slot] = m.once ? Infinity : resetNow ? t + 1 : m.recasts && recastLeft[sp.slot] > 0 ? t + (m.recastGap || 1)
-            : afterCharge(sp, t, t + cdOf(sp.slot, m.zoneCd && t < zoneUntil ? m.zoneCd : sp.cooldown)); // Kindred Q: shorter inside her zone
+            : afterCharge(sp, t, t + cdOf(sp.slot, m.zoneCd && t < zoneUntil ? m.zoneCd // Kindred Q: shorter inside her zone
+              : m.resistCdCap ? Math.max(m.resistCdMin, sp.cooldown - (sp.cooldown - m.resistCdMin) * Math.min(1, (st.bonusArmor + st.bonusMR) / m.resistCdCap)) // K'Sante Q
+              : sp.cooldown));
           // Olaf Q: he walks to the axe and picks it up (pickup seconds later); the cooldown drops to pickupCd from the throw.
           if (m.pickup) { const castAt = t; spellQueue.push({ at: t + m.pickup, label, type: m.type, raw: () => 0,
             after: tt => { if (ready[sp.slot] > tt && ready[sp.slot] !== Infinity) ready[sp.slot] = Math.max(tt, castAt + cdOf(sp.slot, m.pickupCd || 0)); } }); }
@@ -883,6 +924,7 @@
         const label = `${sp.slot} · ${sp.lastVariant || labels[sp.slot] || sp.name}${empTag}`;
         deal(t, dmg, sp.type, label, 'ability');
         if (P && P.rend && P.rend.fromSlot === sp.slot) rendSpears++; // Kalista's Pierce lodges a spear
+        addOverwhelm(t, sp.slot);
         // Shadows (Zed): every active shadow repeats this ability on the target with its own formula.
         if (P && P.shadows && sp.slot === P.shadows.slot) {
           const sh = P.shadows, cdW = (sh.w.every || 16) * 100 / (100 + st.ah);
