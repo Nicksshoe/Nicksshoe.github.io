@@ -1452,9 +1452,10 @@
   // Champion choices for a draft started on this date (How to play shows the same number the draft will offer).
   const champChoicesFor = date => (typeof date === 'string' && date >= DRAFT_V2_FROM ? CHAMP_CHOICES_V2 : DRAFT.CHAMP_CHOICES);
   const SEEN_ITEM_WEIGHT = 0.25;
-  // Also from 2026-11-20: fewer boots in the pool (14 pairs crowded the choices). These three are no longer offered:
-  // Boots of Swiftness, Ionian Boots of Lucidity, Gluttonous Greaves (ids are stable across patches).
-  const REMOVED_ITEMS_V2 = new Set(['3009', '3158', '3008']);
+  // Also from 2026-11-20: fewer boots in the pool (14 pairs crowded the choices). No longer offered: Boots of Swiftness,
+  // Ionian Boots of Lucidity, Gluttonous Greaves and their upgrades Swiftmarch, Crimson Lucidity, Immortal Path
+  // (ids are stable across patches).
+  const REMOVED_ITEMS_V2 = new Set(['3009', '3158', '3008', '3170', '3171', '3168']);
 
   function createDraft(data, seed, opts = {}) {
     const rng = mulberry32(hashStr(seed));
