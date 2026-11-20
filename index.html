@@ -319,6 +319,18 @@ html[data-theme=arcade] .legend span::before{border-radius:0}
 /* Results */
 html[data-theme=arcade] .badge{border-radius:0;width:auto;height:auto;padding:12px 16px;background:var(--bg);border:3px solid var(--gold);
   box-shadow:5px 5px 0 var(--pink);font:400 16px var(--pix);color:var(--gold)}
+/* Each tier in its own colour (brighter versions of the classic ones, readable on the near-black background). */
+html[data-theme=arcade] .badge{color:var(--tc,var(--gold));border-color:var(--tc,var(--gold))}
+html[data-theme=arcade] .badge[data-tier=Iron]{--tc:#b8aca4}
+html[data-theme=arcade] .badge[data-tier=Bronze]{--tc:#e8945a}
+html[data-theme=arcade] .badge[data-tier=Silver]{--tc:#d4dde6}
+html[data-theme=arcade] .badge[data-tier=Gold]{--tc:#ffd23f}
+html[data-theme=arcade] .badge[data-tier=Platinum]{--tc:#4fe6d0}
+html[data-theme=arcade] .badge[data-tier=Emerald]{--tc:#3ddc84}
+html[data-theme=arcade] .badge[data-tier=Diamond]{--tc:#7aa2ff}
+html[data-theme=arcade] .badge[data-tier=Master]{--tc:#c77dff}
+html[data-theme=arcade] .badge[data-tier=Grandmaster]{--tc:#ff5468}
+html[data-theme=arcade] .badge[data-tier=Challenger]{--tc:#fff0a0;text-shadow:0 0 10px #ffe066}
 html[data-theme=arcade] .bignum{font:400 46px var(--pix);color:var(--gold);text-shadow:3px 3px 0 var(--pink)}
 html[data-theme=arcade] .bignum small{font:700 14px 'Chakra Petch',system-ui,sans-serif;text-transform:uppercase;color:var(--cyan);text-shadow:none;margin-left:10px;vertical-align:middle}
 html[data-theme=arcade] .facts b{color:var(--gold)}
@@ -1016,7 +1028,7 @@ function showResults(res, isBest){
 
   $('#stage').innerHTML = `
     <div class="result-hero">
-      <div class="badge" style="--c:${tier.color}">${t('tier_' + tier.name).toUpperCase()}</div>
+      <div class="badge" data-tier="${tier.name}" style="--c:${tier.color}">${t('tier_' + tier.name).toUpperCase()}</div>
       <div>
         <div class="muted" style="font-size:13px;letter-spacing:.12em;text-transform:uppercase">${S.mode === 'daily' ? t('daily') + ' ' + today() : t('free')} · ${cName(S.champ)}</div>
         <div class="bignum">${fmt(res.total)}<small>${t('dmgIn10')}</small></div>
@@ -1073,7 +1085,7 @@ function showDailyDone(prev){
   $('#stage').innerHTML = `
     <div class="stage-head"><div><h2>${t('dailyDone')}</h2><p>${t('dailyDoneSub')}</p></div></div>
     <div class="result-hero">
-      <div class="badge" style="--c:${tier.color}">${t('tier_' + tier.name).toUpperCase()}</div>
+      <div class="badge" data-tier="${tier.name}" style="--c:${tier.color}">${t('tier_' + tier.name).toUpperCase()}</div>
       <div><div class="muted">${champ ? cName(champ) : prev.champ}</div><div class="bignum">${fmt(prev.total)}<small>${t('damage')}</small></div></div>
     </div>
     ${prev.rank ? `<p class="muted">${t('lbRankLine', { rank: prev.rank, of: prev.of, name: esc(prev.name) })}</p>` : ''}
