@@ -31,14 +31,19 @@
 <meta name="twitter:description" content="Draft a random champion and 6 random items, then fight a training dummy for 10 seconds. Free, no sign-up.">
 <meta name="twitter:image" content="https://potentialdamage.gg/og.png?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;700&family=Bungee&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
-/* Arcade is the default look; ?theme=classic switches this browser back to the original (remembered), ?theme=arcade returns. */
+/* Arcade is the default look; ?theme=classic switches this browser back to the original (remembered), ?theme=arcade returns.
+   Only the chosen theme's two fonts are downloaded. */
 (() => {
   const q = new URLSearchParams(location.search).get('theme');
   let saved = null;
   try { if (q === 'arcade' || q === 'classic') localStorage.setItem('potenshall:theme', q); saved = localStorage.getItem('potenshall:theme'); } catch {}
-  if ((q || saved) !== 'classic') document.documentElement.dataset.theme = 'arcade'; // storage can fail (private mode): still arcade
+  const classic = (q || saved) === 'classic'; // storage can fail (private mode): still arcade
+  if (!classic) document.documentElement.dataset.theme = 'arcade';
+  const fonts = document.createElement('link'); fonts.rel = 'stylesheet';
+  fonts.href = 'https://fonts.googleapis.com/css2?' + (classic ? 'family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;700'
+    : 'family=Bungee&family=Chakra+Petch:wght@400;500;600;700') + '&display=swap';
+  document.head.appendChild(fonts);
 })();
 </script>
 <style>
@@ -241,6 +246,7 @@ html[data-theme=arcade]{
   --cyan:#3ef0ff; --pink:#ff3ea5; --lime:#b6ff3e;
   --phys:#ff8a2a; --magic:#3ef0ff; --true:#ffffff; --good:#b6ff3e; --bad:#ff3e6c; --radius:0;
   --pix:Bungee,'Arial Black',sans-serif; --ui:700 13px 'Chakra Petch',system-ui,sans-serif;
+  --e1:3px 3px 0; --e2:5px 5px 0; --e3:8px 8px 0; /* the only three shadow offsets: small (tags, buttons, cards), medium (hover, tier, phone panels), large (main panels) */
 }
 html[data-theme=arcade] body{background:var(--bg);font-family:'Chakra Petch',system-ui,sans-serif;
   border-top:6px solid var(--gold);box-shadow:inset 0 3px 0 var(--pink)}
@@ -249,14 +255,14 @@ html[data-theme=arcade] .logo{font:400 26px var(--pix);letter-spacing:.02em;back
   text-shadow:3px 3px 0 var(--pink)}
 html[data-theme=arcade] .pill,
 html[data-theme=arcade] .modes button{border:2px solid var(--cyan);border-radius:0;background:var(--bg);color:var(--cyan);
-  font:var(--ui);text-transform:uppercase;letter-spacing:.04em;padding:7px 12px;box-shadow:4px 4px 0 #3ef0ff66}
+  font:var(--ui);text-transform:uppercase;letter-spacing:.04em;padding:7px 12px;box-shadow:var(--e1) #3ef0ff55}
 html[data-theme=arcade] .pill b{color:var(--cyan);font-weight:700}
 html[data-theme=arcade] .modes{border:0;border-radius:0;overflow:visible;gap:10px}
-html[data-theme=arcade] .modes button.on{background:var(--gold);color:#120a00;border-color:var(--gold);box-shadow:4px 4px 0 var(--pink)}
+html[data-theme=arcade] .modes button.on{background:var(--gold);color:#120a00;border-color:var(--gold);box-shadow:var(--e1) var(--pink)}
 html[data-theme=arcade] .settings select{font:var(--ui);text-transform:uppercase;color:var(--cyan)}
 
 /* Panels */
-html[data-theme=arcade] .panel{background:var(--bg);border:3px solid var(--gold);border-radius:0;box-shadow:8px 8px 0 var(--pink)}
+html[data-theme=arcade] .panel{background:var(--bg);border:3px solid var(--gold);border-radius:0;box-shadow:var(--e3) var(--pink)}
 html[data-theme=arcade] .panel h3,
 html[data-theme=arcade] .howto h3{font:400 14px var(--pix);letter-spacing:.04em;color:var(--gold)}
 html[data-theme=arcade] .champ-slot .ph,
@@ -265,7 +271,7 @@ html[data-theme=arcade] .champ-slot img{border-radius:0;border:2px solid var(--c
 html[data-theme=arcade] .champ-slot .nm{font:400 16px var(--pix);color:var(--gold)}
 html[data-theme=arcade] .champ-slot .tt{color:var(--cyan)}
 html[data-theme=arcade] .item-slot img{border-radius:0;border:2px solid var(--gold)}
-html[data-theme=arcade] .item-slot.cur .ph{border-color:var(--cyan);color:var(--cyan);box-shadow:3px 3px 0 #3ef0ff55}
+html[data-theme=arcade] .item-slot.cur .ph{border-color:var(--cyan);color:var(--cyan);box-shadow:var(--e1) #3ef0ff55}
 html[data-theme=arcade] .pip{transform:none;border-radius:0;background:var(--gold);border-color:var(--gold)}
 html[data-theme=arcade] .pip.used{background:transparent;border-color:var(--line)}
 html[data-theme=arcade] .dummy-card div{border:2px solid var(--pink);border-radius:0;background:var(--bg)}
@@ -282,14 +288,14 @@ html[data-theme=arcade] .steps div.cur{background:var(--gold)}
 html[data-theme=arcade] .stage-head h2{font:400 22px var(--pix);color:var(--gold);letter-spacing:.02em}
 html[data-theme=arcade] .stage-head p{color:var(--cyan)}
 html[data-theme=arcade] .btn{border:2px solid var(--gold);border-radius:0;background:var(--bg);color:var(--gold);font:700 14px 'Chakra Petch',system-ui,sans-serif;text-transform:uppercase;letter-spacing:.04em;
-  box-shadow:4px 4px 0 var(--pink);transition:transform .08s,box-shadow .08s}
-@media (hover:hover) and (pointer:fine){html[data-theme=arcade] .btn:hover:not(:disabled){box-shadow:6px 6px 0 var(--pink);transform:translate(-1px,-1px)}}
+  box-shadow:var(--e1) var(--pink);transition:transform .08s,box-shadow .08s}
+@media (hover:hover) and (pointer:fine){html[data-theme=arcade] .btn:hover:not(:disabled){box-shadow:var(--e2) var(--pink);transform:translate(-1px,-1px)}}
 html[data-theme=arcade] .btn:active:not(:disabled){box-shadow:1px 1px 0 var(--pink);transform:translate(3px,3px)}
 html[data-theme=arcade] .btn.primary{background:var(--gold);color:#120a00;border-color:var(--gold)}
 
 /* Cards: cyan frames; the hard shadow only on hover so a full grid stays calm */
-html[data-theme=arcade] .card{background:var(--bg);border:2px solid var(--cyan);border-radius:0;box-shadow:3px 3px 0 #3ef0ff55}
-@media (hover:hover) and (pointer:fine){html[data-theme=arcade] .card:hover{border-color:var(--gold);transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--pink)}}
+html[data-theme=arcade] .card{background:var(--bg);border:2px solid var(--cyan);border-radius:0;box-shadow:var(--e1) #3ef0ff55}
+@media (hover:hover) and (pointer:fine){html[data-theme=arcade] .card:hover{border-color:var(--gold);transform:translate(-2px,-2px);box-shadow:var(--e2) var(--pink)}}
 html[data-theme=arcade] .cards.champs{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px} /* 3 big cards per row, like the mockup */
 html[data-theme=arcade] .card .portrait{border-radius:0;border:2px solid #fff}
 html[data-theme=arcade] .card .nm{font:400 15px var(--pix);color:#fff;letter-spacing:.02em}
@@ -311,7 +317,7 @@ html[data-theme=arcade] .arena{border:3px solid var(--cyan);border-radius:0;
   background:linear-gradient(transparent 0 calc(100% - 60px),#1a0f2a calc(100% - 60px)),
     repeating-linear-gradient(0deg,#ffffff06 0 2px,transparent 2px 4px),var(--bg)}
 html[data-theme=arcade] .arena .attacker{border-radius:0;border-color:var(--gold)}
-html[data-theme=arcade] .hpbar{border-radius:0;border:2px solid #fff;box-shadow:3px 3px 0 var(--pink)}
+html[data-theme=arcade] .hpbar{border-radius:0;border:2px solid #fff;box-shadow:var(--e1) var(--pink)}
 html[data-theme=arcade] .hpbar .fill{background:var(--pink)}
 html[data-theme=arcade] .clock,
 html[data-theme=arcade] .kills b{font:400 22px var(--pix);color:var(--gold)}
@@ -321,7 +327,7 @@ html[data-theme=arcade] .legend span::before{border-radius:0}
 
 /* Results */
 html[data-theme=arcade] .badge{border-radius:0;width:auto;height:auto;padding:12px 16px;background:var(--bg);border:3px solid var(--gold);
-  box-shadow:5px 5px 0 var(--pink);font:400 16px var(--pix);color:var(--gold)}
+  box-shadow:var(--e2) var(--pink);font:400 16px var(--pix);color:var(--gold)}
 /* Each tier in its own colour (brighter versions of the classic ones, readable on the near-black background). */
 html[data-theme=arcade] .badge{color:var(--tc,var(--gold));border-color:var(--tc,var(--gold))}
 html[data-theme=arcade] .badge[data-tier=Iron]{--tc:#b8aca4}
@@ -348,7 +354,7 @@ html[data-theme=arcade] .statgrid div{border-bottom:1px solid var(--line)}
 html[data-theme=arcade] .meter i{border-radius:0;height:14px;background:transparent;border:2px solid var(--gold)}
 html[data-theme=arcade] .meter i.on{background:var(--pink);border-color:var(--pink)}
 html[data-theme=arcade] .quote{font-style:normal;color:var(--gold)}
-html[data-theme=arcade] .toast{border-radius:0;background:var(--gold);color:#120a00;font-family:'Chakra Petch',system-ui,sans-serif;box-shadow:4px 4px 0 var(--pink)}
+html[data-theme=arcade] .toast{border-radius:0;background:var(--gold);color:#120a00;font-family:'Chakra Petch',system-ui,sans-serif;box-shadow:var(--e1) var(--pink)}
 html[data-theme=arcade] .spinner{border-radius:0;border-color:var(--line);border-top-color:var(--gold)}
 html[data-theme=arcade] input,html[data-theme=arcade] select,html[data-theme=arcade] textarea{border-radius:0!important}
 html[data-theme=arcade] input:focus,html[data-theme=arcade] select:focus,html[data-theme=arcade] textarea:focus{outline:2px solid var(--cyan);outline-offset:1px}
@@ -356,7 +362,7 @@ html[data-theme=arcade] input:focus,html[data-theme=arcade] select:focus,html[da
 /* Leaderboard */
 html[data-theme=arcade] .lb-list{gap:8px}
 html[data-theme=arcade] .lb-row{border-radius:0;background:var(--bg);border:2px solid var(--cyan)}
-html[data-theme=arcade] .lb-row.mine{background:#ffd23f14;border-color:var(--gold);box-shadow:4px 4px 0 var(--pink)}
+html[data-theme=arcade] .lb-row.mine{background:#ffd23f14;border-color:var(--gold);box-shadow:var(--e1) var(--pink)}
 html[data-theme=arcade] .lb-rank{font:400 16px var(--pix);color:var(--cyan)}
 html[data-theme=arcade] .lb-row.top .lb-rank{color:var(--gold);text-shadow:2px 2px 0 var(--pink)}
 html[data-theme=arcade] .lb-face{border-radius:0;border:2px solid var(--gold)}
@@ -368,12 +374,17 @@ html[data-theme=arcade] .lb-lock h3{font:400 18px var(--pix);color:var(--gold)}
 html[data-theme=arcade] .lb-select{border:2px solid var(--cyan);color:var(--cyan);font:700 13px 'Chakra Petch',sans-serif}
 
 /* How to play and the bug report form */
-html[data-theme=arcade] .howto section{box-shadow:4px 4px 0 #3ef0ff44}
+html[data-theme=arcade] .howto section{box-shadow:var(--e1) #3ef0ff55}
 html[data-theme=arcade] .howto p{color:var(--text)}
 html[data-theme=arcade] #repKind,html[data-theme=arcade] #repText,html[data-theme=arcade] #lbName{border:2px solid var(--cyan)!important;background:var(--bg)!important}
 html[data-theme=arcade] label[for=repKind]{color:var(--gold);font-weight:700;text-transform:uppercase;font-size:13px}
 html[data-theme=arcade] #repStatus{color:var(--lime);font-weight:600}
 html[data-theme=arcade] footer{border-top:3px solid var(--gold);color:var(--muted)}
+/* Readable line length: the legal text stops at about 90 characters (it ran ~180 wide on desktop); the divider stays full width. */
+footer{padding-right:max(0px,calc(100% - 90ch))}
+/* Light text on a dark background reads better with a little more line height and letter spacing. */
+html[data-theme=arcade] body{line-height:1.55;letter-spacing:.005em}
+html[data-theme=arcade] .rules li,html[data-theme=arcade] .howto p{line-height:1.6}
 @media (max-width:560px){
   html[data-theme=arcade] .logo{font-size:20px}
   html[data-theme=arcade] .bignum{font-size:36px}
@@ -381,7 +392,7 @@ html[data-theme=arcade] footer{border-top:3px solid var(--gold);color:var(--mute
   html[data-theme=arcade] .cards.champs{grid-template-columns:repeat(2,1fr);gap:10px} /* 2 per row on phones, like the mockup */
   html[data-theme=arcade] .card .nm{font-size:13px}
   html[data-theme=arcade] .pill,html[data-theme=arcade] .modes button{font-size:12px;padding:6px 9px}
-  html[data-theme=arcade] .panel{box-shadow:5px 5px 0 var(--pink)}
+  html[data-theme=arcade] .panel{box-shadow:var(--e2) var(--pink)}
 }
 
 /* Keyboard focus: a clear outline on anything you can press (only for keyboard use, not taps or clicks). */
