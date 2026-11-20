@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Design previews — Potential Damage</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,700&family=Cinzel:wght@700&family=IBM+Plex+Sans:wght@400;600&family=Pixelify+Sans:wght@500;700&family=Press+Start+2P&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Almendra:wght@700&family=Barlow+Condensed:ital,wght@1,700&family=Cinzel:wght@700&family=IBM+Plex+Sans:wght@400;600&family=Pixelify+Sans:wght@500;700&family=Press+Start+2P&family=Source+Sans+3:wght@400;600&family=Yeseva+One&display=swap" rel="stylesheet">
 <style>
   :root { color-scheme: dark }
   * { box-sizing: border-box }
@@ -21,7 +21,7 @@
   h1 { margin: 0 0 6px; font: 700 28px/1.1 Cinzel, serif; letter-spacing: 0.06em }
   header p { margin: 0; max-width: 68ch; color: #d9d3c7 }
   .current { color: #f4f1ea }
-  .board { display: grid; grid-template-columns: repeat(3, 1fr); min-height: 420px }
+  .board { display: grid; grid-template-columns: repeat(2, 1fr); min-height: 420px }
   a.dir { display: flex; flex-direction: column; justify-content: space-between; gap: 18px; padding: 22px; text-decoration: none; color: inherit; min-height: 280px }
   a.dir:focus-visible { outline: 3px solid #fff; outline-offset: -3px }
   .kicker { font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase }
@@ -39,6 +39,16 @@
   .brd h2 { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-style: italic; letter-spacing: 0.03em; text-transform: uppercase }
   .brd .kicker, .brd .open { font-family: "IBM Plex Sans", sans-serif; letter-spacing: 0.12em }
   .brd .open { color: #d6e4ff }
+  .fj {
+    background:
+      linear-gradient(180deg, rgba(90, 220, 200, 0.22), transparent 110px),
+      #0c1c28;
+    color: #eef6f8;
+    border-top: 6px solid #9ff3ea;
+    box-shadow: inset 0 0 0 1px #6e97a8;
+  }
+  .fj h2 { font-family: "Yeseva One", Almendra, serif; font-weight: 400; color: #f4fffd }
+  .fj .kicker, .fj .open { color: #9ad4e0; letter-spacing: 0.12em }
   footer { border-top: 1px solid #2a2a2a; color: #cfc8bc; font-size: 13px; line-height: 1.5 }
   footer a { color: #f4f1ea }
   @media (max-width: 860px) {
@@ -51,7 +61,7 @@
 <body>
 <header>
   <h1>DESIGN PREVIEWS</h1>
-  <p>Three alternate looks for Potential Damage. Each one plays the real game: same draft, same damage, same leaderboard. The live page is unchanged. <a class="current" href="../index.html">Open the current design</a>.</p>
+  <p>Four alternate looks for Potential Damage. Each one plays the real game: same draft, same damage, same leaderboard. The live page is unchanged. <a class="current" href="../index.html">Open the current design</a>.</p>
 </header>
 <nav class="board">
   <a class="dir hex" href="a-hextech.html">
@@ -75,6 +85,14 @@
       <div class="kicker">03 — Broadcast overlay</div>
       <h2>Post-game graphic</h2>
       <p>Sharp edges, a blue-side and red-side split, condensed headers, and tabular figures.</p>
+    </div>
+    <div class="open">Preview this direction</div>
+  </a>
+  <a class="dir fj" href="d-freljord.html">
+    <div>
+      <div class="kicker">04 — Freljord</div>
+      <h2>True Ice</h2>
+      <p>Glacial navy, carved frost frames, an aurora sky, and the damage total lit like True Ice.</p>
     </div>
     <div class="open">Preview this direction</div>
   </a>
