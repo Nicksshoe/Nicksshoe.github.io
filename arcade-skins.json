@@ -1,0 +1,73 @@
+{
+  "patch": "16.23.1",
+  "champions": {
+    "Ahri": {
+      "num": 7,
+      "name": "Arcade Ahri"
+    },
+    "Belveth": {
+      "num": 1,
+      "name": "Battle Boss Bel'Veth"
+    },
+    "Blitzcrank": {
+      "num": 11,
+      "name": "Battle Boss Blitzcrank"
+    },
+    "Brand": {
+      "num": 6,
+      "name": "Battle Boss Brand"
+    },
+    "Caitlyn": {
+      "num": 19,
+      "name": "Arcade Caitlyn"
+    },
+    "Corki": {
+      "num": 8,
+      "name": "Arcade Corki"
+    },
+    "Ezreal": {
+      "num": 9,
+      "name": "Arcade Ezreal"
+    },
+    "Hecarim": {
+      "num": 4,
+      "name": "Arcade Hecarim"
+    },
+    "Kaisa": {
+      "num": 17,
+      "name": "Arcade Kai'Sa"
+    },
+    "Malzahar": {
+      "num": 6,
+      "name": "Battle Boss Malzahar"
+    },
+    "MissFortune": {
+      "num": 7,
+      "name": "Arcade Miss Fortune"
+    },
+    "Qiyana": {
+      "num": 1,
+      "name": "Battle Boss Qiyana"
+    },
+    "Riven": {
+      "num": 6,
+      "name": "Arcade Riven"
+    },
+    "Sona": {
+      "num": 5,
+      "name": "Arcade Sona"
+    },
+    "Veigar": {
+      "num": 8,
+      "name": "Final Boss Veigar"
+    },
+    "Yasuo": {
+      "num": 17,
+      "name": "Battle Boss Yasuo"
+    },
+    "Ziggs": {
+      "num": 6,
+      "name": "Battle Boss Ziggs"
+    }
+  }
+}

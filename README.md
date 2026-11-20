@@ -53,6 +53,7 @@ It also runs `tools/stamp-assets.ps1`, which adds a content fingerprint to each 
 3. `pwsh -File tools/update-cc.ps1`: `cc.js` (which abilities immobilize, for Imperial Mandate).
 4. `pwsh -File tools/update-itemgroups.ps1`: `itemgroups.js` (which items can't be owned together, e.g. one Last Whisper item, one Spellblade item, one pair of boots).
 5. `pwsh -File tools/update-stacks.ps1`: `stacks.json` (needs the Riot API key; see above).
+   Also `pwsh -File tools/update-arcade-skins.ps1`: `arcade-skins.json` (champions with an Arcade / Battle Boss / Final Boss skin, shown in the arcade theme).
 6. Open `audit.html` on the local server (e.g. http://localhost:5174/audit.html). It compares every ability with Riot's tooltip (damage per cast, damage type, cooldown, casts) and with the saved `audit-baseline.json`; tick **Only new since baseline** to see what the patch changed. Fix or mark each new flag OK (with a note), then click **Save baseline** (on the local server it writes `audit-baseline.json` into the project; elsewhere it downloads) and commit it.
 7. Commit and push, then `pwsh -File tools/build-worker.ps1` and redeploy the Worker. Run `tools/check-patch.ps1` again: it should say everything matches. Close the reminder issue.
 
