@@ -276,7 +276,7 @@ html[data-theme=arcade] .pip{transform:none;border-radius:0;background:var(--gol
 html[data-theme=arcade] .pip.used{background:transparent;border-color:var(--line)}
 html[data-theme=arcade] .dummy-card div{border:2px solid var(--pink);border-radius:0;background:var(--bg)}
 html[data-theme=arcade] .dummy-card b{font:400 17px var(--pix);color:var(--cyan)}
-html[data-theme=arcade] .dummy-card span{color:var(--gold);font-size:10px}
+html[data-theme=arcade] .dummy-card span{color:var(--gold);font-size:12px;line-height:1.2} /* 12px minimum for labels; long translations wrap */
 html[data-theme=arcade] .rules{color:var(--text)}
 html[data-theme=arcade] .howto section{border:2px solid var(--cyan);border-radius:0;background:var(--bg)}
 
@@ -442,7 +442,7 @@ html[data-theme=arcade] :focus-visible{outline:3px solid var(--cyan);outline-off
   </header>
 
   <div class="game">
-    <aside class="panel">
+    <aside class="panel" data-impeccable-ignore="hard-offset-shadow"><!-- the pink offset shadow is the arcade look on purpose (DESIGN.md) -->
       <h3 data-i18n="yourBuild">Your Build</h3>
       <div class="champ-slot" id="champSlot"></div>
       <div class="items-grid" id="itemSlots"></div>
@@ -463,7 +463,7 @@ html[data-theme=arcade] :focus-visible{outline:3px solid var(--cyan);outline-off
       <div id="sponsor" hidden style="margin-top:16px"></div>
     </aside>
 
-    <main class="panel" id="stage">
+    <main class="panel" id="stage" data-impeccable-ignore="hard-offset-shadow">
       <div class="loading"><div><div class="spinner"></div><span data-i18n="loading">Loading the latest patch from Data Dragon…</span></div></div>
     </main>
   </div>

@@ -49,11 +49,14 @@ Platinum `#4fe6d0`, Emerald `#3ddc84`, Diamond `#7aa2ff`, Master `#c77dff`, Gran
 - Light text on dark: body line height 1.55, long text 1.6, letter spacing 0.005em.
 - Line length: long text stops near 90 characters (footer), How to play cards stay around 45 to 75.
 - Numbers use tabular figures where they update live (clock, totals, leaderboard scores).
+- Smallest text is 11px (tags, skin label); functional labels are 12px or more (dummy stat labels: 12px Chakra Petch under
+  the Bungee numbers). Long translations (German "Magieresistenz", Dutch "Magische weerstand") wrap instead of shrinking.
 - Only the active theme's two fonts are downloaded (the theme script adds the Google Fonts link).
 
 ## Components
 
-- **Main panels** (`.panel`: sidebar, stage): 3px gold frame, `--e3` pink shadow.
+- **Main panels** (`.panel`: sidebar, stage): 3px gold frame, `--e3` pink shadow. Marked
+  `data-impeccable-ignore="hard-offset-shadow"`: Impeccable flags hard offset shadows as an advisory, and here it is the design.
 - **Inner panels** (inside the stage: results sections, How to play cards): 2px cyan frame, no shadow (busy screens stay calm).
 - **Cards** (champion and item choices): 2px cyan frame, `--e1` faint cyan shadow at rest; on hover (mouse only) gold frame,
   lift 2px, `--e2` pink shadow. Champion portraits have a 2px white frame. 3 cards per row on desktop, 2 on phones.
