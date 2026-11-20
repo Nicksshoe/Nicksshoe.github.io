@@ -83,6 +83,7 @@ Platinum `#4fe6d0`, Emerald `#3ddc84`, Diamond `#7aa2ff`, Master `#c77dff`, Gran
 - **Buttons**: square, 2px gold frame, Chakra Petch 700 capitals, `--e1` pink shadow; primary is gold fill with dark text.
   Hover lifts with `--e2`; pressed sinks to a 1px shadow.
 - **Pills and mode tabs** (header): 2px cyan frame, cyan capitals; the active mode is gold fill with a pink shadow.
+  Patch and Best are information, not controls: no frame or shadow, muted label, gold number (`.pill.stat`).
 - **Tags** (roles, melee/ranged): 2px pink frame, pink capitals, 11px.
 - **Skin label**: champions with an Arcade, Battle Boss or Final Boss skin show that skin's art and a label in `--skin`
   with white text (5.5:1). The list comes from `arcade-skins.json` (`tools/update-arcade-skins.ps1`).

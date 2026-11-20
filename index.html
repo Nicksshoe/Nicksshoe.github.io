@@ -81,6 +81,8 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0 16p
 .spacer{flex:1}
 .pill{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
 .pill b{color:var(--gold2);font-weight:600}
+.pill.stat{border-color:transparent;background:none}
+.result-hero .badge{justify-self:start}
 #patch,#best{display:inline-block;min-width:6ch} /* room for "16.23.1" / "10,984" before they load, so the header doesn't rewrap */
 .modes{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
 .modes button{background:transparent;border:0;padding:6px 14px;font-size:13px;color:var(--muted)}
@@ -239,7 +241,7 @@ html{scrollbar-gutter:stable} /* the scrollbar appearing or going away doesn't n
 @keyframes spin{to{transform:rotate(360deg)}}
 footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size:11px;color:var(--muted);line-height:1.6}
 .muted{color:var(--muted)}
-.settings select{background:transparent;color:var(--text);border:0;font:inherit;font-weight:600;cursor:pointer;max-width:150px}
+.settings select{min-width:8.2em;background:transparent;color:var(--text);border:0;font:inherit;font-weight:600;cursor:pointer;max-width:150px}
 .settings select option{background:var(--panel);color:var(--text)}
 /* Leaderboard */
 .lb-list{display:grid;gap:6px}
@@ -281,10 +283,15 @@ html[data-theme=arcade] body{background:var(--bg);font-family:'Chakra Petch',sys
 html[data-theme=arcade] header{border-bottom:3px solid var(--gold);padding-bottom:18px}
 html[data-theme=arcade] .logo{font:400 26px var(--pix);letter-spacing:.02em;background:none;color:var(--gold);-webkit-text-fill-color:var(--gold);
   text-shadow:3px 3px 0 var(--pink)}
+/* Reserve the logo's final width (mark + Bungee text) so the header doesn't rewrap when the font arrives. */
+html[data-theme=arcade] h1.logo{min-width:12.7em}
 html[data-theme=arcade] .pill,
 html[data-theme=arcade] .modes button{border:2px solid var(--cyan);border-radius:0;background:var(--bg);color:var(--cyan);
   font:var(--ui);text-transform:uppercase;letter-spacing:.04em;padding:7px 12px;box-shadow:var(--e1) var(--cyan-soft)}
 html[data-theme=arcade] .pill b{color:var(--cyan);font-weight:700}
+/* Patch and Best are information, not buttons: no frame or shadow, so nothing looks tappable that isn't. */
+html[data-theme=arcade] .pill.stat{border-color:transparent;box-shadow:none;background:none;color:var(--muted);padding-left:2px;padding-right:2px}
+html[data-theme=arcade] .pill.stat b{color:var(--gold)}
 html[data-theme=arcade] .modes{border:0;border-radius:0;overflow:visible;gap:10px}
 html[data-theme=arcade] .modes button.on{background:var(--gold);color:var(--on-gold);border-color:var(--gold);box-shadow:var(--e1) var(--pink)}
 html[data-theme=arcade] .settings select{font:var(--ui);text-transform:uppercase;color:var(--cyan)}
@@ -429,6 +436,7 @@ html[data-theme=arcade] .rules li,html[data-theme=arcade] .howto p{line-height:1
 @media (max-width:560px){
   .pill,.modes button,.btn.sm{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:.35em} /* flex drops the space between label and number: gap puts it back */
   .settings select{min-height:36px}
+  .pill.stat{min-height:0;padding-top:2px;padding-bottom:2px}
   footer a{display:inline-block;padding:13px 2px}
 }
 
@@ -470,8 +478,8 @@ html[data-theme=arcade] :focus-visible{outline:3px solid var(--cyan);outline-off
     </div>
     <button class="pill" id="howBtn" style="cursor:pointer"><b data-i18n="howTo">How to play</b></button>
     <button class="pill" id="lbBtn" style="cursor:pointer;visibility:hidden"><b data-i18n="leaderboard">Leaderboard</b></button>
-    <div class="pill"><span data-i18n="patch">Patch</span> <b id="patch">…</b></div>
-    <div class="pill"><span data-i18n="best">Best</span> <b id="best">—</b></div>
+    <div class="pill stat"><span data-i18n="patch">Patch</span> <b id="patch">…</b></div>
+    <div class="pill stat"><span data-i18n="best">Best</span> <b id="best">—</b></div>
     <!-- Settings: language (English, German, Russian, Spanish, Portuguese, Dutch, French; English by default) -->
     <label class="pill settings" id="settings" title="Settings">
       <select id="langSel" aria-label="Language"></select></label>
