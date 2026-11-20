@@ -175,7 +175,7 @@
       stats: c => ({ ad: c.ad * (0.44 + 0.35 * c.crit + 0.3 * (c.bas + 0.51)) }),
       magazine: { size: 4, reload: 2.5 },
       everyN: { n: 4, crit: true, minCrit: 1.5, type: 'physical', dmg: c => 0.25 * c.tmiss } },
-    Jinx: { name: 'Get Excited!', note: 'Minigun attack speed stacks (Q)', stats: () => ({ as: 50 }) },
+    Jinx: none('Get Excited!', 'Takedown attack speed (no champion takedowns here); minigun attack speed is Q in abilities.js'),
     Kaisa: { name: 'Caustic Wounds', note: 'Plasma on-hit; ruptures at 5 stacks', onHit: { type: 'magic', dmg: c => 46 + 0.18 * c.ap },
       everyNHits: { n: 5, type: 'magic', dmg: c => (0.15 + 0.06 * c.ap / 100) * c.tmiss + 50 } },
     // Rend (game files, rank 5): first spear 45 + 70% AD + 65% AP, each extra spear 35 + 50% AD + 50% AP; 8s cooldown.
@@ -197,7 +197,7 @@
     Khazix: { name: 'Unseen Threat', note: 'Attack out of stealth', timedAuto: { every: 10, type: 'magic', dmg: c => 150 + 0.5 * c.bad } }, // game data: 50% bonus AD
     Kindred: none('Mark of the Kindred', 'Marks are counted in her abilities'),
     Kled: none('Skaarl the Cowardly Lizard'),
-    KogMaw: { castDebuff: { Q: { armor: 0.32, mr: 0.32, dur: 4 } }, name: 'Bio-Arcane Barrage (W)', note: 'W on-hit % max HP (8s of the fight) + Q attack speed; W is modeled here', disable: ['W'],
+    KogMaw: { castDebuff: { Q: { armor: 0.32, mr: 0.32, dur: 4 } }, name: 'Bio-Arcane Barrage (W)', note: 'W on-hit % max HP (8s of the fight) + Q attack speed; W is modeled here', disable: ['W'], optional: ['R'], // R spam (abilities.js) vs attacking: the better is kept
       stats: () => ({ as: 26 }), onHit: { type: 'magic', dmg: c => 0.8 * (0.06 + 0.01 * c.ap / 100) * c.tmax } },
     // Game files: the mark deals 12 + 1-2% (by level: 2% at 18) of the target's max health; it doesn't scale with resists.
     // All Out (R, rank 3, game files): for its 15s (the whole fight) +80% attack speed, 50% bonus armor penetration (the

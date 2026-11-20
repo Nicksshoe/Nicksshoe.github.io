@@ -416,6 +416,11 @@
     };
     let mines = null; // Taliyah's E stones on the ground: { until, raw } until W shoves the dummy through them
     const altNext = {}; // Taliyah Q: the next cast is the Worked Ground boulder
+    const castN = {}; // casts per slot (Corki R: every third missile is big)
+    // Escalating mana costs (Kog'Maw R): base x (1 + casts in the window), capped; paid from max mana.
+    let rampSpent = 0; const rampCasts = {};
+    const rampCost = (sp, t) => { const m = sp.mech, n = (rampCasts[sp.slot] || []).filter(x => t - x < (m.costWindow || 8)).length;
+      return Math.min(m.costCap || Infinity, m.costBase * (1 + n)); };
 
     const comboCD = pr.cd * 100 / (100 + st.ah);
     const comboDamage = () => {
@@ -691,6 +696,11 @@
       // Wukong's clone attacks alongside him at reduced damage. It's a separate attacker, so item on-hits aren't repeated.
       const cloneHit = t <= cloneUntil;
       if (cloneHit) deal(t, st.totalAD * (1 + st.crit * (st.critMult - 1)) * cloneMult, 'physical', 'W · Clone attacks', 'attack');
+      // Charge recharges that drop on every hit (Corki R: 2s per attack).
+      for (const sp of castable || []) if (sp.charges && sp.mech && sp.mech.rechargePerHit) {
+        const s = ammoSt[sp.slot];
+        if (s && s.nextAt !== Infinity) { s.nextAt = Math.max(t, s.nextAt - sp.mech.rechargePerHit); if (s.n <= 0 && ready[sp.slot] > t) ready[sp.slot] = s.nextAt; }
+      }
       // Abilities whose cooldown drops on every hit (Wukong Q: 0.5s per hit from him or the clone).
       for (const sp of castable || []) if (sp.mech && sp.mech.cdPerHit && ready[sp.slot] > t) ready[sp.slot] -= sp.mech.cdPerHit * (cloneHit ? 2 : 1);
       // Navori Flickerblade: attacks cut the remaining cooldown of Q, W and E by 15%.
@@ -903,6 +913,8 @@
         if (sp.mech && sp.mech.whenNotReady && (ready[sp.mech.whenNotReady] || 0) <= t + 1e-9) continue;
         // Zoe's Q waits for the bubble's sleep to set in, so it lands on a sleeping target.
         if (sp.mech && sp.mech.waitSleep && sleep && t < sleep.from) continue;
+        // Escalating mana cost (Kog'Maw R): only while his mana pool covers the next cast.
+        if (sp.mech && sp.mech.costBase && rampSpent + rampCost(sp, t) > st.maxMana) continue;
         // Held for a low target (Jhin R: more damage per missing health), or fired anyway at 'latest'. Bel'Veth's E checks this itself.
         if (sp.mech && sp.mech.holdMissing != null && sp.mech.kind !== 'flurry' && 1 - dummyHp / DUMMY.hp < sp.mech.holdMissing && t < (sp.mech.latest ?? 0)) continue;
         // Ornn's R: waits until the Brittle already on the dummy has popped, so its own Brittle isn't wasted.
@@ -1023,6 +1035,13 @@
             }
             if (m.stackMax && m.stackAmpCalc) mult *= 1 + stackOf(sp.slot, t) * ev(m.stackAmpCalc) / 100; // Hecarim: +damage per Rampage stack
             if (m.altCalc && altNext[sp.slot]) { calcName = m.altCalc; lab += ' (boulder)'; } // Taliyah Q on Worked Ground
+            // Kog'Maw R: more damage per missing health (the low-health version replaces it below 40%).
+            if (m.missAmpPer && !(castLow && m.lowCalc)) mult *= 1 + m.missAmpPer * (1 - dummyHp / DUMMY.hp);
+            // Corki R: every third missile is the big one.
+            castN[sp.slot] = (castN[sp.slot] || 0) + 1;
+            if (m.bigEvery && castN[sp.slot] % m.bigEvery === 0) { calcName = m.bigCalc; lab += ' (big one)'; }
+            // Escalating mana cost (Kog'Maw R): pay it from his mana pool.
+            if (m.costBase) { rampSpent += rampCost(sp, t); (rampCasts[sp.slot] = rampCasts[sp.slot] || []).push(t); }
             let extra = 0;
             if (m.stackFlat) extra += stackOf(sp.slot, t) * ev(m.stackFlat); // Kassadin R: flat damage per stack
             if (m.poisonCalc && t <= poisonUntil) extra += ev(m.poisonCalc); // Cassiopeia E vs a poisoned target

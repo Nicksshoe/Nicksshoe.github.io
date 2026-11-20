@@ -489,6 +489,14 @@
         charges: 2, chargeGap: 'QRampUpTime', cdAfterCharges: true, recastIsCast: true, resetsAttack: true },
       W: { kind: 'multi', type: 'physical', parts: [{ calc: 'BaseDamageTotal', type: 'physical' }, { calc: 'OuterEdgeTooltip', pctOfMax: true, type: 'physical' }], channelBlock: 'ChargeDuration', order: 0.32 }, // before R, so R's 4s are all attacks
     },
+    // Karthus E: a toggled aura, damage every second all fight.
+    Karthus: { E: { kind: 'channel', type: 'magic', perSec: 'TotalDPS', duration: 99, once: true, order: 0.3 } },
+    // Kog'Maw R: 1s cooldown (rank 3); each cast within 8s of the last costs 40 more mana (up to 400), so he casts while his
+    // mana lasts. More damage per missing health, double below 40%. passives.js keeps the better of with and without it.
+    KogMaw: { R: { kind: 'cast', type: 'magic', calc: 'BaseDamageCalc', realCd: true, missAmpPer: 'TooltipMissingHealthDamageAmp', lowBelow: 0.4, lowCalc: 'MaxDamageCalc',
+      costBase: 'BaseCost', costCap: 'ManaCostCap', costWindow: 'ManaCostDuration' } },
+    // Corki R: 4 charges; every third missile is the big one; each attack takes 2s off the recharge.
+    Corki: { R: { kind: 'cast', type: 'physical', calc: 'RSmallMissileDamage', bigEvery: 3, bigCalc: 'RBigMissileDamage', rechargePerHit: 'CDReductionOnHit' } },
     // Kayn at 18 as Rhaast (Darkin Slayer: max-health damage is far more against a 10,000 HP dummy than Shadow Assassin's
     // burst). Q hits twice (dash, then spin), each 65% AD + a share of max health. R deals a share of max health; he
     // bursts out after the 0.5s minimum, and can't attack while inside.
@@ -579,7 +587,10 @@
     Garen: { R: { kind: 'execute', type: 'true', flat: 'BaseDamage', missPct: 0.35, holdKill: true, latest: 9.5 } },
     Fiddlesticks: { W: { kind: 'execute', type: 'magic', flat: 'DamagePerSecond', flatMult: 2, missPct: 0.22, noHold: true } }, // 2s drain + 22% missing HP
     Veigar: { R: { kind: 'execute', type: 'magic', calc: 'MinDamage', missAmp: { max: 1, at: 0.667 }, holdKill: true, latest: 9.5 } },
-    Jinx: { R: { kind: 'execute', type: 'physical', calc: 'DamageMax', missPct: 0.35, holdKill: true, latest: 9.5 } },
+    // Jinx Q: she fights with the minigun (its attack speed at 3 stacks: 130% at rank 5, built in the first 3 attacks, so 9s
+    // of the fight); rockets add only 10% damage and lose attack speed. The swap itself deals no damage.
+    Jinx: { Q: { kind: 'buff', stats: { as: 'MinigunAttackSpeedMax' }, duration: 9 },
+      R: { kind: 'execute', type: 'physical', calc: 'DamageMax', missPct: 0.35, holdKill: true, latest: 9.5 } },
     Akshan: { R: { kind: 'execute', type: 'physical', missAmp: { max: 3, at: 1 }, holdKill: true, latest: 9.5 } },
     Smolder: { Q: { kind: 'execute', type: 'physical', threshold: 'Tier3_ExecuteThresholdStart', noHold: true } }, // 225 stacks
     // Darkin Daggers: first dagger + bleed + second dagger (minimum), all physical.
@@ -659,7 +670,7 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut', 'sleepDelay', 'sleepDur', 'falloff', 'apPerStack', 'venomSeconds', 'cdRefund', 'lowBelow', 'stackMax', 'stackCdCut', 'stackDur', 'rCd', 'execPct', 'execDur', 'altCdCut', 'altMinCd', 'mines', 'detonateAfter', 'cutPerCast', 'missAmpPer', 'lastMult', 'perSecFlat', 'onHitPctMax', 'channelBlock', 'charges', 'chargeGap', 'onHitPctCur']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut', 'sleepDelay', 'sleepDur', 'falloff', 'apPerStack', 'venomSeconds', 'cdRefund', 'lowBelow', 'stackMax', 'stackCdCut', 'stackDur', 'rCd', 'execPct', 'execDur', 'altCdCut', 'altMinCd', 'mines', 'detonateAfter', 'cutPerCast', 'missAmpPer', 'lastMult', 'perSecFlat', 'onHitPctMax', 'channelBlock', 'charges', 'chargeGap', 'onHitPctCur', 'costBase', 'costCap', 'costWindow', 'rechargePerHit']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
       ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: (v => v > 1 ? v / 100 : v)(dv(p.pctMaxHp)) } : {}), // stored as 0.09 or as 9 (%)
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));
