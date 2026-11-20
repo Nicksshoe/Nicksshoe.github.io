@@ -1,4 +1,5 @@
-# Draws og.png (1200x630), the image link previews show (Reddit, Discord, X...). Windows only (System.Drawing).
+# Draws og.png (1200x630), the image link previews show (Reddit, Discord, X...), in the arcade theme's colours.
+# Windows only (System.Drawing). Text stays in the middle: previews often crop the edges.
 Add-Type -AssemblyName System.Drawing
 $root = Split-Path $PSScriptRoot -Parent
 $W = 1200; $H = 630
@@ -6,22 +7,25 @@ $bmp = [Drawing.Bitmap]::new($W, $H)
 $g = [Drawing.Graphics]::FromImage($bmp)
 $g.SmoothingMode = 'AntiAlias'; $g.TextRenderingHint = 'AntiAliasGridFit'
 $hex = { param($h) [Drawing.ColorTranslator]::FromHtml($h) }
+$bg = & $hex '#0c0614'; $gold = & $hex '#ffd23f'; $cyan = & $hex '#3ef0ff'; $pink = & $hex '#ff3ea5'; $white = & $hex '#f4f0ff'
 
-# Background: the site's dark navy with a soft gold glow.
-$g.Clear((& $hex '#0a0f1a'))
-$glow = [Drawing.Drawing2D.GraphicsPath]::new(); $glow.AddEllipse(-200, -350, 1600, 900)
-$pgb = [Drawing.Drawing2D.PathGradientBrush]::new($glow)
-$pgb.CenterColor = [Drawing.Color]::FromArgb(70, 200, 162, 74); $pgb.SurroundColors = @([Drawing.Color]::FromArgb(0, 10, 15, 26))
-$g.FillPath($pgb, $glow)
-$pen = [Drawing.Pen]::new((& $hex '#c8a24a'), 3); $g.DrawRectangle($pen, 28, 28, $W - 56, $H - 56)
+$g.Clear($bg)
+# Top stripe (yellow, then a pink line), like the site.
+$g.FillRectangle([Drawing.SolidBrush]::new($gold), 0, 0, $W, 14)
+$g.FillRectangle([Drawing.SolidBrush]::new($pink), 0, 14, $W, 6)
+# Frame: pink offset shadow behind a yellow border.
+$g.FillRectangle([Drawing.SolidBrush]::new($pink), 70, 92, 1076, 480)
+$g.FillRectangle([Drawing.SolidBrush]::new($bg), 58, 80, 1076, 480)
+$g.DrawRectangle([Drawing.Pen]::new($gold, 6), 58, 80, 1076, 480)
 
 $center = [Drawing.StringFormat]::new(); $center.Alignment = 'Center'
-$gold = [Drawing.SolidBrush]::new((& $hex '#e7c46a')); $text = [Drawing.SolidBrush]::new((& $hex '#e8e3d6')); $muted = [Drawing.SolidBrush]::new((& $hex '#8f9bb3'))
-# Centred vertically, with nothing near the edges: previews often crop the image (top and bottom, or to a square).
-$g.DrawString('POTENTIAL DAMAGE', [Drawing.Font]::new('Georgia', 60, [Drawing.FontStyle]::Bold), $gold, [Drawing.RectangleF]::new(0, 165, $W, 110), $center)
-$g.DrawString('Draft a random champion and 6 random items.', [Drawing.Font]::new('Segoe UI', 36), $text, [Drawing.RectangleF]::new(0, 292, $W, 70), $center)
-$g.DrawString('How much damage can you deal in 10 seconds?', [Drawing.Font]::new('Segoe UI Semibold', 36), $text, [Drawing.RectangleF]::new(0, 355, $W, 75), $center)
-$g.DrawString('potentialdamage.gg  ·  free, no sign-up', [Drawing.Font]::new('Segoe UI', 24), $muted, [Drawing.RectangleF]::new(0, 445, $W, 44), $center)
+$shadow = { param($text, $font, $brush, $y, $h, $off)
+  $g.DrawString($text, $font, [Drawing.SolidBrush]::new($pink), [Drawing.RectangleF]::new($off, $y + $off, $W, $h), $center)
+  $g.DrawString($text, $font, $brush, [Drawing.RectangleF]::new(0, $y, $W, $h), $center) }
+& $shadow 'POTENTIAL DAMAGE' ([Drawing.Font]::new('Arial Black', 62)) ([Drawing.SolidBrush]::new($gold)) 160 110 5
+$g.DrawString('Draft a random champion and 6 random items.', [Drawing.Font]::new('Segoe UI Semibold', 34), [Drawing.SolidBrush]::new($white), [Drawing.RectangleF]::new(0, 300, $W, 64), $center)
+$g.DrawString('How much damage can you deal in 10 seconds?', [Drawing.Font]::new('Segoe UI', 34, [Drawing.FontStyle]::Bold), [Drawing.SolidBrush]::new($cyan), [Drawing.RectangleF]::new(0, 360, $W, 70), $center)
+$g.DrawString('POTENTIALDAMAGE.GG  ·  FREE, NO SIGN-UP', [Drawing.Font]::new('Segoe UI', 22, [Drawing.FontStyle]::Bold), [Drawing.SolidBrush]::new($gold), [Drawing.RectangleF]::new(0, 460, $W, 44), $center)
 
 $out = Join-Path $root 'og.png'
 $bmp.Save($out, [Drawing.Imaging.ImageFormat]::Png); $g.Dispose(); $bmp.Dispose()

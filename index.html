@@ -22,14 +22,14 @@
 <meta property="og:title" content="Potential Damage: how much damage can your random build deal?">
 <meta property="og:description" content="Draft a random champion and 6 random items, then fight a 10,000 HP training dummy for 10 seconds. Free, no sign-up, daily challenge and leaderboards.">
 <meta property="og:url" content="https://potentialdamage.gg/">
-<meta property="og:image" content="https://potentialdamage.gg/og.png?v=2">
+<meta property="og:image" content="https://potentialdamage.gg/og.png?v=3">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Potential Damage: draft a random champion and 6 random items. How much damage can you deal in 10 seconds?">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Potential Damage: how much damage can your random build deal?">
 <meta name="twitter:description" content="Draft a random champion and 6 random items, then fight a training dummy for 10 seconds. Free, no sign-up.">
-<meta name="twitter:image" content="https://potentialdamage.gg/og.png?v=2">
+<meta name="twitter:image" content="https://potentialdamage.gg/og.png?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;700&family=Bungee&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
@@ -212,6 +212,22 @@ footer{margin-top:28px;padding:16px 0;border-top:1px solid var(--line);font-size
 .muted{color:var(--muted)}
 .settings select{background:transparent;color:var(--text);border:0;font:inherit;font-weight:600;cursor:pointer;max-width:150px}
 .settings select option{background:var(--panel);color:var(--text)}
+/* Leaderboard */
+.lb-list{display:grid;gap:6px}
+.lb-row{display:grid;grid-template-columns:36px 36px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;
+  background:var(--panel2);border:1px solid var(--line)}
+.lb-row.mine{background:#c8aa6e22;border-color:var(--gold-dim)}
+.lb-rank{text-align:center;color:var(--muted)}
+.lb-row.top .lb-rank{color:var(--gold2)}
+.lb-face{width:36px;height:36px;border-radius:6px}
+.lb-masked{background:var(--bg);display:grid;place-items:center}
+.lb-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-items{display:flex;gap:3px;margin-top:3px;flex-wrap:wrap;align-items:center}
+.lb-items img{width:20px;height:20px;border-radius:3px}
+.lb-champ{font-size:12px;margin-left:6px}
+.lb-score{font-variant-numeric:tabular-nums}
+.lb-lock{text-align:center;padding:28px 12px;border:1px dashed var(--line);border-radius:10px}
+.lb-select{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit}
 
 /* ===================== Arcade theme (preview: ?theme=arcade) =====================
    Yellow / cyan / magenta on near-black, square corners, hard offset shadows. Bungee (bold arcade lettering, easy to read) only for the
@@ -320,6 +336,28 @@ html[data-theme=arcade] .quote{font-style:normal;color:var(--gold)}
 html[data-theme=arcade] .toast{border-radius:0;background:var(--gold);color:#120a00;font-family:'Chakra Petch',system-ui,sans-serif;box-shadow:4px 4px 0 var(--pink)}
 html[data-theme=arcade] .spinner{border-radius:0;border-color:var(--line);border-top-color:var(--gold)}
 html[data-theme=arcade] input,html[data-theme=arcade] select,html[data-theme=arcade] textarea{border-radius:0!important}
+html[data-theme=arcade] input:focus,html[data-theme=arcade] select:focus,html[data-theme=arcade] textarea:focus{outline:2px solid var(--cyan);outline-offset:1px}
+
+/* Leaderboard */
+html[data-theme=arcade] .lb-list{gap:8px}
+html[data-theme=arcade] .lb-row{border-radius:0;background:var(--bg);border:2px solid var(--cyan)}
+html[data-theme=arcade] .lb-row.mine{background:#ffd23f14;border-color:var(--gold);box-shadow:4px 4px 0 var(--pink)}
+html[data-theme=arcade] .lb-rank{font:400 16px var(--pix);color:var(--cyan)}
+html[data-theme=arcade] .lb-row.top .lb-rank{color:var(--gold);text-shadow:2px 2px 0 var(--pink)}
+html[data-theme=arcade] .lb-face{border-radius:0;border:2px solid var(--gold)}
+html[data-theme=arcade] .lb-items img{border-radius:0;border:1px solid var(--gold-dim)}
+html[data-theme=arcade] .lb-champ{color:var(--cyan)}
+html[data-theme=arcade] .lb-score{font:400 18px var(--pix);color:var(--gold)}
+html[data-theme=arcade] .lb-lock{border:2px dashed var(--pink);border-radius:0}
+html[data-theme=arcade] .lb-lock h3{font:400 18px var(--pix);color:var(--gold)}
+html[data-theme=arcade] .lb-select{border:2px solid var(--cyan);color:var(--cyan);font:700 13px 'Chakra Petch',sans-serif}
+
+/* How to play and the bug report form */
+html[data-theme=arcade] .howto section{box-shadow:4px 4px 0 #3ef0ff44}
+html[data-theme=arcade] .howto p{color:var(--text)}
+html[data-theme=arcade] #repKind,html[data-theme=arcade] #repText,html[data-theme=arcade] #lbName{border:2px solid var(--cyan)!important;background:var(--bg)!important}
+html[data-theme=arcade] label[for=repKind]{color:var(--gold);font-weight:700;text-transform:uppercase;font-size:13px}
+html[data-theme=arcade] #repStatus{color:var(--lime);font-weight:600}
 html[data-theme=arcade] footer{border-top:3px solid var(--gold);color:var(--muted)}
 @media (max-width:560px){
   html[data-theme=arcade] .logo{font-size:20px}
@@ -668,7 +706,7 @@ async function showBoard(mode, order, freePeriod){
       <div class="modes" style="width:max-content">
         <button data-o="high" class="${order==='high'?'on':''}">${t('mostDmg')}</button>
         <button data-o="low" class="${order==='low'?'on':''}">${t('leastDmg')}</button></div>
-      ${mode === 'free' ? `<label class="muted" style="font-size:13px">${t('patch')} <select id="lbPatch" style="background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit">
+      ${mode === 'free' ? `<label class="muted" style="font-size:13px">${t('patch')} <select id="lbPatch" class="lb-select">
         <option>${esc(period)}</option></select></label>` : ''}</div>`;
   const title = mode === 'all' ? t(order === 'low' ? 'titleAllLeast' : 'titleAll') : t(order === 'low' ? 'titleLeast' : 'leaderboard');
   const sub = t(mode === 'all' ? 'subAll' : order === 'low' ? 'subLow' : 'subTop');
@@ -689,7 +727,7 @@ async function showBoard(mode, order, freePeriod){
   }
   // Today's daily board stays hidden until this browser has finished today's daily, so nobody can copy the best builds.
   if (mode === 'daily' && !store.get('daily:'+today())) {
-    $('#boardBody').innerHTML = `<div style="text-align:center;padding:28px 12px;border:1px dashed var(--line);border-radius:10px">
+    $('#boardBody').innerHTML = `<div class="lb-lock">
       <div style="font-size:28px">🔒</div><h3 style="margin:8px 0 4px">${t('lockTitle')}</h3><p class="muted" style="margin:0 0 14px">${t('lockSub')}</p>
       <button class="btn primary" id="lbPlayDaily">${t('playDaily')}</button></div>`;
     $('#lbPlayDaily').onclick = () => newGame('daily');
@@ -703,17 +741,16 @@ async function showBoard(mode, order, freePeriod){
     const champName = id => { const c = DATA.champions.find(x => x.id === id); return c ? cName(c) : id; };
     // All-time rows: mode and patch go under the score, so a long name can't push them out of view.
     const tag = r => mode !== 'all' ? '' : `<div class="muted" style="font-size:11px;white-space:nowrap;margin-top:2px">${r.mode === 'daily' ? t('daily') : t('freeTag')} · ${t('patch')} ${esc(r.patch || '?')}</div>`;
-    $('#boardBody').innerHTML = rows.length ? `<div style="display:grid;gap:6px">${rows.map((r, i) => `
-      <div style="display:grid;grid-template-columns:36px 36px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;
-        background:${r.mine ? '#c8aa6e22' : 'var(--panel2)'};border:1px solid ${r.mine ? 'var(--gold-dim)' : 'var(--line)'}">
-        <b style="color:${i < 3 ? 'var(--gold2)' : 'var(--muted)'};text-align:center">${i + 1}</b>
-        ${masked(r) ? `<div title="${esc(t('lockTitle'))}" style="width:36px;height:36px;border-radius:6px;background:var(--bg);display:grid;place-items:center">🔒</div>`
-          : `<img src="${img.champ(r.champ)}" alt="" style="width:36px;height:36px;border-radius:6px">`}
-        <div style="min-width:0"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.name)}</div>
-          <div style="display:flex;gap:3px;margin-top:3px;flex-wrap:wrap">${masked(r) ? `<span class="muted" style="font-size:12px">${t('lockTitle')}</span>`
-            : `${String(r.items).split(',').map(id => `<img src="${img.item(id)}" alt="" style="width:20px;height:20px;border-radius:3px">`).join('')}
-          <span class="muted" style="font-size:12px;margin-left:6px">${esc(champName(r.champ))}</span>`}</div></div>
-        <div style="text-align:end"><b style="font-variant-numeric:tabular-nums">${fmt(r.score)}</b>${tag(r)}</div></div>`).join('')}</div>`
+    $('#boardBody').innerHTML = rows.length ? `<div class="lb-list">${rows.map((r, i) => `
+      <div class="lb-row${r.mine ? ' mine' : ''}${i < 3 ? ' top' : ''}">
+        <b class="lb-rank">${i + 1}</b>
+        ${masked(r) ? `<div class="lb-face lb-masked" title="${esc(t('lockTitle'))}">🔒</div>`
+          : `<img class="lb-face" src="${img.champ(r.champ)}" alt="">`}
+        <div style="min-width:0"><div class="lb-name">${esc(r.name)}</div>
+          <div class="lb-items">${masked(r) ? `<span class="muted" style="font-size:12px">${t('lockTitle')}</span>`
+            : `${String(r.items).split(',').map(id => `<img src="${img.item(id)}" alt="">`).join('')}
+          <span class="muted lb-champ">${esc(champName(r.champ))}</span>`}</div></div>
+        <div style="text-align:end"><b class="lb-score">${fmt(r.score)}</b>${tag(r)}</div></div>`).join('')}</div>`
       : `<p class="muted">${t('noScores')}</p>`;
   } catch (e) { $('#boardBody').innerHTML = `<p class="muted">${t('lbError', { msg: esc(e.message) })}</p>`; }
 }

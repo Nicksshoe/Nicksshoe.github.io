@@ -23,3 +23,19 @@ th,td{text-align:left;border-bottom:1px solid var(--line);padding:8px 6px;vertic
 th{color:var(--muted);font-weight:600}
 footer{margin-top:40px;padding:16px 0;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
 @media (max-width:560px){h1{font-size:24px}nav a{margin-left:10px}}
+
+/* Arcade theme (the default; theme.js sets it). Same palette as the game. */
+html[data-theme=arcade]{--bg:#0c0614;--panel:#0c0614;--line:#3a2a52;--gold:#ffd23f;--gold2:#ffffff;--gold-dim:#b8952a;--text:#f4f0ff;--muted:#a99cc4;
+  --cyan:#3ef0ff;--pink:#ff3ea5}
+html[data-theme=arcade] body{background:var(--bg);font-family:'Chakra Petch',system-ui,sans-serif;border-top:6px solid var(--gold);box-shadow:inset 0 3px 0 var(--pink)}
+html[data-theme=arcade] header{border-bottom:3px solid var(--gold)}
+html[data-theme=arcade] .logo{font:400 22px Bungee,sans-serif;background:none;color:var(--gold);-webkit-text-fill-color:var(--gold);text-shadow:3px 3px 0 var(--pink)}
+html[data-theme=arcade] nav a{color:var(--cyan);font-weight:700;text-transform:uppercase;font-size:12px;letter-spacing:.04em}
+html[data-theme=arcade] nav a:hover,html[data-theme=arcade] nav a[aria-current]{color:var(--gold)}
+html[data-theme=arcade] h1{font:400 30px Bungee,sans-serif;color:var(--gold);text-shadow:3px 3px 0 var(--pink)}
+html[data-theme=arcade] h2{font:400 15px Bungee,sans-serif;color:var(--cyan);letter-spacing:.02em}
+html[data-theme=arcade] table{border:2px solid var(--cyan)}
+html[data-theme=arcade] th{color:var(--gold);background:#3ef0ff14}
+html[data-theme=arcade] th,html[data-theme=arcade] td{border-bottom:1px solid var(--line);padding:8px 10px}
+html[data-theme=arcade] a{color:var(--gold)}
+html[data-theme=arcade] footer{border-top:3px solid var(--gold)}
