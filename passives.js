@@ -236,7 +236,8 @@
     MonkeyKing: none('Stone Skin'),
     Mordekaiser: { castDebuff: { R: { armor: 0.1, mr: 0.1, dur: 7, auto: true } }, name: 'Darkness Rise', note: 'Damage aura after 3 hits', aura: { hits: 3, linger: 4, type: 'magic', dmg: c => 5 + 0.3 * c.ap + 0.05 * c.tmax } },
     Morgana: none('Soul Siphon', 'Healing only'),
-    Naafiri: { name: 'We Are More', note: 'Packmates attack with her', periodic: { every: 1, start: 0.5, type: 'physical', dmg: c => 2 * (15 + 0.06 * c.bad) } }, // 2 packmates, about 29 per hit at 230 bonus AD (game data)
+    // R (The Call of the Pack): +22% AD for 5s (game data), counted as half of it over the 10s fight.
+    Naafiri: { name: 'We Are More', note: 'Packmates attack with her; R +22% AD for 5s', stats: c => ({ ad: 0.22 * 0.5 * c.ad }), periodic: { every: 1, start: 0.5, type: 'physical', dmg: c => 2 * (15 + 0.06 * c.bad) } }, // 2 packmates, about 29 per hit at 230 bonus AD (game data)
     Nami: none('Surging Tides'),
     Nasus: { castDebuff: { E: { armor: 0.5, dur: 5 } }, name: 'Soul Eater', note: 'Q stacks are counted in his Q; R burns % max HP every second', periodic: { every: 1, start: 0.5, label: 'R · Fury of the Sands', kind: 'ability', type: 'magic', dmg: c => (0.05 + 0.01 * c.ap / 100) * c.tmax } },
     Nautilus: { name: 'Staggering Blow', note: 'First attack on a target', timedAuto: { every: 10, type: 'physical', dmg: () => 122 } },

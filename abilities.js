@@ -450,7 +450,11 @@
     // ---- Ability audit, batch 1: abilities whose tooltip is "X plus Y% max Health" (both parts now), charged abilities at
     // full charge, and multi-shot ultimates. Numbers are read from the game data by name.
     Amumu: { W: { kind: 'channel', type: 'magic', perSecFlat: 'BaseDamage', perSecPctCalc: 'TotalHealthDamage', duration: 99, once: true, order: 0.3 } }, // toggle, every second
-    Evelynn: { W: { kind: 'cast', noDamage: true, order: 0.3 } }, // champions: charm + magic resist shred (passives.js); damage is monsters only
+    // Evelynn: W charms and shreds magic resist (passives.js), damage is monsters only. R deals its normal damage, 2.4x
+    // below 30% health: held until the dummy is that low (or 9s in).
+    Evelynn: { W: { kind: 'cast', noDamage: true, order: 0.3 },
+      R: { kind: 'cast', type: 'magic', calc: 'Damage', lowBelow: 'CritTreshold', lowCalc: 'CritDamage', holdMissing: 0.7, latest: 9 } },
+    Irelia: { W: { kind: 'cast', type: 'physical', calc: 'MaxDamageCalc', channelBlock: 'ChargeTimeForMax' } }, // charged to full (0.75s)
     RekSai: { R: { kind: 'multi', type: 'physical', parts: [{ calc: 'RBaseDamageCalc', type: 'physical' }, { pctMaxHp: 'PercentHealthDamage', type: 'physical' }] } },
     // Jhin R: 4 shots 1s apart, each +3% per 1% missing health, the 4th a crit (x2); held until the dummy is half down
     // (or 6s in), and he can't attack while channeling.
@@ -622,7 +626,8 @@
         recasts: 2, recastGap: 3, blocksAttacks: true, cloneEcho: true, first: true },
     },
     // Pantheon W: damage is a share of the target's max health (game data stores 0.08 = 8%).
-    Naafiri: { Q: { kind: 'multi', parts: [{ calc: 'TotalDamageFirstCast', type: 'physical' }, { calc: 'TotalBleedDamage', type: 'physical' }, { calc: 'TotalMinDamageSecondCast', type: 'physical' }] } },
+    Naafiri: { Q: { kind: 'multi', parts: [{ calc: 'TotalDamageFirstCast', type: 'physical' }, { calc: 'TotalBleedDamage', type: 'physical' }, { calc: 'TotalMinDamageSecondCast', type: 'physical' }] },
+      R: { kind: 'cast', type: 'physical', noDamage: true } }, // the dash has no damage formula in the game data; +22% AD for 5s is in passives.js
     Kayle: { E: { kind: 'cast', type: 'magic', calc: 'ActiveTotalExecuteDamage', pctOfMissing: true } }, // formula is a share of missing HP
     // Skarner Q: rip up a boulder that empowers his next 3 attacks with attack speed and the ability damage; the 3rd
     // also deals 11% of the target's max health. The cooldown starts once the 3rd attack lands.

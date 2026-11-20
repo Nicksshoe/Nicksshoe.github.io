@@ -202,7 +202,7 @@ function render() {
   $('#main').innerHTML = `
     <div class="bar"><input id="q" placeholder="Search champion" value="${esc(query)}">
       <button class="btn" id="rerun">Run again</button>
-      <button class="btn gold" id="save">Download baseline</button>
+      <button class="btn gold" id="save">Save baseline</button>
       <label><input type="checkbox" id="onlyNew" ${onlyNew ? 'checked' : ''} ${BASE ? '' : 'disabled'}> Only new since baseline</label>
       <span class="muted">${rows.length} abilities · patch ${esc(DATA.patch)} · ${BASE ? `baseline: patch ${esc(BASE.patch)}, saved ${esc(BASE.saved)}` : 'no baseline saved yet'} · ${okCount} marked OK</span></div>
     <div class="summary">
@@ -250,8 +250,16 @@ function baselineJSON() {
     ratio: r.ratio && +r.ratio.toFixed(3), casts: r.casts, gameCd: r.gameCd, ourCd: +(+r.ourCd).toFixed(2), tipType: r.tipType, ourType: r.ourType, flags: r.flags };
   return { patch: DATA.patch, saved: new Date().toISOString().slice(0, 10), refItems: REF_ITEMS, accepted, champs };
 }
-function downloadBaseline() {
-  const blob = new Blob([JSON.stringify(baselineJSON(), null, 1)], { type: 'application/json' });
+// On the local server (.claude/serve.ps1) the baseline is written straight into the project; elsewhere it downloads.
+async function downloadBaseline() {
+  const text = JSON.stringify(baselineJSON(), null, 1);
+  if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+    try {
+      const r = await fetch(BASELINE_FILE, { method: 'PUT', body: text, headers: { 'Content-Type': 'application/json' } });
+      if (r.ok) { BASE = JSON.parse(text); alert(`Saved ${BASELINE_FILE} in the project folder. Commit it.`); render(); return; }
+    } catch {}
+  }
+  const blob = new Blob([text], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = BASELINE_FILE; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }

@@ -1,0 +1,8109 @@
+{
+ "patch": "16.23.1",
+ "saved": "2026-11-20",
+ "refItems": [
+  "Rabadon's Deathcap",
+  "Bloodthirster",
+  "Warmog's Armor"
+ ],
+ "accepted": {
+  "Amumu W cd": "Toggle: one cast deals damage every second all fight; game cooldown is the toggle lockout",
+  "Amumu W rarely": "Toggle: one cast deals damage every second all fight; game cooldown is the toggle lockout",
+  "Viego Q under": "Tooltip lists the passive on-hit first; the on-hit is in passives.js (% current health)",
+  "Rengar Q under": "Tooltip counts the attack too; ours is the bonus only (the attack is under Basic Attacks)",
+  "Rell E under": "Second cast near the end: its empowered attack doesn't land before 10s",
+  "Vayne W never": "Passive: every 3rd hit (everyN), never cast",
+  "Belveth E never": "Optional: used only when it adds damage (run with and without, keep the better)",
+  "Camille Q type": "Q2 turns the attack into true damage (by design)",
+  "Velkoz R type": "True damage: E, W, Q go first, so R hits a target recently hit by Organic Deconstruction",
+  "Zaahen E type": "Physical + % max health as magic (both in the tooltip)",
+  "Zaahen E over": "Edge hit: bonus physical + 6% max health magic",
+  "Anivia R cd": "Toggle: cast once, damages every 0.5s all fight; its 2s cooldown is the toggle lockout",
+  "Karthus E cd": "Toggle aura: cast once, ticks all fight",
+  "Belveth Q cd": "Each of the 4 directions has its own cooldown (shorter with attack speed); 1.5s between dashes lands near the real count",
+  "Belveth R cd": "Needs Void Coral from a takedown: cast once",
+  "Caitlyn W cd": "Traps can't stack on one target: a normal cooldown (game lockout 0.5s)",
+  "Corki R cd": "4 charges with a 2s lockout; attacks speed up the recharge",
+  "Heimerdinger Q cd": "3 turret kits (charges); turrets shoot all fight",
+  "Heimerdinger Q rarely": "3 turrets, then the kits are spent",
+  "Ivern W cd": "Brush: attacks deal bonus damage while in it (charges)",
+  "Milio E cd": "Shield only",
+  "Nilah E cd": "2 charges, used for their damage",
+  "Quinn R cd": "2s channel then one aerial strike: cast once",
+  "Rumble E cd": "2 charges, 6s recharge",
+  "Samira R cd": "Needs S style rating (several different actions): cast once",
+  "Vi E cd": "2 charges, used on attacks",
+  "Zoe R cd": "Portal Jump: no damage; it's how her Q travels far (modeled on Q)",
+  "Jinx Q cd": "Weapon swap: the minigun buff for the fight (no damage of its own)",
+  "KogMaw R under": "The tooltip number read is the below-40% version (double); ours is the normal shot plus its missing-health bonus",
+  "Jinx Q never": "Minigun buff for the whole fight, not a cast",
+  "Vi E rarely": "2 charges then an 8s recharge",
+  "Camille R over": "Per cast = all the % current health her attacks deal during the 4s",
+  "Amumu Q rarely": "2 charges, then the recharge",
+  "AurelionSol Q rarely": "Channels for the rest of the fight (cast once)",
+  "Gangplank E over": "The barrel deals his attack's damage plus the champion bonus (tooltip shows only the bonus)",
+  "Irelia W over": "Fully charged (0.75s); the tooltip number read is the uncharged minimum",
+  "Jhin E rarely": "Lotus Trap charges, then the recharge",
+  "RekSai Q over": "Per cast = its 3 empowered attacks (tooltip is per attack)",
+  "RekSai Q rarely": "Cooldown starts after the 3 empowered attacks",
+  "Seraphine E over": "Stage Presence: every 3rd ability is cast twice (passives.js)",
+  "Singed Q rarely": "Toggle: cast once, trail damage all fight",
+  "Skarner Q rarely": "Cooldown starts after the 3rd empowered attack",
+  "Smolder W over": "Sneeze plus the explosion on a champion (tooltip number read is the sneeze)",
+  "Velkoz W rarely": "2 charges, then the recharge",
+  "MonkeyKing Q over": "Wukong and his clone both get the empowered attack",
+  "XinZhao W over": "Slash plus thrust (tooltip number read is the slash)",
+  "Yuumi R over": "All waves on one target (the game's own single-target total)",
+  "Naafiri R nodata": "The dash's damage isn't in the game data (no formula); R is modeled as its +22% AD buff"
+ },
+ "champs": {
+  "Aatrox": {
+   "Q": {
+    "expFirst": 353.5,
+    "perCast": 618.6,
+    "ratio": 1.75,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 196,
+    "perCast": 392,
+    "ratio": 2,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Ahri": {
+   "Q": {
+    "expFirst": 219.5,
+    "perCast": 439,
+    "ratio": 2,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 187.6,
+    "perCast": 337.7,
+    "ratio": 1.8,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 383.7,
+    "perCast": 383.7,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 234.1,
+    "perCast": 702.4,
+    "ratio": 3,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Akali": {
+   "Q": {
+    "expFirst": 375.2,
+    "perCast": 375.2,
+    "ratio": 1,
+    "casts": 5,
+    "gameCd": 1.5,
+    "ourCd": 1.5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 220.2,
+    "perCast": 734,
+    "ratio": 3.333,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 420.7,
+    "perCast": 800.2,
+    "ratio": 1.902,
+    "casts": 1,
+    "gameCd": 60,
+    "ourCd": 60,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Akshan": {
+   "Q": {
+    "expFirst": 221,
+    "perCast": 442,
+    "ratio": 2,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 128.1,
+    "ratio": null,
+    "casts": 5,
+    "gameCd": 2,
+    "ourCd": 2,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 103.2,
+    "perCast": 103.2,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 72.5,
+    "perCast": 2390.1,
+    "ratio": 32.989,
+    "casts": 1,
+    "gameCd": 70,
+    "ourCd": 70,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Alistar": {
+   "Q": {
+    "expFirst": 355.2,
+    "perCast": 355.2,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 444,
+    "perCast": 444,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 318.3,
+    "perCast": 318.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Ambessa": {
+   "Q": {
+    "expFirst": 1008,
+    "perCast": 1008,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 190,
+    "perCast": 285,
+    "ratio": 1.5,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 160,
+    "perCast": 160,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 414,
+    "perCast": 414,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Amumu": {
+   "Q": {
+    "expFirst": 313.7,
+    "perCast": 313.7,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 3,
+    "ourCd": 3,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": [
+     "rarely"
+    ]
+   },
+   "W": {
+    "expFirst": 294.5,
+    "perCast": 2797.7,
+    "ratio": 9.5,
+    "casts": 1,
+    "gameCd": 1,
+    "ourCd": 1.5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": [
+     "cd",
+     "rarely"
+    ]
+   },
+   "E": {
+    "expFirst": 269.5,
+    "perCast": 269.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 535.2,
+    "perCast": 535.2,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Anivia": {
+   "Q": {
+    "expFirst": 172.3,
+    "perCast": 448.3,
+    "ratio": 2.603,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 17,
+    "ourCd": 17,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 248,
+    "perCast": 248,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 81.1,
+    "perCast": 1947,
+    "ratio": 24,
+    "casts": 1,
+    "gameCd": 2,
+    "ourCd": 20,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": [
+     "cd"
+    ]
+   }
+  },
+  "Annie": {
+   "Q": {
+    "expFirst": 395.2,
+    "perCast": 395.2,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 365.2,
+    "perCast": 365.2,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 132.6,
+    "perCast": 132.6,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 526.8,
+    "perCast": 526.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Aphelios": {
+   "Q": {
+    "expFirst": null,
+    "perCast": 548,
+    "ratio": null,
+    "casts": 4,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0.800000011920929,
+    "ourCd": 1.5,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 414.8,
+    "perCast": 450,
+    "ratio": 1.085,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Ashe": {
+   "Q": {
+    "expFirst": null,
+    "perCast": 247,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 280,
+    "perCast": 280,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 802.8,
+    "perCast": 802.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 60,
+    "ourCd": 60,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "AurelionSol": {
+   "Q": {
+    "expFirst": 198,
+    "perCast": 3137.9,
+    "ratio": 15.852,
+    "casts": 1,
+    "gameCd": 3,
+    "ourCd": 3,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": [
+     "rarely"
+    ]
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 61,
+    "perCast": 305.2,
+    "ratio": 5,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 476.8,
+    "perCast": 595.9,
+    "ratio": 1.25,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Aurora": {
+   "Q": {
+    "expFirst": 212.6,
+    "perCast": 531.5,
+    "ratio": 2.5,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 18,
+    "ourCd": 18,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 358.3,
+    "perCast": 358.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 493.3,
+    "perCast": 493.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Azir": {
+   "Q": {
+    "expFirst": 248,
+    "perCast": 248,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 291.8,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 1.5,
+    "ourCd": 1.5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 331.4,
+    "perCast": 331.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 726.8,
+    "perCast": 726.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Bard": {
+   "Q": {
+    "expFirst": 429,
+    "perCast": 429,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 2,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Belveth": {
+   "Q": {
+    "expFirst": 188.5,
+    "perCast": 188.5,
+    "ratio": 1,
+    "casts": 7,
+    "gameCd": 1,
+    "ourCd": 1.5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": [
+     "cd"
+    ]
+   },
+   "W": {
+    "expFirst": 573.5,
+    "perCast": 573.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 74.5,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "physical",
+    "ourType": null,
+    "flags": [
+     "never"
+    ]
+   },
+   "R": {
+    "expFirst": 8.4,
+    "perCast": 503.5,
+    "ratio": 59.94,
+    "casts": 1,
+    "gameCd": 1,
+    "ourCd": 20,
+    "tipType": "true",
+    "ourType": "true",
+    "flags": [
+     "cd"
+    ]
+   }
+  },
+  "Blitzcrank": {
+   "Q": {
+    "expFirst": 512.8,
+    "perCast": 512.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 15,
+    "ourCd": 15,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 445.3,
+    "perCast": 445.3,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 253.4,
+    "perCast": 694,
+    "ratio": 2.738,
+    "casts": 1,
+    "gameCd": 20,
+    "ourCd": 20,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Brand": {
+   "Q": {
+    "expFirst": 299.8,
+    "perCast": 299.8,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 373.3,
+    "perCast": 373.3,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 256.4,
+    "perCast": 256.4,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 300.7,
+    "perCast": 300.7,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Braum": {
+   "Q": {
+    "expFirst": 342.9,
+    "perCast": 342.9,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 451.4,
+    "perCast": 451.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Briar": {
+   "Q": {
+    "expFirst": 325.4,
+    "perCast": 325.4,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 182.5,
+    "perCast": 256.6,
+    "ratio": 1.406,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 469,
+    "perCast": 1506.6,
+    "ratio": 3.212,
+    "casts": 1,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 569.7,
+    "perCast": 569.7,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Caitlyn": {
+   "Q": {
+    "expFirst": 653.5,
+    "perCast": 653.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 239,
+    "perCast": 239,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 0.5,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": [
+     "cd"
+    ]
+   },
+   "E": {
+    "expFirst": 415.2,
+    "perCast": 415.2,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 730,
+    "perCast": 730,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Camille": {
+   "Q": {
+    "expFirst": 85,
+    "perCast": 276.4,
+    "ratio": 3.25,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "physical",
+    "ourType": "true",
+    "flags": [
+     "type"
+    ]
+   },
+   "W": {
+    "expFirst": 208,
+    "perCast": 1308,
+    "ratio": 6.288,
+    "casts": 1,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 240,
+    "perCast": 240,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 800,
+    "perCast": 3339,
+    "ratio": 4.174,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": [
+     "over"
+    ]
+   }
+  },
+  "Cassiopeia": {
+   "Q": {
+    "expFirst": 331.8,
+    "perCast": 331.8,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 3.5,
+    "ourCd": 3.5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 56.9,
+    "perCast": 284.5,
+    "ratio": 5,
+    "casts": 1,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 153.8,
+    "perCast": 334.8,
+    "ratio": 2.177,
+    "casts": 13,
+    "gameCd": 0.75,
+    "ourCd": 0.75,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 451.8,
+    "perCast": 451.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Chogath": {
+   "Q": {
+    "expFirst": 469,
+    "perCast": 469,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 398.3,
+    "perCast": 398.3,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 550.7,
+    "perCast": 1285,
+    "ratio": 2.333,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 834.5,
+    "perCast": 834.5,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 60,
+    "ourCd": 60,
+    "tipType": "true",
+    "ourType": "true",
+    "flags": []
+   }
+  },
+  "Corki": {
+   "Q": {
+    "expFirst": 509,
+    "perCast": 509,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 863.5,
+    "perCast": 863.5,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 472,
+    "perCast": 472,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 352,
+    "perCast": 422.4,
+    "ratio": 1.2,
+    "casts": 5,
+    "gameCd": 2,
+    "ourCd": 20,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": [
+     "cd"
+    ]
+   }
+  },
+  "Darius": {
+   "Q": {
+    "expFirst": 714.6,
+    "perCast": 714.6,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 622.4,
+    "perCast": 622.4,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 555,
+    "perCast": 1110,
+    "ratio": 2,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "true",
+    "ourType": "true",
+    "flags": []
+   }
+  },
+  "Diana": {
+   "Q": {
+    "expFirst": 328.3,
+    "perCast": 328.3,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 98.4,
+    "perCast": 295.3,
+    "ratio": 3,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 231.4,
+    "perCast": 231.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 501.4,
+    "perCast": 501.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "DrMundo": {
+   "Q": {
+    "expFirst": null,
+    "perCast": 2435.5,
+    "ratio": null,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 150,
+    "perCast": 150,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 15,
+    "ourCd": 15,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 95,
+    "perCast": 127.6,
+    "ratio": 1.343,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 120,
+    "ourCd": 120,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Draven": {
+   "Q": {
+    "expFirst": 152,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "physical",
+    "ourType": null,
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 255,
+    "perCast": 255,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 520,
+    "perCast": 520,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Ekko": {
+   "Q": {
+    "expFirst": 190.7,
+    "perCast": 449,
+    "ratio": 2.354,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 217.6,
+    "perCast": 217.6,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 795.8,
+    "perCast": 795.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 50,
+    "ourCd": 50,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Elise": {
+   "Q": {
+    "expFirst": 1067,
+    "perCast": 943.3,
+    "ratio": 0.884,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 346.8,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 3,
+    "ourCd": 20,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Evelynn": {
+   "Q": {
+    "expFirst": 87.3,
+    "perCast": 184.5,
+    "ratio": 2.115,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 733.5,
+    "perCast": 733.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 501.8,
+    "perCast": 501.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Ezreal": {
+   "Q": {
+    "expFirst": 452.5,
+    "perCast": 452.5,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 4.5,
+    "ourCd": 4.5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 561,
+    "perCast": 561,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 454.8,
+    "perCast": 454.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 1140.8,
+    "perCast": 1140.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Fiddlesticks": {
+   "Q": {
+    "expFirst": 1107,
+    "perCast": 973.9,
+    "ratio": 0.88,
+    "casts": 1,
+    "gameCd": 13,
+    "ourCd": 13,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 256,
+    "perCast": 608.2,
+    "ratio": 2.375,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 294.5,
+    "perCast": 294.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 2172.5,
+    "perCast": 1750,
+    "ratio": 0.806,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Fiora": {
+   "Q": {
+    "expFirst": 198,
+    "perCast": 198,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 439,
+    "perCast": 439,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": 200,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": 660,
+    "ratio": null,
+    "casts": 4,
+    "gameCd": 70,
+    "ourCd": 70,
+    "tipType": null,
+    "ourType": "true",
+    "flags": []
+   }
+  },
+  "Fizz": {
+   "Q": {
+    "expFirst": 189,
+    "perCast": 352,
+    "ratio": 1.862,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 132.3,
+    "perCast": 226,
+    "ratio": 1.709,
+    "casts": 4,
+    "gameCd": 3,
+    "ourCd": 3,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 440.5,
+    "perCast": 440.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 521.4,
+    "perCast": 782.1,
+    "ratio": 1.5,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Galio": {
+   "Q": {
+    "expFirst": 328.3,
+    "perCast": 328.3,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 110.7,
+    "perCast": 332.1,
+    "ratio": 3,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 409,
+    "perCast": 409,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 468.3,
+    "perCast": 468.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 140,
+    "ourCd": 140,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Gangplank": {
+   "Q": {
+    "expFirst": null,
+    "perCast": 604.4,
+    "ratio": null,
+    "casts": 3,
+    "gameCd": 4.5,
+    "ourCd": 4.5,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 155,
+    "perCast": 370.4,
+    "ratio": 2.39,
+    "casts": 2,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": [
+     "over"
+    ]
+   },
+   "R": {
+    "expFirst": 116.9,
+    "perCast": 1402.8,
+    "ratio": 12,
+    "casts": 1,
+    "gameCd": 120,
+    "ourCd": 120,
+    "tipType": "true",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Garen": {
+   "Q": {
+    "expFirst": 488.3,
+    "perCast": 488.3,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 133.3,
+    "perCast": 932.8,
+    "ratio": 7,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": 891.4,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": null,
+    "ourType": "true",
+    "flags": []
+   }
+  },
+  "Gnar": {
+   "Q": {
+    "expFirst": null,
+    "perCast": 427.4,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 1609,
+    "ratio": null,
+    "casts": 4,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": 363,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 609,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 30,
+    "ourCd": 30,
+    "tipType": "physical",
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Gragas": {
+   "Q": {
+    "expFirst": 375.2,
+    "perCast": 375.2,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 958.3,
+    "perCast": 958.3,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 361.4,
+    "perCast": 361.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 535.2,
+    "perCast": 535.2,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 70,
+    "ourCd": 70,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Graves": {
+   "Q": {
+    "expFirst": 194,
+    "perCast": 194,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 361.4,
+    "perCast": 361.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 18,
+    "ourCd": 18,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 695,
+    "perCast": 695,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 60,
+    "ourCd": 60,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Gwen": {
+   "Q": {
+    "expFirst": 34.5,
+    "perCast": 391.4,
+    "ratio": 11.361,
+    "casts": 3,
+    "gameCd": 3.5,
+    "ourCd": 3.5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 18,
+    "ourCd": 18,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 48.8,
+    "perCast": 48.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 86.9,
+    "perCast": 86.9,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Hecarim": {
+   "Q": {
+    "expFirst": 267.3,
+    "perCast": 295.7,
+    "ratio": 1.106,
+    "casts": 5,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 375.2,
+    "perCast": 375.2,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 138.5,
+    "perCast": 277,
+    "ratio": 2,
+    "casts": 1,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 519,
+    "perCast": 519,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Heimerdinger": {
+   "Q": {
+    "expFirst": null,
+    "perCast": 952.3,
+    "ratio": null,
+    "casts": 3,
+    "gameCd": 1,
+    "ourCd": 1.5,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": [
+     "cd",
+     "rarely"
+    ]
+   },
+   "W": {
+    "expFirst": 243,
+    "perCast": 444.1,
+    "ratio": 1.828,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 321.4,
+    "perCast": 321.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 179.1,
+    "perCast": 2089.8,
+    "ratio": 11.665,
+    "casts": 1,
+    "gameCd": 70,
+    "ourCd": 70,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Hwei": {
+   "Q": {
+    "expFirst": 1005.2,
+    "perCast": 1005.2,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 85.4,
+    "perCast": 256.1,
+    "ratio": 3,
+    "casts": 1,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 339.8,
+    "perCast": 339.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 38.5,
+    "perCast": 700.5,
+    "ratio": 18.22,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Illaoi": {
+   "Q": {
+    "expFirst": null,
+    "perCast": 650.8,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 1305,
+    "perCast": 1305,
+    "ratio": 1,
+    "casts": 5,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": 4008.8,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 390,
+    "perCast": 390,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 70,
+    "ourCd": 70,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Irelia": {
+   "Q": {
+    "expFirst": 248.6,
+    "perCast": 248.6,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 216.3,
+    "perCast": 648.9,
+    "ratio": 3,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": [
+     "over"
+    ]
+   },
+   "E": {
+    "expFirst": 399,
+    "perCast": 399,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 444,
+    "perCast": 444,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 85,
+    "ourCd": 85,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Ivern": {
+   "Q": {
+    "expFirst": 378.3,
+    "perCast": 378.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 83.8,
+    "perCast": 83.8,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 0.5,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": [
+     "cd"
+    ]
+   },
+   "E": {
+    "expFirst": 285.2,
+    "perCast": 285.2,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 274.5,
+    "perCast": 534.5,
+    "ratio": 1.947,
+    "casts": 1,
+    "gameCd": 120,
+    "ourCd": 120,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Janna": {
+   "Q": {
+    "expFirst": 279.5,
+    "perCast": 420.2,
+    "ratio": 1.503,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 259.5,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "JarvanIV": {
+   "Q": {
+    "expFirst": 366,
+    "perCast": 366,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 375.2,
+    "perCast": 375.2,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 594,
+    "perCast": 594,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Jax": {
+   "Q": {
+    "expFirst": 305,
+    "perCast": 305,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 291.4,
+    "perCast": 291.4,
+    "ratio": 1,
+    "casts": 4,
+    "gameCd": 3,
+    "ourCd": 3,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 678.3,
+    "perCast": 678.3,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 286.4,
+    "perCast": 419,
+    "ratio": 1.463,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Jayce": {
+   "Q": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": 169,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 20,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Jhin": {
+   "Q": {
+    "expFirst": 499.8,
+    "perCast": 499.8,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 381.9,
+    "perCast": 381.9,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 841.5,
+    "perCast": 841.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 2,
+    "ourCd": 2,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": [
+     "rarely"
+    ]
+   },
+   "R": {
+    "expFirst": 277.9,
+    "perCast": 2323.7,
+    "ratio": 8.36,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Jinx": {
+   "Q": {
+    "expFirst": 209,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0.8999999761581421,
+    "ourCd": 1.5,
+    "tipType": "physical",
+    "ourType": null,
+    "flags": [
+     "never",
+     "cd"
+    ]
+   },
+   "W": {
+    "expFirst": 476,
+    "perCast": 476,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 459,
+    "perCast": 459,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": 1131.1,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 45,
+    "ourCd": 45,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "KSante": {
+   "Q": {
+    "expFirst": 190,
+    "perCast": 190,
+    "ratio": 1,
+    "casts": 5,
+    "gameCd": 3.5,
+    "ourCd": 3.5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 1005,
+    "perCast": 1005,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 150,
+    "perCast": 2050,
+    "ratio": 13.667,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Kaisa": {
+   "Q": {
+    "expFirst": 177.8,
+    "perCast": 400.1,
+    "ratio": 2.25,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 444.2,
+    "perCast": 444.2,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 70,
+    "ourCd": 70,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Kalista": {
+   "Q": {
+    "expFirst": 498.6,
+    "perCast": 498.6,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 30,
+    "ourCd": 30,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 535.6,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 8,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 120,
+    "ourCd": 120,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Karma": {
+   "Q": {
+    "expFirst": 378.3,
+    "perCast": 378.3,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 216,
+    "perCast": 216,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 210.7,
+    "perCast": 210.7,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 36,
+    "ourCd": 36,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Karthus": {
+   "Q": {
+    "expFirst": 175.1,
+    "perCast": 175.1,
+    "ratio": 1,
+    "casts": 11,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 15,
+    "ourCd": 15,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 143.8,
+    "perCast": 1366.1,
+    "ratio": 9.5,
+    "casts": 1,
+    "gameCd": 0.5,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": [
+     "cd"
+    ]
+   },
+   "R": {
+    "expFirst": 618.3,
+    "perCast": 618.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 160,
+    "ourCd": 160,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Kassadin": {
+   "Q": {
+    "expFirst": 320.2,
+    "perCast": 320.2,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 41.9,
+    "perCast": 285.2,
+    "ratio": 6.807,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 308.3,
+    "perCast": 308.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 17,
+    "ourCd": 17,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 232.1,
+    "perCast": 403.3,
+    "ratio": 1.738,
+    "casts": 5,
+    "gameCd": 2,
+    "ourCd": 2,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Katarina": {
+   "Q": {
+    "expFirst": 287.6,
+    "perCast": 287.6,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 179.2,
+    "perCast": 179.2,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 82.1,
+    "perCast": 1703.1,
+    "ratio": 20.742,
+    "casts": 1,
+    "gameCd": 45,
+    "ourCd": 45,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Kayle": {
+   "Q": {
+    "expFirst": 312.5,
+    "perCast": 312.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 15,
+    "ourCd": 15,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 76.8,
+    "perCast": 83.6,
+    "ratio": 1.089,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 598.3,
+    "perCast": 598.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Kayn": {
+   "Q": {
+    "expFirst": 263,
+    "perCast": 2025.3,
+    "ratio": 7.701,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 353,
+    "perCast": 353,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 13,
+    "ourCd": 13,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 470,
+    "perCast": 2300,
+    "ratio": 4.894,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Kennen": {
+   "Q": {
+    "expFirst": 401.8,
+    "perCast": 401.8,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 230.2,
+    "perCast": 305.2,
+    "ratio": 1.326,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 375.2,
+    "perCast": 375.2,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 162.3,
+    "perCast": 973.5,
+    "ratio": 6,
+    "casts": 1,
+    "gameCd": 120,
+    "ourCd": 120,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Khazix": {
+   "Q": {
+    "expFirst": null,
+    "perCast": 264,
+    "ratio": null,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 275,
+    "perCast": 275,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 237,
+    "perCast": 237,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 70,
+    "ourCd": 70,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Kindred": {
+   "Q": {
+    "expFirst": 200,
+    "perCast": 200,
+    "ratio": 1,
+    "casts": 5,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 244.8,
+    "perCast": 1845.8,
+    "ratio": 7.54,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": 157.4,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 120,
+    "ourCd": 120,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Kled": {
+   "Q": {
+    "expFirst": 178,
+    "perCast": 534,
+    "ratio": 3,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 1270,
+    "perCast": 1270,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 179,
+    "perCast": 179,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 3120,
+    "perCast": 3120,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 110,
+    "ourCd": 110,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "KogMaw": {
+   "Q": {
+    "expFirst": 412.1,
+    "perCast": 412.1,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 853.5,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 17,
+    "ourCd": 17,
+    "tipType": "magic",
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 339.8,
+    "perCast": 339.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 632.1,
+    "perCast": 369.5,
+    "ratio": 0.585,
+    "casts": 6,
+    "gameCd": 1,
+    "ourCd": 1,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": [
+     "under"
+    ]
+   }
+  },
+  "Leblanc": {
+   "Q": {
+    "expFirst": 224.1,
+    "perCast": 336.2,
+    "ratio": 1.5,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 387.1,
+    "perCast": 387.1,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 197.6,
+    "perCast": 581.3,
+    "ratio": 2.942,
+    "casts": 1,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 297.6,
+    "perCast": 892.8,
+    "ratio": 3,
+    "casts": 1,
+    "gameCd": 25,
+    "ourCd": 25,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "LeeSin": {
+   "Q": {
+    "expFirst": 252,
+    "perCast": 756,
+    "ratio": 3,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 318.4,
+    "perCast": 318.4,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 710,
+    "perCast": 710,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 60,
+    "ourCd": 60,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Leona": {
+   "Q": {
+    "expFirst": 160.7,
+    "perCast": 160.7,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 242.6,
+    "perCast": 242.6,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 277.6,
+    "perCast": 277.6,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 435.2,
+    "perCast": 435.2,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 60,
+    "ourCd": 60,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Lillia": {
+   "Q": {
+    "expFirst": 134.1,
+    "perCast": 134.1,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 219.1,
+    "perCast": 219.1,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 244.5,
+    "perCast": 244.5,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 267.6,
+    "perCast": 267.6,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 110,
+    "ourCd": 110,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Lissandra": {
+   "Q": {
+    "expFirst": 346.8,
+    "perCast": 346.8,
+    "ratio": 1,
+    "casts": 4,
+    "gameCd": 3,
+    "ourCd": 3,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 328.3,
+    "perCast": 328.3,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 311.4,
+    "perCast": 311.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 476.8,
+    "perCast": 476.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Locke": {
+   "Q": {
+    "expFirst": 105.8,
+    "perCast": 746.4,
+    "ratio": 7.055,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 184.5,
+    "perCast": 184.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 401.4,
+    "perCast": 401.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Lucian": {
+   "Q": {
+    "expFirst": 330,
+    "perCast": 330,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 367.1,
+    "perCast": 367.1,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 117.7,
+    "perCast": 2588.9,
+    "ratio": 22,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Lulu": {
+   "Q": {
+    "expFirst": 284.5,
+    "perCast": 284.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 18,
+    "ourCd": 18,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 314.5,
+    "perCast": 314.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Lux": {
+   "Q": {
+    "expFirst": 366.8,
+    "perCast": 366.8,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 400.2,
+    "perCast": 400.2,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 702.8,
+    "perCast": 702.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 40,
+    "ourCd": 40,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Malphite": {
+   "Q": {
+    "expFirst": 371.4,
+    "perCast": 371.4,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 122.4,
+    "perCast": 122.4,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 351.1,
+    "perCast": 351.1,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 552.1,
+    "perCast": 552.1,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Malzahar": {
+   "Q": {
+    "expFirst": 303,
+    "perCast": 303,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 150.3,
+    "perCast": 150.3,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 355.2,
+    "perCast": 355.2,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 410.2,
+    "perCast": 410.2,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Maokai": {
+   "Q": {
+    "expFirst": null,
+    "perCast": 339.5,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 227.6,
+    "perCast": 227.6,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 242.3,
+    "perCast": 242.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 426.8,
+    "perCast": 426.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "MasterYi": {
+   "Q": {
+    "expFirst": 212.5,
+    "perCast": 371.9,
+    "ratio": 1.75,
+    "casts": 2,
+    "gameCd": 18,
+    "ourCd": 18,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 68,
+    "perCast": 527,
+    "ratio": 7.75,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "true",
+    "ourType": "true",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 85,
+    "ourCd": 85,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Mel": {
+   "Q": {
+    "expFirst": 102.3,
+    "perCast": 473.1,
+    "ratio": 4.627,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 91.9,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 26,
+    "ourCd": 26,
+    "tipType": "magic",
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 358.3,
+    "perCast": 358.3,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 96.9,
+    "perCast": 1130.2,
+    "ratio": 11.663,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Milio": {
+   "Q": {
+    "expFirst": 522.8,
+    "perCast": 522.8,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 21,
+    "ourCd": 21,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0.5,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "cd"
+    ]
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 130,
+    "ourCd": 130,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "MissFortune": {
+   "Q": {
+    "expFirst": 354.9,
+    "perCast": 354.9,
+    "ratio": 1,
+    "casts": 4,
+    "gameCd": 3,
+    "ourCd": 3,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 206.4,
+    "perCast": 206.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 187.7,
+    "perCast": 3379.1,
+    "ratio": 18,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Mordekaiser": {
+   "Q": {
+    "expFirst": 497.3,
+    "perCast": 497.3,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 216,
+    "perCast": 216,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Morgana": {
+   "Q": {
+    "expFirst": 452.1,
+    "perCast": 452.1,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 103.8,
+    "perCast": 103.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 485.2,
+    "perCast": 970.4,
+    "ratio": 2,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Naafiri": {
+   "Q": {
+    "expFirst": null,
+    "perCast": 408,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 22,
+    "ourCd": 22,
+    "tipType": "physical",
+    "ourType": null,
+    "flags": [
+     "nodata"
+    ]
+   },
+   "E": {
+    "expFirst": 94.4,
+    "perCast": 333.3,
+    "ratio": 3.529,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 628.3,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Nami": {
+   "Q": {
+    "expFirst": 394.5,
+    "perCast": 394.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 284.5,
+    "perCast": 284.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 113.8,
+    "perCast": 113.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 451.4,
+    "perCast": 451.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Nasus": {
+   "Q": {
+    "expFirst": 325,
+    "perCast": 325,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 3.5,
+    "ourCd": 3.5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 95,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 271.4,
+    "perCast": 271.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": 669,
+    "ratio": null,
+    "casts": 10,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Nautilus": {
+   "Q": {
+    "expFirst": 397.1,
+    "perCast": 397.1,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 137.6,
+    "perCast": 137.6,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 279.5,
+    "perCast": 279.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 535.2,
+    "perCast": 535.2,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Neeko": {
+   "Q": {
+    "expFirst": 361.4,
+    "perCast": 538.7,
+    "ratio": 1.49,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 271.4,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 329.8,
+    "perCast": 329.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 752.8,
+    "perCast": 752.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Nidalee": {
+   "Q": {
+    "expFirst": 234.5,
+    "perCast": 762.1,
+    "ratio": 3.25,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 58.5,
+    "perCast": 116.9,
+    "ratio": 2,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 3,
+    "ourCd": 20,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Nilah": {
+   "Q": {
+    "expFirst": 212,
+    "perCast": 212,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 22,
+    "ourCd": 22,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 116,
+    "perCast": 116,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 0.5,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": [
+     "cd"
+    ]
+   },
+   "R": {
+    "expFirst": 172,
+    "perCast": 982,
+    "ratio": 5.709,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Nocturne": {
+   "Q": {
+    "expFirst": 293,
+    "perCast": 293,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 429,
+    "perCast": 429,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 496,
+    "perCast": 496,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Nunu": {
+   "Q": {
+    "expFirst": 379.8,
+    "perCast": 379.8,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 204.3,
+    "perCast": 613.5,
+    "ratio": 3.003,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 65.3,
+    "perCast": 391,
+    "ratio": 5.99,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 1957,
+    "perCast": 1957,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Olaf": {
+   "Q": {
+    "expFirst": 437,
+    "perCast": 437,
+    "ratio": 1,
+    "casts": 4,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 407.4,
+    "perCast": 407.4,
+    "ratio": 1,
+    "casts": 4,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "true",
+    "ourType": "true",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Orianna": {
+   "Q": {
+    "expFirst": 281.4,
+    "perCast": 281.4,
+    "ratio": 1,
+    "casts": 4,
+    "gameCd": 3,
+    "ourCd": 3,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 373.7,
+    "perCast": 373.7,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 230.7,
+    "perCast": 230.7,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 660.9,
+    "perCast": 660.9,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Ornn": {
+   "Q": {
+    "expFirst": 349.4,
+    "perCast": 349.4,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 1600,
+    "perCast": 1600,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 260,
+    "perCast": 260,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 258.8,
+    "perCast": 517.6,
+    "ratio": 2,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Pantheon": {
+   "Q": {
+    "expFirst": 282,
+    "perCast": 479.4,
+    "ratio": 1.7,
+    "casts": 3,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 1453.5,
+    "perCast": 1618.6,
+    "ratio": 1.114,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 200.1,
+    "perCast": 575.1,
+    "ratio": 2.874,
+    "casts": 1,
+    "gameCd": 18,
+    "ourCd": 18,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 869,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 150,
+    "ourCd": 150,
+    "tipType": "magic",
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Poppy": {
+   "Q": {
+    "expFirst": 1090,
+    "perCast": 2180,
+    "ratio": 2,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 348.3,
+    "perCast": 348.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 168,
+    "perCast": 168,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 472,
+    "perCast": 472,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Pyke": {
+   "Q": {
+    "expFirst": 413.6,
+    "perCast": 413.6,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 451.4,
+    "perCast": 451.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": 335.6,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 70,
+    "ourCd": 70,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Qiyana": {
+   "Q": {
+    "expFirst": 262,
+    "perCast": 262,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 132,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 250,
+    "perCast": 250,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 1400,
+    "perCast": 1400,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 120,
+    "ourCd": 120,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Quinn": {
+   "Q": {
+    "expFirst": 369.5,
+    "perCast": 369.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 30,
+    "ourCd": 30,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 156,
+    "perCast": 156,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 148,
+    "perCast": 148,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 3,
+    "ourCd": 20,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": [
+     "cd"
+    ]
+   }
+  },
+  "Rakan": {
+   "Q": {
+    "expFirst": 368.3,
+    "perCast": 368.3,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 405.2,
+    "perCast": 405.2,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 384.5,
+    "perCast": 384.5,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Rammus": {
+   "Q": {
+    "expFirst": 409,
+    "perCast": 409,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 32.8,
+    "perCast": 32.8,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 451.4,
+    "perCast": 451.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "RekSai": {
+   "Q": {
+    "expFirst": 96.5,
+    "perCast": 255,
+    "ratio": 2.642,
+    "casts": 3,
+    "gameCd": 2,
+    "ourCd": 2,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": [
+     "over",
+     "rarely"
+    ]
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 265.2,
+    "ratio": null,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": 218,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 2930,
+    "perCast": 2930,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Rell": {
+   "Q": {
+    "expFirst": 321.4,
+    "perCast": 321.4,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 281.4,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 1207,
+    "perCast": 753.5,
+    "ratio": 0.624,
+    "casts": 2,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": [
+     "under"
+    ]
+   },
+   "R": {
+    "expFirst": 535.9,
+    "perCast": 535.9,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Renata": {
+   "Q": {
+    "expFirst": 395.2,
+    "perCast": 395.2,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 24,
+    "ourCd": 24,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 278,
+    "perCast": 278,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 110,
+    "ourCd": 110,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Renekton": {
+   "Q": {
+    "expFirst": 260,
+    "perCast": 321,
+    "ratio": 1.235,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 459.3,
+    "perCast": 574.2,
+    "ratio": 1.25,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 232,
+    "perCast": 590,
+    "ratio": 2.543,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 264.9,
+    "perCast": 2516.6,
+    "ratio": 9.5,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Rengar": {
+   "Q": {
+    "expFirst": 390,
+    "perCast": 216.1,
+    "ratio": 0.554,
+    "casts": 5,
+    "gameCd": 0.25,
+    "ourCd": 4,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": [
+     "under"
+    ]
+   },
+   "W": {
+    "expFirst": 305.2,
+    "perCast": 305.2,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 0.25,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 315,
+    "perCast": 315,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 0.25,
+    "ourCd": 10,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 219,
+    "perCast": 219,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Riven": {
+   "Q": {
+    "expFirst": 260.2,
+    "perCast": 780.6,
+    "ratio": 3,
+    "casts": 1,
+    "gameCd": 13,
+    "ourCd": 13,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 304,
+    "perCast": 304,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 265.5,
+    "perCast": 370,
+    "ratio": 1.394,
+    "casts": 1,
+    "gameCd": 60,
+    "ourCd": 60,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Rumble": {
+   "Q": {
+    "expFirst": null,
+    "perCast": 327.4,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 239.5,
+    "perCast": 239.5,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 0.5,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": [
+     "cd"
+    ]
+   },
+   "R": {
+    "expFirst": 347.6,
+    "perCast": 1564.2,
+    "ratio": 4.5,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Ryze": {
+   "Q": {
+    "expFirst": 277.8,
+    "perCast": 277.8,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 343,
+    "perCast": 343,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 294.3,
+    "perCast": 294.3,
+    "ratio": 1,
+    "casts": 4,
+    "gameCd": 2.5,
+    "ourCd": 2.5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 140,
+    "ourCd": 140,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Samira": {
+   "Q": {
+    "expFirst": 226.8,
+    "perCast": 226.8,
+    "ratio": 1,
+    "casts": 5,
+    "gameCd": 2,
+    "ourCd": 2,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 120,
+    "perCast": 120,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 22,
+    "ourCd": 22,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 106,
+    "perCast": 106,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 116.4,
+    "perCast": 1164,
+    "ratio": 10,
+    "casts": 1,
+    "gameCd": 5,
+    "ourCd": 20,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": [
+     "cd"
+    ]
+   }
+  },
+  "Sejuani": {
+   "Q": {
+    "expFirst": 416.8,
+    "perCast": 416.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 238.4,
+    "perCast": 238.4,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 373.3,
+    "perCast": 373.3,
+    "ratio": 1,
+    "casts": 7,
+    "gameCd": 1.5,
+    "ourCd": 1.5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 242.6,
+    "perCast": 535.2,
+    "ratio": 2.206,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Senna": {
+   "Q": {
+    "expFirst": 178,
+    "perCast": 178,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 15,
+    "ourCd": 15,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 302,
+    "perCast": 302,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 20,
+    "ourCd": 20,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 760.3,
+    "perCast": 760.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Seraphine": {
+   "Q": {
+    "expFirst": 227.6,
+    "perCast": 227.6,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 173.8,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 22,
+    "ourCd": 22,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 274.5,
+    "perCast": 549,
+    "ratio": 2,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": [
+     "over"
+    ]
+   },
+   "R": {
+    "expFirst": 317.6,
+    "perCast": 317.6,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 120,
+    "ourCd": 120,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Sett": {
+   "Q": {
+    "expFirst": 774,
+    "perCast": 1548,
+    "ratio": 2,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 160,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 254.8,
+    "perCast": 254.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": 496,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Shaco": {
+   "Q": {
+    "expFirst": 113,
+    "perCast": 113,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 50.3,
+    "perCast": 50.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 15,
+    "ourCd": 15,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 335.4,
+    "perCast": 335.4,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 418.3,
+    "perCast": 418.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Shen": {
+   "Q": {
+    "expFirst": 693.5,
+    "perCast": 3234,
+    "ratio": 4.663,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 270,
+    "perCast": 270,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 160,
+    "ourCd": 160,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Shyvana": {
+   "Q": {
+    "expFirst": 188,
+    "perCast": 311.7,
+    "ratio": 1.658,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "true",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 269.8,
+    "perCast": 269.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 745.2,
+    "perCast": 745.2,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 519,
+    "perCast": 519,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 0,
+    "ourCd": 60,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Singed": {
+   "Q": {
+    "expFirst": 178.8,
+    "perCast": 1698.5,
+    "ratio": 9.5,
+    "casts": 1,
+    "gameCd": 0,
+    "ourCd": 1.5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": [
+     "rarely"
+    ]
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 13,
+    "ourCd": 13,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 1043.7,
+    "perCast": 1043.7,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Sion": {
+   "Q": {
+    "expFirst": 262.8,
+    "perCast": 868.4,
+    "ratio": 3.304,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 1607.6,
+    "perCast": 1607.6,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 298,
+    "perCast": 298,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 482,
+    "perCast": 1446,
+    "ratio": 3,
+    "casts": 1,
+    "gameCd": 60,
+    "ourCd": 60,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Sivir": {
+   "Q": {
+    "expFirst": null,
+    "perCast": 317.4,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 91.3,
+    "perCast": 912.5,
+    "ratio": 10,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 18,
+    "ourCd": 18,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Skarner": {
+   "Q": {
+    "expFirst": 152,
+    "perCast": 1556,
+    "ratio": 10.237,
+    "casts": 2,
+    "gameCd": 3,
+    "ourCd": 3,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": [
+     "rarely"
+    ]
+   },
+   "W": {
+    "expFirst": 265.2,
+    "perCast": 265.2,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 456,
+    "perCast": 456,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 18,
+    "ourCd": 18,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 519,
+    "perCast": 519,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Smolder": {
+   "Q": {
+    "expFirst": 204,
+    "perCast": 204,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 3.5,
+    "ourCd": 3.5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 148,
+    "perCast": 448.2,
+    "ratio": 3.028,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": [
+     "over"
+    ]
+   },
+   "E": {
+    "expFirst": 83.1,
+    "perCast": 83.1,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 599,
+    "perCast": 599,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Sona": {
+   "Q": {
+    "expFirst": 257.6,
+    "perCast": 257.6,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 434.5,
+    "perCast": 434.5,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Soraka": {
+   "Q": {
+    "expFirst": 284.1,
+    "perCast": 284.1,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 254.5,
+    "ratio": null,
+    "casts": 5,
+    "gameCd": 2,
+    "ourCd": 2,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 237.6,
+    "perCast": 237.6,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 120,
+    "ourCd": 120,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Swain": {
+   "Q": {
+    "expFirst": 256,
+    "perCast": 512.1,
+    "ratio": 2,
+    "casts": 4,
+    "gameCd": 3,
+    "ourCd": 3,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 351.4,
+    "perCast": 351.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 18,
+    "ourCd": 18,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 368.3,
+    "perCast": 368.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 41.8,
+    "perCast": 814.3,
+    "ratio": 19.5,
+    "casts": 1,
+    "gameCd": 120,
+    "ourCd": 120,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Sylas": {
+   "Q": {
+    "expFirst": 187.6,
+    "perCast": 187.6,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 316.4,
+    "perCast": 316.4,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 415.2,
+    "perCast": 415.2,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 30,
+    "ourCd": 30,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Syndra": {
+   "Q": {
+    "expFirst": 348.3,
+    "perCast": 348.3,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 299.8,
+    "perCast": 299.8,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 301.4,
+    "perCast": 301.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 15,
+    "ourCd": 15,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 193.8,
+    "perCast": 1356.6,
+    "ratio": 7,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "TahmKench": {
+   "Q": {
+    "expFirst": 424,
+    "perCast": 424,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 493.5,
+    "perCast": 493.5,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 17,
+    "ourCd": 17,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 3,
+    "ourCd": 3,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": 3083,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 0,
+    "ourCd": 80,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Taliyah": {
+   "Q": {
+    "expFirst": 209.5,
+    "perCast": 477.7,
+    "ratio": 2.28,
+    "casts": 5,
+    "gameCd": 3,
+    "ourCd": 3,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 368.3,
+    "perCast": 360,
+    "ratio": 0.978,
+    "casts": 2,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 120,
+    "ourCd": 120,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Talon": {
+   "Q": {
+    "expFirst": 225,
+    "perCast": 225,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 122,
+    "perCast": 374,
+    "ratio": 3.066,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 260,
+    "perCast": 260,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 60,
+    "ourCd": 60,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Taric": {
+   "Q": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 3,
+    "ourCd": 3,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 15,
+    "ourCd": 15,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 334.5,
+    "perCast": 334.5,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 120,
+    "ourCd": 120,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Teemo": {
+   "Q": {
+    "expFirst": 378.3,
+    "perCast": 378.3,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 119.7,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 534.5,
+    "perCast": 534.5,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 0.25,
+    "ourCd": 20,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Thresh": {
+   "Q": {
+    "expFirst": 452.1,
+    "perCast": 452.1,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 17,
+    "ourCd": 17,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 359.9,
+    "perCast": 346.4,
+    "ratio": 0.962,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 669,
+    "perCast": 669,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Tristana": {
+   "Q": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "W": {
+    "expFirst": 374.5,
+    "perCast": 374.5,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 147.3,
+    "perCast": 617,
+    "ratio": 4.19,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 550,
+    "perCast": 550,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Trundle": {
+   "Q": {
+    "expFirst": 438,
+    "perCast": 438,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 3.5,
+    "ourCd": 3.5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 15,
+    "ourCd": 15,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 3338,
+    "perCast": 3755.3,
+    "ratio": 1.125,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Tryndamere": {
+   "Q": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 503.2,
+    "perCast": 503.2,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "TwistedFate": {
+   "Q": {
+    "expFirst": 423.7,
+    "perCast": 423.7,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 463.5,
+    "perCast": 463.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 248.6,
+    "perCast": 248.6,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 110,
+    "ourCd": 110,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Twitch": {
+   "Q": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 60,
+    "perCast": 868.5,
+    "ratio": 14.475,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Udyr": {
+   "Q": {
+    "expFirst": 64,
+    "perCast": 2224,
+    "ratio": 34.75,
+    "casts": 1,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 111.1,
+    "perCast": 508.6,
+    "ratio": 4.576,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 20,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Urgot": {
+   "Q": {
+    "expFirst": 352.7,
+    "perCast": 352.7,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 83.7,
+    "perCast": 251.2,
+    "ratio": 3,
+    "casts": 9,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 290,
+    "perCast": 290,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 390,
+    "perCast": 390,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 70,
+    "ourCd": 70,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Varus": {
+   "Q": {
+    "expFirst": 533.8,
+    "perCast": 533.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 94.7,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 40,
+    "ourCd": 40,
+    "tipType": "magic",
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 252,
+    "perCast": 252,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 519,
+    "perCast": 519,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 60,
+    "ourCd": 60,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Vayne": {
+   "Q": {
+    "expFirst": 366.2,
+    "perCast": 366.2,
+    "ratio": 1,
+    "casts": 5,
+    "gameCd": 2,
+    "ourCd": 2,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 1000,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": "true",
+    "ourType": "true",
+    "flags": [
+     "never"
+    ]
+   },
+   "E": {
+    "expFirst": 262.5,
+    "perCast": 262.5,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 70,
+    "ourCd": 70,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Veigar": {
+   "Q": {
+    "expFirst": 358.3,
+    "perCast": 358.3,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 490.9,
+    "perCast": 490.9,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 0,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 451.8,
+    "perCast": 553.5,
+    "ratio": 1.225,
+    "casts": 1,
+    "gameCd": 60,
+    "ourCd": 60,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Velkoz": {
+   "Q": {
+    "expFirst": 392.1,
+    "perCast": 392.1,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 143.8,
+    "perCast": 351.1,
+    "ratio": 2.441,
+    "casts": 2,
+    "gameCd": 1.5,
+    "ourCd": 1.5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": [
+     "rarely"
+    ]
+   },
+   "E": {
+    "expFirst": 240.7,
+    "perCast": 240.7,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 1161.3,
+    "perCast": 1161.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "true",
+    "flags": [
+     "type"
+    ]
+   }
+  },
+  "Vex": {
+   "Q": {
+    "expFirst": 368.3,
+    "perCast": 368.3,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 290.7,
+    "perCast": 290.7,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 231.4,
+    "perCast": 231.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 13,
+    "ourCd": 13,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": 208.8,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Vi": {
+   "Q": {
+    "expFirst": 168,
+    "perCast": 420,
+    "ratio": 2.5,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 1080,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 507,
+    "perCast": 507,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 1,
+    "ourCd": 1.5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": [
+     "cd",
+     "rarely"
+    ]
+   },
+   "R": {
+    "expFirst": 422,
+    "perCast": 422,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Viego": {
+   "Q": {
+    "expFirst": 600,
+    "perCast": 228.5,
+    "ratio": 0.381,
+    "casts": 4,
+    "gameCd": 3,
+    "ourCd": 3,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": [
+     "under"
+    ]
+   },
+   "W": {
+    "expFirst": 469,
+    "perCast": 469,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 246,
+    "perCast": 246,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Viktor": {
+   "Q": {
+    "expFirst": 187.6,
+    "perCast": 392.1,
+    "ratio": 2.09,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 13,
+    "ourCd": 13,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 314.5,
+    "perCast": 589.7,
+    "ratio": 1.875,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 351.4,
+    "perCast": 1576.3,
+    "ratio": 4.486,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Vladimir": {
+   "Q": {
+    "expFirst": 287.1,
+    "perCast": 531.2,
+    "ratio": 1.85,
+    "casts": 3,
+    "gameCd": 4.599999904632568,
+    "ourCd": 4.6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 490.6,
+    "perCast": 490.6,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 220.3,
+    "perCast": 573.9,
+    "ratio": 2.606,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 498.3,
+    "perCast": 498.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 120,
+    "ourCd": 120,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Volibear": {
+   "Q": {
+    "expFirst": 382.5,
+    "perCast": 382.5,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 390,
+    "perCast": 390,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": 318.3,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 1111.3,
+    "perCast": 1111.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 110,
+    "ourCd": 110,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Warwick": {
+   "Q": {
+    "expFirst": 1394,
+    "perCast": 1394,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 40,
+    "ourCd": 40,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 658.6,
+    "perCast": 658.6,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 70,
+    "ourCd": 70,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "MonkeyKing": {
+   "Q": {
+    "expFirst": 160,
+    "perCast": 208,
+    "ratio": 1.3,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": [
+     "over"
+    ]
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 1747.1,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 18,
+    "ourCd": 18,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 409,
+    "perCast": 409,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 7,
+    "ourCd": 7,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 2165.1,
+    "perCast": 4330.2,
+    "ratio": 2,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Xayah": {
+   "Q": {
+    "expFirst": 145,
+    "perCast": 290,
+    "ratio": 2,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 142,
+    "perCast": 841.4,
+    "ratio": 5.925,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 480,
+    "perCast": 480,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Xerath": {
+   "Q": {
+    "expFirst": 382.1,
+    "perCast": 382.1,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 299.8,
+    "perCast": 299.8,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 266,
+    "perCast": 266,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 346,
+    "perCast": 346,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "XinZhao": {
+   "Q": {
+    "expFirst": 111,
+    "perCast": 333,
+    "ratio": 3,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 128.2,
+    "perCast": 602.6,
+    "ratio": 4.701,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": [
+     "over"
+    ]
+   },
+   "E": {
+    "expFirst": 352.8,
+    "perCast": 352.8,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": 1957.3,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Yasuo": {
+   "Q": {
+    "expFirst": 302.5,
+    "perCast": 302.5,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 17,
+    "ourCd": 17,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 247.4,
+    "perCast": 247.4,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 0.10000000149011612,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 620,
+    "perCast": 620,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 30,
+    "ourCd": 30,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Yone": {
+   "Q": {
+    "expFirst": 309.8,
+    "perCast": 309.8,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 226,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": 124,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 332,
+    "perCast": 664,
+    "ratio": 2,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Yorick": {
+   "Q": {
+    "expFirst": 223.5,
+    "perCast": 223.5,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 1307,
+    "perCast": 1307,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 300,
+    "perCast": 3640,
+    "ratio": 12.133,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Yunara": {
+   "Q": {
+    "expFirst": 56.8,
+    "perCast": 56.8,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 367.5,
+    "perCast": 367.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 9,
+    "ourCd": 9,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": 702.8,
+    "ratio": null,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": null,
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Yuumi": {
+   "Q": {
+    "expFirst": 233.8,
+    "perCast": 233.8,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 6.5,
+    "ourCd": 6.5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 14,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": 217.3,
+    "perCast": 434.5,
+    "ratio": 2,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": [
+     "over"
+    ]
+   }
+  },
+  "Zaahen": {
+   "Q": {
+    "expFirst": null,
+    "perCast": 317,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 177.5,
+    "perCast": 322,
+    "ratio": 1.814,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 177.5,
+    "perCast": 866.2,
+    "ratio": 4.88,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "physical",
+    "ourType": "magic",
+    "flags": [
+     "over",
+     "type"
+    ]
+   },
+   "R": {
+    "expFirst": 780,
+    "perCast": 780,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 80,
+    "ourCd": 80,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Zac": {
+   "Q": {
+    "expFirst": 260.7,
+    "perCast": 260.7,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 1387,
+    "perCast": 1387,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 375.2,
+    "perCast": 375.2,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 10,
+    "ourCd": 10,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 327.6,
+    "perCast": 327.6,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Zed": {
+   "Q": {
+    "expFirst": 320,
+    "perCast": 608,
+    "ratio": 1.9,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 216,
+    "perCast": 216,
+    "ratio": 1,
+    "casts": 4,
+    "gameCd": 3,
+    "ourCd": 3,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 200.8,
+    "perCast": 479.9,
+    "ratio": 2.39,
+    "casts": 1,
+    "gameCd": 100,
+    "ourCd": 100,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   }
+  },
+  "Zeri": {
+   "Q": {
+    "expFirst": 225,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": "physical",
+    "ourType": null,
+    "flags": []
+   },
+   "W": {
+    "expFirst": 444.5,
+    "perCast": 444.5,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "physical",
+    "ourType": "physical",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 63.8,
+    "perCast": 319,
+    "ratio": 5,
+    "casts": 1,
+    "gameCd": 18,
+    "ourCd": 18,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 583.9,
+    "perCast": 906.7,
+    "ratio": 1.553,
+    "casts": 1,
+    "gameCd": 70,
+    "ourCd": 70,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Ziggs": {
+   "Q": {
+    "expFirst": 415.2,
+    "perCast": 415.2,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 4,
+    "ourCd": 4,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 294.5,
+    "perCast": 294.5,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 12,
+    "ourCd": 12,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "E": {
+    "expFirst": 266,
+    "perCast": 266,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 16,
+    "ourCd": 16,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 869,
+    "perCast": 869,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 70,
+    "ourCd": 70,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  },
+  "Zilean": {
+   "Q": {
+    "expFirst": 452.1,
+    "perCast": 452.1,
+    "ratio": 1,
+    "casts": 3,
+    "gameCd": 8,
+    "ourCd": 8,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": 0,
+    "ratio": null,
+    "casts": 2,
+    "gameCd": 6,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 15,
+    "ourCd": 15,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 60,
+    "ourCd": 60,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   }
+  },
+  "Zoe": {
+   "Q": {
+    "expFirst": 321.4,
+    "perCast": 803.5,
+    "ratio": 2.5,
+    "casts": 2,
+    "gameCd": 6.5,
+    "ourCd": 6.5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": 71.9,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0.25,
+    "ourCd": 6,
+    "tipType": "magic",
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 306,
+    "perCast": 612.1,
+    "ratio": 2,
+    "casts": 1,
+    "gameCd": 14,
+    "ourCd": 14,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 5,
+    "ourCd": 20,
+    "tipType": null,
+    "ourType": null,
+    "flags": [
+     "cd"
+    ]
+   }
+  },
+  "Zyra": {
+   "Q": {
+    "expFirst": 329.8,
+    "perCast": 329.8,
+    "ratio": 1,
+    "casts": 2,
+    "gameCd": 5,
+    "ourCd": 5,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "W": {
+    "expFirst": null,
+    "perCast": null,
+    "ratio": null,
+    "casts": 0,
+    "gameCd": 0,
+    "ourCd": 6,
+    "tipType": null,
+    "ourType": null,
+    "flags": []
+   },
+   "E": {
+    "expFirst": 301.4,
+    "perCast": 301.4,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 11,
+    "ourCd": 11,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   },
+   "R": {
+    "expFirst": 518.3,
+    "perCast": 518.3,
+    "ratio": 1,
+    "casts": 1,
+    "gameCd": 90,
+    "ourCd": 90,
+    "tipType": "magic",
+    "ourType": "magic",
+    "flags": []
+   }
+  }
+ }
+}

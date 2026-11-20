@@ -383,12 +383,45 @@
     const cdOf = (slot, base) => base * 100 / (100 + st.ah + (slot === 'R' ? sum('ultHaste') : 0) + (hasAny('mandate') && immob.has(slot) ? 20 : 0));
     let mandateUntil = -1, horizonUntil = -1, horizonReady = 0;
     const castDebuff = (t, slot) => {
+      if (opts.audit) castLog.push({ t, slot });
       if (P && P.castDebuff && P.castDebuff[slot]) addDebuff(t, P.castDebuff[slot], slot);
       if (hasAny('mandate') && immob.has(slot)) mandateUntil = t + 4;
       // Passive stuns on every Nth ability cast (Annie's Pyromania), whichever ability lands it.
       if (P && P.ccEveryNAbility && ++ccCasts % P.ccEveryNAbility === 0 && hasAny('mandate')) mandateUntil = t + 4;
+      // Ornn's Brittle: a knock-up (E into his pillar, the R headbutt) pops it; W and R apply it (the R recast reapplies it).
+      const B = P && P.brittle;
+      if (B) {
+        if (B.consume.includes(slot)) brittlePop(t, slot + ' knock-up');
+        if (slot in B.from) brittleOn(t, B.from[slot]);
+        if (slot === B.recastSlot) spellQueue.push({ at: t + B.recastAt, label: slot, type: 'magic', raw: () => 0,
+          after: tt => { brittlePop(tt, slot + ' knock-up'); brittleOn(tt, 0); } });
+      }
+      // Poisons (Cassiopeia Q and W): the dummy stays poisoned this many seconds after the cast.
+      if (P && P.poison && P.poison[slot]) poisonUntil = Math.max(poisonUntil, t + P.poison[slot]);
+      // Kassadin's Force Pulse: every ability cast takes time off its cooldown.
+      for (const s of castable || []) if (s.mech && s.mech.cutPerCast && s.slot !== slot && ready[s.slot] > t && ready[s.slot] !== Infinity)
+        ready[s.slot] = Math.max(t, ready[s.slot] - s.mech.cutPerCast);
     };
-    let ccCasts = 0;
+    let ccCasts = 0, poisonUntil = -1;
+    const castLog = []; // every ability cast (audit.html counts casts from it)
+    // Ornn: Brittle on the dummy ({ from, until }). The next attack or knock-up pops it for a share of max health (magic).
+    let brittle = null;
+    const brittleOn = (t, delay) => { brittle = { from: t + delay, until: t + delay + (P.brittle.dur || 3) }; };
+    const brittlePop = (t, how) => {
+      const B = P && P.brittle;
+      if (!B || !brittle || t < brittle.from || t > brittle.until) return;
+      brittle = null;
+      const s = (castable || []).find(x => x.slot === B.slot); if (!s) return;
+      const v = root.Potenshall.Abilities.evalCalc(B.calc, s.sp, { ...spellCtx(), rank: s.rank });
+      if (Number.isFinite(v) && v > 0) deal(t, Math.min(v, 1) * DUMMY.hp, 'magic', `Passive · Brittle (${how})`, 'ability');
+    };
+    let mines = null; // Taliyah's E stones on the ground: { until, raw } until W shoves the dummy through them
+    const altNext = {}; // Taliyah Q: the next cast is the Worked Ground boulder
+    const castN = {}; // casts per slot (Corki R: every third missile is big)
+    // Escalating mana costs (Kog'Maw R): base x (1 + casts in the window), capped; paid from max mana.
+    let rampSpent = 0; const rampCasts = {};
+    const rampCost = (sp, t) => { const m = sp.mech, n = (rampCasts[sp.slot] || []).filter(x => t - x < (m.costWindow || 8)).length;
+      return Math.min(m.costCap || Infinity, m.costBase * (1 + n)); };
 
     const comboCD = pr.cd * 100 / (100 + st.ah);
     const comboDamage = () => {
@@ -425,7 +458,7 @@
         amt *= 100 / (100 + mr);
         if (hasAny('bloodletter') && kind !== 'attack') bloodStacks = Math.min(4, bloodStacks + 1);
       }
-      record(t, amt, type, src);
+      record(t, amt, type, src, raw);
       const exec = sum('execute');
       if (exec && dummyHp > 0 && dummyHp < exec * DUMMY.hp) record(t, dummyHp, 'true', 'The Collector');
       // Passive executes: a share of max HP (P.execute), or a line that grows with stacks (Mel's Overwhelm, P.executeHp).
@@ -484,7 +517,7 @@
       if (P && P.stackDot) { pStack.n = Math.min(P.stackDot.max, pStack.n + 1); pStack.until = t + P.stackDot.dur; }
     };
 
-    function record(t, amt, type, src) {
+    function record(t, amt, type, src, raw) {
       if (markState && t <= markState.until && src !== markState.label) markState.sum += amt;
       total += amt; byType[type] += amt; bySource[src] = (bySource[src] || 0) + amt;
       dummyHp -= amt;
@@ -497,7 +530,7 @@
           ready[s] = P.killReset.pct ? t + (ready[s] - t) * (1 - P.killReset.pct) : Math.max(t, ready[s] - P.killReset.cd);
         if (P && P.killReset && P.killReset.extendAS && t <= tempASUntil) tempASUntil += P.killReset.extendAS;
       }
-      hits.push({ t, amt, type, src, hp: dummyHp, killed });
+      hits.push({ t, amt, type, src, hp: dummyHp, killed, raw }); // raw: before amps and resistances (for the ability audit)
     }
 
     // Spellblade: unique, take strongest owned.
@@ -577,7 +610,7 @@
         if (pr.onHitAp) hit(pr.onHitAp * st.ap + 20, 'magic', 'Champion on-hit');
         if (P && P.onHit && (!P.onHit.cond || P.onHit.cond(pctx(t)))) { if (P.onHit.dot) addDot(t, P.onHit, P.onHit.dmg); else dealP(t, P.onHit, c => P.onHit.dmg(c) * mult, 'onhit'); }
         if (st.muramana) hit(0.012 * st.maxMana, 'physical', 'Manamune');
-        for (const b of onHitBuffs) if (t <= b.until) hit(b.raw, b.type, b.label);
+        for (const b of onHitBuffs) if (t <= b.until) hit(b.raw + (b.pctCur || 0) * dummyHp, b.type, b.label); // pctCur: Camille R
       }
     };
 
@@ -606,8 +639,14 @@
       // Show Sundered Sky's guaranteed crit as its own line: the part above an average attack.
       if (sunderedShare > 0) { deal(t, autoDmg * sunderedShare, 'physical', 'Sundered Sky', 'split'); autoDmg *= 1 - sunderedShare; sunderedShare = 0; }
       if (fiendShare > 0) { deal(t, autoDmg * fiendShare, 'physical', 'Fiendhunter Bolts', 'split'); autoDmg *= 1 - fiendShare; }
-      if (empowered && empowered.replacesAttack) autoDmg = 0; // Twisted Fate's card: the card's damage instead of the attack's
+      // An empowered attack waiting for its recast window (Camille's Q2: at least 1.5s after the first) isn't spent yet.
+      const empNow = empowered && !(empowered.nextAt > t) ? empowered : null;
+      if (empNow && empNow.replacesAttack) autoDmg = 0; // Twisted Fate's card: the card's damage instead of the attack's
+      // Camille's Q2: a share of the whole attack becomes true damage.
+      const convNow = empNow && empNow.left === 1 && empNow.convFn ? Math.min(1, Math.max(0, empNow.convFn())) : 0;
+      if (convNow > 0) { deal(t, autoDmg * convNow, 'true', empNow.label + ' (true)', 'split'); autoDmg *= 1 - convNow; }
       deal(t, autoDmg, 'physical', 'Basic Attacks', 'attack');
+      if (P && P.brittle) brittlePop(t, 'attack'); // Ornn: the attack knocks a Brittle target back
       // Xayah: attacks after an ability leave a feather behind the target.
       if (P && P.feathers && featherCharges > 0) { featherCharges--; feathers.push(t + P.feathers.dur); }
       if (!openerDone) {
@@ -634,26 +673,35 @@
         if (t > eArm.until) eArm = null;
         else if (--eArm.left <= 0) { const e = eArm; eArm = null; deal(t, e.raw(), e.type, e.label, 'ability'); }
       }
-      if (empowered) {
-        const e = empowered;
+      if (empNow) {
+        const e = empNow;
         e.left--;
         if (e.left <= 0) {
           empowered = null;
           if (e.cdAfterCharges) ready[e.slot] = t + cdOf(e.slot, e.cd);
         }
+        if (e.left > 0 && e.chargeGap) e.nextAt = t + e.chargeGap; // Camille: the recast waits for the empowered window
+        if (e.left <= 0 && e.recastIsCast) onAbilityHit(t, false); // the recast is an ability cast (Sheen, etc.)
         if (e.shred) { shredPct = e.shred; shredUntil = t + (e.shredDur || 3); } // armor shred lands with the hit
         // Xin Zhao Q: each empowered attack cuts his other abilities' cooldowns (so E and W come back for a second cast).
         if (e.cdOthersPerHit) for (const s of ['Q', 'W', 'E', 'R']) if (s !== e.slot && ready[s] > t && ready[s] !== Infinity) ready[s] = Math.max(t, ready[s] - e.cdOthersPerHit);
         const firstHit = !e.firstOnly || e.left === (e.charges || 1) - 1; // Rengar Q: only the first attack hits harder
         empRaw = firstHit ? (e.adRatio || 0) * st.totalAD + (e.bonusAdRatio || 0) * st.bonusAD + (e.apRatio || 0) * st.ap + (e.flat || 0)
-          + (e.calcFn ? e.calcFn() : 0) + (e.pctFn ? e.pctFn() * DUMMY.hp : 0) // Shen Q: flat + % of max health on each
+          + (e.left <= 0 && e.lastCalcFn ? e.lastCalcFn() : e.calcFn ? e.calcFn() : 0) + (e.pctFn ? e.pctFn() * DUMMY.hp : 0) // Shen Q: flat + % of max health on each
           + (e.left <= 0 && e.finalPctMaxHp ? e.finalPctMaxHp * DUMMY.hp : 0) : 0;
+        const conv = e.left <= 0 && e.convFn ? Math.min(1, Math.max(0, e.convFn())) : 0; // Camille Q2: true damage share
+        if (conv > 0 && empRaw > 0) { deal(t, empRaw * conv, 'true', e.label + ' (true)', 'ability'); empRaw *= 1 - conv; }
         if (empRaw > 0) deal(t, empRaw, e.type, e.label, 'ability');
         if (empRaw > 0 && t <= cloneUntil) deal(t, empRaw * cloneMult, e.type, e.label + ' (clone)', 'ability'); // the clone's next attack is empowered too
       }
       // Wukong's clone attacks alongside him at reduced damage. It's a separate attacker, so item on-hits aren't repeated.
       const cloneHit = t <= cloneUntil;
       if (cloneHit) deal(t, st.totalAD * (1 + st.crit * (st.critMult - 1)) * cloneMult, 'physical', 'W · Clone attacks', 'attack');
+      // Charge recharges that drop on every hit (Corki R: 2s per attack).
+      for (const sp of castable || []) if (sp.charges && sp.mech && sp.mech.rechargePerHit) {
+        const s = ammoSt[sp.slot];
+        if (s && s.nextAt !== Infinity) { s.nextAt = Math.max(t, s.nextAt - sp.mech.rechargePerHit); if (s.n <= 0 && ready[sp.slot] > t) ready[sp.slot] = s.nextAt; }
+      }
       // Abilities whose cooldown drops on every hit (Wukong Q: 0.5s per hit from him or the clone).
       for (const sp of castable || []) if (sp.mech && sp.mech.cdPerHit && ready[sp.slot] > t) ready[sp.slot] -= sp.mech.cdPerHit * (cloneHit ? 2 : 1);
       // Navori Flickerblade: attacks cut the remaining cooldown of Q, W and E by 15%.
@@ -791,6 +839,8 @@
       let cd = sp.cooldown;
       if (m.stackMax) cd = Math.max(0.5, cd - (m.stackCdCut || 0) * stackOf(sp.slot, t));
       if (m.cdRefund && !(m.lowNoRefund && low)) cd *= 1 - m.cdRefund;
+      // Taliyah Q: the boulder (cast on Worked Ground) has a shorter cooldown; volleys and boulders alternate.
+      if (m.altCalc) { if (altNext[sp.slot]) cd = Math.max(m.altMinCd || 0, cd * (1 - (m.altCdCut || 0))); altNext[sp.slot] = !altNext[sp.slot]; }
       return cd;
     };
     const onUltimate = t => {
@@ -824,6 +874,11 @@
       for (const s of live) deal(t, s.raw, s.type, s.label + ' (mark)', 'ability');
     };
     const castOrder = castable ? [...castable].sort((a, b) => castRank(a) - castRank(b)) : [];
+    // Passive on-hit damage from an ability (Kassadin's Nether Blade): every attack, all fight.
+    for (const s of castOrder) if (s.mech && s.mech.permOnHit) {
+      const v = root.Potenshall.Abilities.evalCalc(s.mech.permOnHit, s.sp, { ...spellCtx(), rank: s.rank });
+      if (Number.isFinite(v) && v > 0) onHitBuffs.push({ until: Infinity, raw: v, type: s.mech.type || 'magic', label: `${s.slot} · ${labels[s.slot] || s.name} (passive)` });
+    }
     // Rengar's Ferocity: +1 per ability cast; at max his next ability is empowered. He always spends it on empowered Q,
     // which ignores Q's cooldown: the next attack deals the empowered bonus and he gains attack speed.
     const FER = P && P.ferocity;
@@ -859,6 +914,12 @@
         if (sp.mech && sp.mech.whenNotReady && (ready[sp.mech.whenNotReady] || 0) <= t + 1e-9) continue;
         // Zoe's Q waits for the bubble's sleep to set in, so it lands on a sleeping target.
         if (sp.mech && sp.mech.waitSleep && sleep && t < sleep.from) continue;
+        // Escalating mana cost (Kog'Maw R): only while his mana pool covers the next cast.
+        if (sp.mech && sp.mech.costBase && rampSpent + rampCost(sp, t) > st.maxMana) continue;
+        // Held for a low target (Jhin R: more damage per missing health), or fired anyway at 'latest'. Bel'Veth's E checks this itself.
+        if (sp.mech && sp.mech.holdMissing != null && sp.mech.kind !== 'flurry' && 1 - dummyHp / DUMMY.hp < sp.mech.holdMissing && t < (sp.mech.latest ?? 0)) continue;
+        // Ornn's R: waits until the Brittle already on the dummy has popped, so its own Brittle isn't wasted.
+        if (sp.mech && sp.mech.holdWhileBrittle && brittle && t <= brittle.until) continue;
         // Locke's R: held until the dummy is low enough for its seal, or until its mark would just cover the rest of the fight.
         if (sp.mech && sp.mech.holdBelow && dummyHp > sp.mech.holdBelow * DUMMY.hp && t < (sp.mech.latest ?? 0)) continue;
         // Pantheon: one action short of Mortal Will, Q waits for the next attack so it goes out empowered.
@@ -868,7 +929,10 @@
           empowered = { ...sp.mech, label: `${sp.slot} · ${labels[sp.slot] || sp.name}`, slot: sp.slot, cd: sp.cooldown,
             left: sp.mech.charges || 1,
             calcFn: sp.mech.calc ? () => root.Potenshall.Abilities.evalCalc(sp.mech.calc, sp.sp, { ...spellCtx(), rank: sp.rank }) || 0 : null,
-            pctFn: sp.mech.pctCalc ? () => root.Potenshall.Abilities.evalCalc(sp.mech.pctCalc, sp.sp, { ...spellCtx(), rank: sp.rank }) || 0 : null };
+            pctFn: sp.mech.pctCalc ? () => root.Potenshall.Abilities.evalCalc(sp.mech.pctCalc, sp.sp, { ...spellCtx(), rank: sp.rank }) || 0 : null,
+            // Camille Q2: the last empowered attack uses its own formula and converts a share to true damage.
+            lastCalcFn: sp.mech.lastCalc ? () => root.Potenshall.Abilities.evalCalc(sp.mech.lastCalc, sp.sp, { ...spellCtx(), rank: sp.rank }) || 0 : null,
+            convFn: sp.mech.convCalc ? () => root.Potenshall.Abilities.evalCalc(sp.mech.convCalc, sp.sp, { ...spellCtx(), rank: sp.rank }) || 0 : null };
           onAbilityHit(t, false); castDebuff(t, sp.slot);
           // Multi-charge empowers (Skarner Q): the cooldown starts when the last empowered attack lands.
           ready[sp.slot] = sp.mech.cdAfterCharges ? Infinity : t + cdOf(sp.slot, sp.cooldown);
@@ -941,7 +1005,14 @@
               raw: () => ev(m.calc) * critAvg * (1 + (m.missAmpMax || 0) * (1 - dummyHp / DUMMY.hp)),
               after: tt => onHitEffects(tt, 1, (m.onHitRatio || 0) * (1 + (1 - dummyHp / DUMMY.hp))) });
             channelUntil = t + dur;
-          } else if (m.kind === 'cast' && m.noDamage) first = 0; // utility casts (Katarina W drops a dagger)
+          } else if (m.kind === 'cast' && m.noDamage) {
+            first = 0; // utility casts (Katarina W drops a dagger)
+            // Taliyah W: knocks the dummy through E's stones, which detonate (and stun) when the knock lands.
+            if (m.detonates && mines && t <= mines.until) {
+              const mn = mines; mines = null;
+              spellQueue.push({ at: t + (m.detonateAfter || 0.5), label: mn.label, type: m.type || 'magic', raw: () => mn.raw, after: tt => castDebuff(tt, m.detonates) });
+            }
+          }
           else if (m.kind === 'cast' && m.recastCalc && m.recasts && recastLeft[sp.slot] > 0) {
             // Akali R2: the recast scales with the target's missing health, up to recastMaxMult at recastFullAt health left.
             const miss = 1 - dummyHp / DUMMY.hp, full = 1 - (m.recastFullAt || 0.3);
@@ -963,12 +1034,26 @@
             if (P && P.fury && m.empCalc && fury >= 50 && (sp.slot === P.fury.prefer || fury >= 100 || (ready[P.fury.prefer] || 0) - t > 3)) {
               calcName = m.empCalc; fury -= 50; furyEmp = true; lab += ' (Fury)';
             }
-            if (m.stackMax) mult *= 1 + stackOf(sp.slot, t) * ev(m.stackAmpCalc) / 100; // Hecarim: +damage per Rampage stack
-            first = deal(t, ev(calcName) * mult * critAvg * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1), m.type, lab, 'ability');
+            if (m.stackMax && m.stackAmpCalc) mult *= 1 + stackOf(sp.slot, t) * ev(m.stackAmpCalc) / 100; // Hecarim: +damage per Rampage stack
+            if (m.altCalc && altNext[sp.slot]) { calcName = m.altCalc; lab += ' (boulder)'; } // Taliyah Q on Worked Ground
+            // Kog'Maw R: more damage per missing health (the low-health version replaces it below 40%).
+            if (m.missAmpPer && !(castLow && m.lowCalc)) mult *= 1 + m.missAmpPer * (1 - dummyHp / DUMMY.hp);
+            // Corki R: every third missile is the big one.
+            castN[sp.slot] = (castN[sp.slot] || 0) + 1;
+            if (m.bigEvery && castN[sp.slot] % m.bigEvery === 0) { calcName = m.bigCalc; lab += ' (big one)'; }
+            // Escalating mana cost (Kog'Maw R): pay it from his mana pool.
+            if (m.costBase) { rampSpent += rampCost(sp, t); (rampCasts[sp.slot] = rampCasts[sp.slot] || []).push(t); }
+            let extra = 0;
+            if (m.stackFlat) extra += stackOf(sp.slot, t) * ev(m.stackFlat); // Kassadin R: flat damage per stack
+            if (m.poisonCalc && t <= poisonUntil) extra += ev(m.poisonCalc); // Cassiopeia E vs a poisoned target
+            first = deal(t, (ev(calcName) * (m.pctOfMissing ? DUMMY.hp - dummyHp : m.pctOfMax ? DUMMY.hp : 1) + extra) * mult * critAvg, m.type, lab, 'ability');
+            // Taliyah E: the stones stay on the ground; W shoves the dummy through all of them.
+            if (m.mineCalc) mines = { until: t + (m.mines || 4), raw: ev(m.mineCalc), label: label + ' (stones detonate)' };
             if (castLow && m.lowBonusCalc) first += deal(t, ev(m.lowBonusCalc) * mult, m.type, lab, 'ability'); // Qiyana's Rock Q vs low health
             if (P && P.fury && !furyEmp) addFury((P.fury.perSlot || {})[sp.slot] || 0); // empowered casts don't build Fury
             if (m.stackMax && first > 0) castStacks[sp.slot] = { n: Math.min(m.stackMax, stackOf(sp.slot, t) + 1), until: t + (m.stackDur || 8) };
             if (m.onHitMult) onHitEffects(t, 1, m.onHitMult);
+            if (m.onHitTimes) onHitEffects(t, m.onHitTimes); // Warwick R: each of its attacks applies on-hit effects
             // Zoe: the hit that wakes a sleeping target deals its damage again as true damage, up to the bubble's cap.
             if (sleep && first > 0 && t >= sleep.from && t <= sleep.until) { deal(t, Math.min(first, sleep.cap), 'true', 'E · Sleep (wake-up hit)', 'ability'); sleep = null; }
           }
@@ -990,6 +1075,10 @@
             for (let k = 1; k <= Math.min(m.duration || 15, T); k++) spellQueue.push({ at: t + k, label, type: m.type, raw: () => 0, after: () => addFury(P.fury.rPerSec || 0) }); }
           // Wuju Style: every attack deals the buff's damage for its duration.
           if (m.onHitBuff) { onHitBuffs = onHitBuffs.filter(b => b.label !== label); onHitBuffs.push({ until: t + (m.duration || 5), raw: ev(m.onHitBuff), type: m.onHitType || 'true', label }); }
+          // Yorick's Maiden marks the target: his attacks deal a share of its max health for the rest of the fight.
+          // Camille's R: for its duration her attacks deal a share of the target's current health.
+          if (m.onHitPctCur) onHitBuffs.push({ until: t + (m.duration || 4), raw: 0, pctCur: m.onHitPctCur > 1 ? m.onHitPctCur / 100 : m.onHitPctCur, type: m.onHitType || m.type, label });
+          if (m.onHitPctMax) onHitBuffs.push({ until: Infinity, raw: (m.onHitPctMax > 1 ? m.onHitPctMax / 100 : m.onHitPctMax) * DUMMY.hp, type: m.onHitType || m.type, label: label + ' (mark)' });
           // Akali W: restores energy and raises her max energy by the same amount while the shroud lasts.
           // Zilean's Rewind: takes seconds off his other basic abilities' cooldowns.
           if (m.cdReduce) for (const s of ['Q', 'W', 'E']) if (s !== sp.slot && ready[s] > t && ready[s] !== Infinity) ready[s] = Math.max(t, ready[s] - m.cdReduce);
@@ -1002,20 +1091,26 @@
               + (m.asPerBonusAS ? st.bonusASPct / m.asPerBonusAS : 0) + (m.apToAS ? st.ap * m.apToAS * 100 : 0); // Xin Zhao E
             tempASUntil = t + (m.asDur || 5);
           }
-          else if (m.kind === 'multi') for (const p of m.parts) // a part is a formula, a flat data value, or a share of max HP
-            first += deal(t, (p.calc ? Math.max(0, ev(p.calc) * (p.pctOfMax ? DUMMY.hp : 1) * (p.mult || 1) - (p.minusAD ? st.totalAD : 0)) : 0) + (p.flat || 0) + (p.pctMaxHp || 0) * DUMMY.hp
-              + (p.pctCurHp || 0) * dummyHp, p.type, label, 'ability'); // Xin Zhao R: % current health
+          else if (m.kind === 'multi') for (const p of m.parts) { // a part is a formula, a flat data value, or a share of max HP
+            // A formula that is a share of max health may be stored as 0.05 or as 5 (%).
+            const c = p.calc ? ev(p.calc) : 0, cv = p.pctOfMax ? (c > 1 ? c / 100 : c) * DUMMY.hp : c;
+            first += deal(t, (Math.max(0, cv * (p.mult || 1) - (p.minusAD ? st.totalAD : 0)))
+              + ((p.flat || 0) + (p.pctMaxHp || 0) * DUMMY.hp + (p.pctCurHp || 0) * dummyHp) * (p.mult || 1), p.type, label, 'ability'); // Xin Zhao R: % current health
+          }
           else if (m.kind === 'hits') {
             // firstCalc: an opening burst on cast, then the hits start startAfter seconds later (Viktor's storm ticks).
+            // missAmpPer: +x% damage per 1% missing health (Jhin R); lastMult: the last hit is stronger (Jhin's 4th shot).
             if (m.firstCalc) first = deal(t, ev(m.firstCalc), m.type, label, 'ability');
             for (let i = 0; i < m.n; i++) spellQueue.push({ at: t + (m.startAfter || 0) + (m.n > 1 ? i * m.over / (m.n - 1) : 0), label, type: m.type,
-              raw: () => { const b = ev(m.calc); return m.critCalc ? b + st.crit * (ev(m.critCalc) - b) : b; } });
+              raw: () => { const b = ev(m.calc); return (m.critCalc ? b + st.crit * (ev(m.critCalc) - b) : b)
+                * (1 + (m.missAmpPer || 0) * (1 - dummyHp / DUMMY.hp)) * (i === m.n - 1 && m.lastMult ? m.lastMult : 1); } });
           } else if (m.kind === 'channel') {
             const dur = Math.min(m.duration || 99, T);
             // Zones that execute (Aurelion Sol E): threshold in % of max HP, checked on every tick.
             const exec = m.executeCalc ? () => { const v = ev(m.executeCalc); return v > 1 ? v / 100 : v; } : null;
             for (let k = 0.5; k <= dur + 1e-9; k += 0.5) spellQueue.push({ at: t + k, label, type: m.type, exec, clone: !!m.cloneEcho,
-              raw: () => ((m.empCalc && k > m.empAfter ? ev(m.empCalc) : ev(m.perSec)) + (m.perSecPctMaxHp || 0) * DUMMY.hp) / 2 });
+              raw: () => ((m.empCalc && k > m.empAfter ? ev(m.empCalc) : ev(m.perSec)) + (m.perSecPctMaxHp || 0) * DUMMY.hp + (m.perSecFlat || 0)
+                + (m.perSecPctCalc ? (v => v > 1 ? v / 100 : v)(ev(m.perSecPctCalc)) * DUMMY.hp : 0)) / 2 }); // Amumu W: flat + % max health per second
             // Repeating bursts while channeling (Aurelion Sol Q: every 1s, magic + % max HP true per stack).
             if (m.burstEvery) for (let k = m.burstEvery; k <= dur + 1e-9; k += m.burstEvery) for (const p of m.bursts)
               spellQueue.push({ at: t + k, label, type: p.type, raw: () => ev(p.calc) * (p.pctMaxHp ? DUMMY.hp : 1) });
@@ -1259,6 +1354,8 @@
         ah: st.ah, hp: st.maxHP, mana: st.maxMana, leth: st.leth,
         armorPen: 1 - st.arpenKeep, magicPen: 1 - st.mpenKeep, mpenFlat: st.mpenFlat },
       profile: pr, realKit: !!spells || !!(P && P.ownKit), passive: P ? { name: P.name, note: P.note || '' } : null,
+      castLog: opts.audit ? castLog : undefined,
+      auditCtx: opts.audit ? spellCtx() : undefined, // the stats abilities were evaluated with (audit.html)
     };
   }
 
@@ -1749,6 +1846,7 @@
     Rumble: { R: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 'TrailDuration' } },
     // Singed R (Insanity Potion, rank 3): +85 AP, armor and magic resist for 25s, so the whole fight.
     Singed: { Q: { kind: 'channel', type: 'magic', perSec: 'DamagePerSecond', duration: 99, once: true },
+      E: { kind: 'multi', type: 'magic', parts: [{ calc: 'BaseDamage', type: 'magic' }, { pctMaxHp: 'MaxHPDamage', type: 'magic' }] }, // flat + % max health
       R: { kind: 'buff', stats: { ap: 'StatAmount', armor: 'StatAmount', mr: 'StatAmount' }, duration: 'Duration' } },
     // Gnar: Mini abilities, or Mega ones (formCalc) in the Mega line (passives.js runs both and keeps the better). Mega W
     // and R only exist in Mega form; R knocks the target into a wall (1.5x).
@@ -1803,6 +1901,94 @@
       R: { kind: 'cast', type: 'magic', calc: 'Damage', execPct: 'ExecutionThreshold', execDur: 'Duration', holdBelow: 0.45, latest: 5, order: 0.3 },
     },
     Kennen: { R: { kind: 'hits', type: 'magic', calc: 'PerTickDamageCalculated', n: 6, over: 3 } },
+    // Taliyah Q: 5 rocks on one target (each after the first deals 60% less: the game's 2.6x tooltip), which leaves Worked
+    // Ground under the dummy; standing on it, the next Q is a single boulder (1.8x) with half the cooldown and uses it up,
+    // so normal volleys and boulders alternate. E scatters stones; W shoves the dummy through them, so every stone
+    // detonates (the game's full-field tooltip, 2.5x) and stuns. W deals no damage itself.
+    Taliyah: {
+      Q: { kind: 'cast', type: 'magic', calc: 'MaxDamageTooltip', altCalc: 'BigRockDamage', altCdCut: 'WorkedGroundCDR', altMinCd: 'MinimumWorkedGroundCD' },
+      E: { kind: 'cast', type: 'magic', calc: 'ScatterDamage', mineCalc: 'MaxDetonationDamageTooltip', mines: 'MineLifetime', order: 0.5 },
+      W: { kind: 'cast', noDamage: true, detonates: 'E', detonateAfter: 'KnockupDelay', order: 0.6 },
+    },
+    // Kassadin: R's cooldown is 2s at rank 3 (the generic 20s ultimate floor doesn't apply); each recast within 15s adds
+    // a stack (max 4) of bonus damage. W: every attack deals its passive magic damage, and the active empowers the next
+    // attack. E: any ability cast takes 0.75s off its cooldown.
+    Kassadin: {
+      Q: { kind: 'cast', type: 'magic', calc: 'TotalDamage' },
+      W: { kind: 'empowerAuto', type: 'magic', calc: 'ActiveDamage', resetsAttack: true, permOnHit: 'OnHitDamage' },
+      E: { kind: 'cast', type: 'magic', calc: 'TotalDamage', cutPerCast: 'ReductionPerSpellCast' },
+      R: { kind: 'cast', type: 'magic', calc: 'BaseDamage', stackMax: 'MaxStacks', stackFlat: 'BonusDamage', stackDur: 'RStackDuration', realCd: true },
+    },
+    // ---- Ability audit, batch 1: abilities whose tooltip is "X plus Y% max Health" (both parts now), charged abilities at
+    // full charge, and multi-shot ultimates. Numbers are read from the game data by name.
+    Amumu: { W: { kind: 'channel', type: 'magic', perSecFlat: 'BaseDamage', perSecPctCalc: 'TotalHealthDamage', duration: 99, once: true, order: 0.3 } }, // toggle, every second
+    // Evelynn: W charms and shreds magic resist (passives.js), damage is monsters only. R deals its normal damage, 2.4x
+    // below 30% health: held until the dummy is that low (or 9s in).
+    Evelynn: { W: { kind: 'cast', noDamage: true, order: 0.3 },
+      R: { kind: 'cast', type: 'magic', calc: 'Damage', lowBelow: 'CritTreshold', lowCalc: 'CritDamage', holdMissing: 0.7, latest: 9 } },
+    Irelia: { W: { kind: 'cast', type: 'physical', calc: 'MaxDamageCalc', channelBlock: 'ChargeTimeForMax' } }, // charged to full (0.75s)
+    RekSai: { R: { kind: 'multi', type: 'physical', parts: [{ calc: 'RBaseDamageCalc', type: 'physical' }, { pctMaxHp: 'PercentHealthDamage', type: 'physical' }] } },
+    // Jhin R: 4 shots 1s apart, each +3% per 1% missing health, the 4th a crit (x2); held until the dummy is half down
+    // (or 6s in), and he can't attack while channeling.
+    Jhin: { R: { kind: 'hits', type: 'physical', calc: 'DamageCalc', n: 4, over: 3, startAfter: 0.5, missAmpPer: 'PercentMissingAmp', lastMult: 'FourthShotMultiplier',
+      channelBlock: 3.5, holdMissing: 0.5, latest: 6 } },
+    Poppy: { Q: { kind: 'multi', type: 'physical', parts: [{ calc: 'BaseDamage', type: 'physical', mult: 2 }, { pctMaxHp: 'HealthDamagePercent', type: 'physical', mult: 2 }] } }, // hits, then erupts again
+    // Warwick R: suppresses and attacks 3 times while channeling (magic damage, on-hit effects each time); no attacks meanwhile.
+    Warwick: { Q: { kind: 'multi', type: 'magic', parts: [{ calc: 'BaseBiteDamage', type: 'magic' }, { pctMaxHp: 'TargetPercentHPDamage', type: 'magic' }] },
+      R: { kind: 'cast', type: 'magic', calc: 'DamageCumulative', onHitTimes: 3, channelBlock: 'RDuration' } },
+    Aatrox: { W: { kind: 'multi', type: 'physical', parts: [{ calc: 'WDamage', type: 'physical', mult: 2 }] } }, // hit, then the pull hits again (the dummy stays put)
+    Vi: { Q: { kind: 'cast', type: 'physical', calc: 'MaxDamageTooltip', channelBlock: 1.25 } }, // fully charged (1.25s)
+    Gragas: { W: { kind: 'multi', type: 'magic', parts: [{ calc: 'TotalDamage', type: 'magic' }, { pctMaxHp: 'MaxHPPercentDamage', type: 'magic' }] } },
+    Galio: { W: { kind: 'cast', type: 'magic', calc: 'MaxTotalDamage', channelBlock: 'MaxChargeDuration' } }, // fully charged
+    Varus: { Q: { kind: 'cast', type: 'physical', calc: 'TotalDamageMax', channelBlock: 1.25 } }, // fully charged
+    Hwei: { Q: { kind: 'multi', type: 'magic', parts: [{ calc: 'Tooltip_QQDamage', type: 'magic' }, { pctMaxHp: 'Tooltip_QQBonusDamage', type: 'magic' }] } }, // Devastating Fire
+    Jax: { E: { kind: 'multi', type: 'magic', parts: [{ calc: 'TotalDamage', type: 'magic' }, { pctMaxHp: 'PercentHealthDamage', type: 'magic' }] } },
+    Shyvana: { E: { kind: 'multi', type: 'magic', parts: [{ calc: 'Damage', type: 'magic' }, { calc: 'Calc_Max_Health_Damage', pctOfMax: true, type: 'magic' }] } },
+    Ziggs: { R: { kind: 'cast', type: 'magic', calc: 'EmpoweredDamage' } }, // centre of the blast on a dummy that doesn't move
+    Janna: { Q: { kind: 'cast', type: 'magic', calc: 'MaxDamage' } }, // fully grown tornado
+    // Cho'Gath E and Rell E: the next attack(s) deal flat + a share of max health (Cho'Gath: 3 attacks).
+    Chogath: { E: { kind: 'empowerAuto', type: 'magic', calc: 'FlatDamageCalc', pctCalc: 'MaxHealthPercentCalc', charges: 'MaximumAttacks', resetsAttack: true } },
+    Rell: { E: { kind: 'empowerAuto', type: 'magic', pctCalc: 'MaxHealthDamageCalc' } },
+    // Yorick E: the share of max health (not the minimum). R: the Maiden attacks all fight, and marks the target so
+    // Yorick's attacks deal 3% of its max health.
+    Yorick: {
+      E: { kind: 'cast', type: 'magic', calc: 'Calc_HealthDamage', pctOfMax: true },
+      R: { kind: 'pet', type: 'magic', calc: 'YorickBigGhoulDamage', petAS: 1, petASPerLevel: 0, duration: 99, turret: true, onHitPctMax: 'RMarkDamagePercent', order: 0.3 },
+    },
+    // Camille: E hooks a wall and dashes in (stun, +attack speed); R (cast, so ultimate items trigger) makes her attacks deal
+    // 8% current health for 4s; Q's next attack hits harder, then the recast at least 1.5s later deals the empowered bonus
+    // with the whole attack turned into true damage (it's a cast too, so Sheen procs). W: base plus the outer edge's max health.
+    Camille: {
+      E: { kind: 'cast', type: 'physical', calc: 'TotalDamage', asBonus: 'ASBuff', asDur: 'ASDuration', channelBlock: 'WallHangDuration', order: 0.3 },
+      R: { kind: 'cast', type: 'magic', noDamage: true, onHitPctCur: 'RPercentCurrentHPDamage', duration: 'RDuration', order: 0.35 },
+      Q: { kind: 'empowerAuto', type: 'physical', calc: 'BonusDamage', lastCalc: 'EmpoweredBonusDamage', convCalc: 'DamageConversionPercentage',
+        charges: 2, chargeGap: 'QRampUpTime', cdAfterCharges: true, recastIsCast: true, resetsAttack: true },
+      W: { kind: 'multi', type: 'physical', parts: [{ calc: 'BaseDamageTotal', type: 'physical' }, { calc: 'OuterEdgeTooltip', pctOfMax: true, type: 'physical' }], channelBlock: 'ChargeDuration', order: 0.32 }, // before R, so R's 4s are all attacks
+    },
+    // Karthus E: a toggled aura, damage every second all fight.
+    Karthus: { E: { kind: 'channel', type: 'magic', perSec: 'TotalDPS', duration: 99, once: true, order: 0.3 } },
+    // Kog'Maw R: 1s cooldown (rank 3); each cast within 8s of the last costs 40 more mana (up to 400), so he casts while his
+    // mana lasts. More damage per missing health, double below 40%. passives.js keeps the better of with and without it.
+    KogMaw: { R: { kind: 'cast', type: 'magic', calc: 'BaseDamageCalc', realCd: true, missAmpPer: 'TooltipMissingHealthDamageAmp', lowBelow: 0.4, lowCalc: 'MaxDamageCalc',
+      costBase: 'BaseCost', costCap: 'ManaCostCap', costWindow: 'ManaCostDuration' } },
+    // Corki R: 4 charges; every third missile is the big one; each attack takes 2s off the recharge.
+    Corki: { R: { kind: 'cast', type: 'physical', calc: 'RSmallMissileDamage', bigEvery: 3, bigCalc: 'RBigMissileDamage', rechargePerHit: 'CDReductionOnHit' } },
+    // Kayn at 18 as Rhaast (Darkin Slayer: max-health damage is far more against a 10,000 HP dummy than Shadow Assassin's
+    // burst). Q hits twice (dash, then spin), each 65% AD + a share of max health. R deals a share of max health; he
+    // bursts out after the 0.5s minimum, and can't attack while inside.
+    Kayn: {
+      Q: { kind: 'multi', type: 'physical', parts: [{ calc: 'DarkinFlatDamage', type: 'physical', mult: 2 }, { calc: 'DarkinPercentDamage', type: 'physical', pctOfMax: true, mult: 2 }] },
+      R: { kind: 'cast', type: 'physical', calc: 'SlayerDamage', pctOfMax: true, channelBlock: 0.5 },
+    },
+    // Ornn (Brittle in passives.js): E after Q so he rams the pillar for the knock-up; R is two passes of the elemental
+    // (summoned, then redirected by the headbutt 1s later), magic damage, held while the dummy is still Brittle.
+    Ornn: {
+      E: { kind: 'cast', type: 'physical', calc: 'TotalDamage', order: 1.1 },
+      R: { kind: 'cast', type: 'magic', calc: 'RDamageCalc', delayCalc: 'RDamageCalc', delayAfter: 1, holdWhileBrittle: true, order: 1.2 },
+    },
+    // Cassiopeia: E's real cooldown is 0.75s, and against a poisoned target (Q's poison, W's cloud: passives.js) it adds
+    // its bonus damage. Q and W go first so the fangs land on a poisoned dummy.
+    Cassiopeia: { E: { kind: 'cast', type: 'magic', calc: 'BasicDamage', poisonCalc: 'BonusPoisonedDamage', realCd: true, order: 1.5 } },
     // Execute ultimates: held until the hit leaves the target under the threshold, then the execute kills it.
     // If the dummy never gets that low, it's fired near the end of the fight for its damage.
     //   execute: threshold (share of max HP or a data value) / thresholdCalc (absolute HP from a formula); calc: damage
@@ -1824,9 +2010,10 @@
       W: { kind: 'cast', noDamage: true, cdReduce: 'CooldownReduction', whenNotReady: 'Q' },
     },
     // Bel'Veth E (Royal Maelstrom): 1.5s of strikes (6, +40% more per 100% bonus attack speed), each up to double damage
-    // as the target's health drops and applying 12% of on-hit effects; held until the dummy is at half health or 8.3s.
+    // as the target's health drops and applying 12% (up to 24%) of on-hit effects; held until the dummy is 85% down (each strike
+    // near its maximum) or 8.5s. It still rarely beats attacking (it's mostly damage reduction and life steal), so it stays optional.
     Belveth: { E: { kind: 'flurry', type: 'physical', calc: 'DamagePerStrike', strikesCalc: 'TotalStrikes', duration: 'TotalDuration',
-      missAmpMax: 'MissingHealthMult', onHitRatio: 'OnHitRatio', critAvg: true, holdMissing: 0.5, latest: 8.3 } },
+      missAmpMax: 'MissingHealthMult', onHitRatio: 'OnHitRatio', critAvg: true, holdMissing: 0.85, latest: 8.5 } },
     // Shen Q: his next 3 attacks deal 40 + 7% (+2% per 100 AP) of the target's max health (the empowered version, with the
     // spirit blade pulled through the target) and gain 50% attack speed.
     Shen: { Q: { kind: 'empowerAuto', type: 'magic', calc: 'BaseFlatDamage', pctCalc: 'EmpPercentHealth', charges: 3, asBonus: 'SteroidAS' } },
@@ -1876,7 +2063,10 @@
     Garen: { R: { kind: 'execute', type: 'true', flat: 'BaseDamage', missPct: 0.35, holdKill: true, latest: 9.5 } },
     Fiddlesticks: { W: { kind: 'execute', type: 'magic', flat: 'DamagePerSecond', flatMult: 2, missPct: 0.22, noHold: true } }, // 2s drain + 22% missing HP
     Veigar: { R: { kind: 'execute', type: 'magic', calc: 'MinDamage', missAmp: { max: 1, at: 0.667 }, holdKill: true, latest: 9.5 } },
-    Jinx: { R: { kind: 'execute', type: 'physical', calc: 'DamageMax', missPct: 0.35, holdKill: true, latest: 9.5 } },
+    // Jinx Q: she fights with the minigun (its attack speed at 3 stacks: 130% at rank 5, built in the first 3 attacks, so 9s
+    // of the fight); rockets add only 10% damage and lose attack speed. The swap itself deals no damage.
+    Jinx: { Q: { kind: 'buff', stats: { as: 'MinigunAttackSpeedMax' }, duration: 9 },
+      R: { kind: 'execute', type: 'physical', calc: 'DamageMax', missPct: 0.35, holdKill: true, latest: 9.5 } },
     Akshan: { R: { kind: 'execute', type: 'physical', missAmp: { max: 3, at: 1 }, holdKill: true, latest: 9.5 } },
     Smolder: { Q: { kind: 'execute', type: 'physical', threshold: 'Tier3_ExecuteThresholdStart', noHold: true } }, // 225 stacks
     // Darkin Daggers: first dagger + bleed + second dagger (minimum), all physical.
@@ -1908,7 +2098,8 @@
         recasts: 2, recastGap: 3, blocksAttacks: true, cloneEcho: true, first: true },
     },
     // Pantheon W: damage is a share of the target's max health (game data stores 0.08 = 8%).
-    Naafiri: { Q: { kind: 'multi', parts: [{ calc: 'TotalDamageFirstCast', type: 'physical' }, { calc: 'TotalBleedDamage', type: 'physical' }, { calc: 'TotalMinDamageSecondCast', type: 'physical' }] } },
+    Naafiri: { Q: { kind: 'multi', parts: [{ calc: 'TotalDamageFirstCast', type: 'physical' }, { calc: 'TotalBleedDamage', type: 'physical' }, { calc: 'TotalMinDamageSecondCast', type: 'physical' }] },
+      R: { kind: 'cast', type: 'physical', noDamage: true } }, // the dash has no damage formula in the game data; +22% AD for 5s is in passives.js
     Kayle: { E: { kind: 'cast', type: 'magic', calc: 'ActiveTotalExecuteDamage', pctOfMissing: true } }, // formula is a share of missing HP
     // Skarner Q: rip up a boulder that empowers his next 3 attacks with attack speed and the ability damage; the 3rd
     // also deals 11% of the target's max health. The cooldown starts once the 3rd attack lands.
@@ -1956,14 +2147,17 @@
     const dv = name => { const v = name && sp.dv[name]; return v ? +(v[rank] ?? v[v.length - 1]) || 0 : 0; };
     const m = { ...spec };
     for (const k of ['adRatio', 'bonusAdRatio', 'apRatio', 'pctTargetMaxHp', 'floor', 'flat', 'duration', 'threshold', 'pct',
-      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut', 'sleepDelay', 'sleepDur', 'falloff', 'apPerStack', 'venomSeconds', 'cdRefund', 'lowBelow', 'stackMax', 'stackCdCut', 'stackDur', 'rCd', 'execPct', 'execDur']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
+      'mult', 'asBonus', 'asDur', 'shred', 'shredDur', 'cdPerHit', 'perSecPctMaxHp', 'finalPctMaxHp', 'zoneCd', 'share', 'window', 'rate', 'onHitRatio', 'asPerBonusAS', 'apToAS', 'recastGap', 'recastFullAt', 'energyMax', 'pickupCd', 'sigilDur', 'delayAfter', 'onHitMult', 'fuse', 'cdReduce', 'missAmpMax', 'resistCdMin', 'resistCdCap', 'allOutCdCut', 'sleepDelay', 'sleepDur', 'falloff', 'apPerStack', 'venomSeconds', 'cdRefund', 'lowBelow', 'stackMax', 'stackCdCut', 'stackDur', 'rCd', 'execPct', 'execDur', 'altCdCut', 'altMinCd', 'mines', 'detonateAfter', 'cutPerCast', 'missAmpPer', 'lastMult', 'perSecFlat', 'onHitPctMax', 'channelBlock', 'charges', 'chargeGap', 'onHitPctCur', 'costBase', 'costCap', 'costWindow', 'rechargePerHit']) if (typeof spec[k] === 'string') m[k] = dv(spec[k]);
     if (spec.parts) m.parts = spec.parts.map(p => ({ ...p, ...(typeof p.flat === 'string' ? { flat: dv(p.flat) } : {}),
-      ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: dv(p.pctMaxHp) } : {}),
+      ...(typeof p.pctMaxHp === 'string' ? { pctMaxHp: (v => v > 1 ? v / 100 : v)(dv(p.pctMaxHp)) } : {}), // stored as 0.09 or as 9 (%)
       ...(typeof p.pctCurHp === 'string' ? { pctCurHp: dv(p.pctCurHp) } : {}) }));
     // Buff stats: a data value name, or [name, multiplier] (e.g. attack speed stored as 0.7 -> 70%), or a number.
     if (spec.stats) m.stats = Object.fromEntries(Object.entries(spec.stats).map(([k, v]) => [k, typeof v === 'number' ? v : Array.isArray(v) ? dv(v[0]) * v[1] : dv(v)]));
     return m;
   }
+
+  // Damage types where the game file's tag is wrong or missing and Riot's tooltip says otherwise (found by audit.html).
+  const TYPE_FIX = { 'Shen E': 'physical', 'Tryndamere E': 'physical', 'Samira E': 'magic', 'Sion W': 'magic' };
 
   // Build a compact, ready-to-simulate view of the kit.
   function describeKit(kit, kitHint) {
@@ -1976,8 +2170,9 @@
       const m = mech[sp.slot] ? resolveMechanic(mech[sp.slot], sp, rank) : null;
       return {
         slot: sp.slot, name: sp.name, rank, calc, sp, mech: m,
-        damaging: !m && ((Number.isFinite(probe) && probe > 1) || sp.variants.length > 0), type: (m && m.type) || damageTypeFor(sp, calc, rank, kitHint),
-        cooldown: cooldownFor(sp, rank), castTime: Math.min(0.75, sp.castTime || 0.25),
+        damaging: !m && ((Number.isFinite(probe) && probe > 1) || sp.variants.length > 0), type: (m && m.type) || TYPE_FIX[kit.id + ' ' + sp.slot] || damageTypeFor(sp, calc, rank, kitHint),
+        // realCd: a short cooldown that really is that short (Cassiopeia E, Kassadin R), so the sanity floor doesn't apply.
+        cooldown: m && m.realCd && +sp.cds[rank] > 0.25 ? +sp.cds[rank] : cooldownFor(sp, rank), castTime: Math.min(0.75, sp.castTime || 0.25),
         // Multi-charge abilities: charges, the recharge time per charge, and the short lockout between casts.
         ...chargesFor(sp, rank),
         // Energy/mana cost at this rank (the game lists costs from rank 1, unlike cooldowns).
@@ -2105,10 +2300,10 @@
     Briar: { castDebuff: { Q: { armor: 0.2, mr: 0.2, dur: 5 } }, name: 'Crimson Curse', note: 'Stacking bleed from attacks and abilities', stackDot: { max: 5, dur: 5, type: 'physical', perStack: c => (25 + 0.05 * c.bad) / 5 } },
     Caitlyn: { name: 'Headshot', note: 'Every 6th attack, and after a net/trap hit', everyN: { n: 6, type: 'physical', dmg: c => c.ad * (1.2 + c.crit * 1.3125 * (c.cm / 1.75)) },
       afterAbility: { cd: 10, type: 'physical', dmg: c => c.ad * (1.2 + c.crit * 1.3125 * (c.cm / 1.75)) } },
-    Camille: { name: 'Adaptive Defenses', note: 'Q empowered attacks, the second part true damage', timedAuto: { every: 4, label: 'Q · Precision Protocol', kind: 'ability', dmg: c => ({ physical: 0.3 * c.ad, true: 0.5 * c.ad }) },
-      // R (Hextech Ultimatum) cast at the start: attacks deal 15 + 8% current HP magic for 4s.
-      onHit: { cond: c => c.t >= 0.5 && c.t <= 4.5, label: 'R · Hextech Ultimatum', kind: 'ability', type: 'magic', dmg: c => 15 + 0.08 * c.thp } },
-    Cassiopeia: none('Serpentine Grace'),
+    // Her kit (Q's two empowered attacks, R's % current health on attacks) is in abilities.js from the game data.
+    Camille: none('Adaptive Defenses', 'Shield only'),
+    // Q poisons for 3s; W's cloud lasts 5s and poisons for 1s more (game data), so E's poisoned bonus applies.
+    Cassiopeia: { ...none('Serpentine Grace'), poison: { Q: 3, W: 6 } },
     Chogath: none('Carnivore', 'Healing only'),
     Corki: { castDebuff: { E: { armorFlat: 20, mrFlat: 20, dur: 4 } }, name: 'Hextech Munitions', note: 'Attacks deal 80% magic damage', autoSplit: { magic: 0.8 } },
     Darius: { name: 'Hemorrhage', note: 'Stacking bleed; Noxian Might at 5 stacks', stackDot: { max: 5, dur: 5, type: 'physical', perStack: c => (30 + 0.3 * c.bad) / 5 },
@@ -2193,7 +2388,7 @@
       stats: c => ({ ad: c.ad * (0.44 + 0.35 * c.crit + 0.3 * (c.bas + 0.51)) }),
       magazine: { size: 4, reload: 2.5 },
       everyN: { n: 4, crit: true, minCrit: 1.5, type: 'physical', dmg: c => 0.25 * c.tmiss } },
-    Jinx: { name: 'Get Excited!', note: 'Minigun attack speed stacks (Q)', stats: () => ({ as: 50 }) },
+    Jinx: none('Get Excited!', 'Takedown attack speed (no champion takedowns here); minigun attack speed is Q in abilities.js'),
     Kaisa: { name: 'Caustic Wounds', note: 'Plasma on-hit; ruptures at 5 stacks', onHit: { type: 'magic', dmg: c => 46 + 0.18 * c.ap },
       everyNHits: { n: 5, type: 'magic', dmg: c => (0.15 + 0.06 * c.ap / 100) * c.tmiss + 50 } },
     // Rend (game files, rank 5): first spear 45 + 70% AD + 65% AP, each extra spear 35 + 50% AD + 50% AP; 8s cooldown.
@@ -2210,12 +2405,12 @@
       daggers: { from: { Q: 1.1, W: 1.25 }, type: 'magic', dmg: c => 240 + 0.6 * c.bad + c.ap, onHit: true, eReduce: 7.68 },
       killReset: { cd: 15, slots: ['Q', 'W', 'E'] } },
     Kayle: { castDebuff: { Q: { armor: 0.15, mr: 0.15, dur: 4 } }, name: 'Divine Ascent', note: 'Exalted at 16: attack waves + attack speed', stats: () => ({ as: 30 }), onHit: { type: 'magic', dmg: c => 50 + 0.25 * c.ap + 0.1 * c.bad } },
-    Kayn: none('The Darkin Scythe'),
+    Kayn: none('The Darkin Scythe', 'Rhaast (Darkin Slayer): Q and R deal max-health damage; the healing does not add damage'),
     Kennen: none('Mark of the Storm'),
     Khazix: { name: 'Unseen Threat', note: 'Attack out of stealth', timedAuto: { every: 10, type: 'magic', dmg: c => 150 + 0.5 * c.bad } }, // game data: 50% bonus AD
     Kindred: none('Mark of the Kindred', 'Marks are counted in her abilities'),
     Kled: none('Skaarl the Cowardly Lizard'),
-    KogMaw: { castDebuff: { Q: { armor: 0.32, mr: 0.32, dur: 4 } }, name: 'Bio-Arcane Barrage (W)', note: 'W on-hit % max HP (8s of the fight) + Q attack speed; W is modeled here', disable: ['W'],
+    KogMaw: { castDebuff: { Q: { armor: 0.32, mr: 0.32, dur: 4 } }, name: 'Bio-Arcane Barrage (W)', note: 'W on-hit % max HP (8s of the fight) + Q attack speed; W is modeled here', disable: ['W'], optional: ['R'], // R spam (abilities.js) vs attacking: the better is kept
       stats: () => ({ as: 26 }), onHit: { type: 'magic', dmg: c => 0.8 * (0.06 + 0.01 * c.ap / 100) * c.tmax } },
     // Game files: the mark deals 12 + 1-2% (by level: 2% at 18) of the target's max health; it doesn't scale with resists.
     // All Out (R, rank 3, game files): for its 15s (the whole fight) +80% attack speed, 50% bonus armor penetration (the
@@ -2254,7 +2449,8 @@
     MonkeyKing: none('Stone Skin'),
     Mordekaiser: { castDebuff: { R: { armor: 0.1, mr: 0.1, dur: 7, auto: true } }, name: 'Darkness Rise', note: 'Damage aura after 3 hits', aura: { hits: 3, linger: 4, type: 'magic', dmg: c => 5 + 0.3 * c.ap + 0.05 * c.tmax } },
     Morgana: none('Soul Siphon', 'Healing only'),
-    Naafiri: { name: 'We Are More', note: 'Packmates attack with her', periodic: { every: 1, start: 0.5, type: 'physical', dmg: c => 2 * (15 + 0.06 * c.bad) } }, // 2 packmates, about 29 per hit at 230 bonus AD (game data)
+    // R (The Call of the Pack): +22% AD for 5s (game data), counted as half of it over the 10s fight.
+    Naafiri: { name: 'We Are More', note: 'Packmates attack with her; R +22% AD for 5s', stats: c => ({ ad: 0.22 * 0.5 * c.ad }), periodic: { every: 1, start: 0.5, type: 'physical', dmg: c => 2 * (15 + 0.06 * c.bad) } }, // 2 packmates, about 29 per hit at 230 bonus AD (game data)
     Nami: none('Surging Tides'),
     Nasus: { castDebuff: { E: { armor: 0.5, dur: 5 } }, name: 'Soul Eater', note: 'Q stacks are counted in his Q; R burns % max HP every second', periodic: { every: 1, start: 0.5, label: 'R · Fury of the Sands', kind: 'ability', type: 'magic', dmg: c => (0.05 + 0.01 * c.ap / 100) * c.tmax } },
     Nautilus: { name: 'Staggering Blow', note: 'First attack on a target', timedAuto: { every: 10, type: 'physical', dmg: () => 122 } },
@@ -2276,7 +2472,10 @@
     Olaf: { castDebuff: { Q: { armor: 0.2, dur: 4 } }, name: 'Berserker Rage + Ragnarok', note: 'Attack speed from missing health; R: +30 AD + 25% AD',
       stats: c => ({ as: 100 * Math.min(1, c.smiss / 0.7), ad: 30 + 0.25 * c.ad }) },
     Orianna: { name: 'Clockwork Windup', note: 'On-hit, stacking on repeated attacks', onHit: { type: 'magic', dmg: c => (59 + 0.15 * c.ap) * 1.4 } },
-    Ornn: none('Living Forge'),
+    // Brittle: W's last flame (0.75s in) and R apply it for 3s; the next attack or knock-up (E into his pillar, the R
+    // headbutt 1s after the cast, which reapplies it) deals W's share of max health as magic damage (17% at level 18).
+    Ornn: { ...none('Living Forge', 'Brittle: attacks and knock-ups pop it for 17% max health'),
+      brittle: { slot: 'W', calc: 'BrittlePercentMaxHPCalc', from: { W: 0.75, R: 0 }, consume: ['E'], recastSlot: 'R', recastAt: 1, dur: 3 } },
     // Mortal Will: every 5 actions (attacks and abilities) empower his next Q: +70% on the close-range stab (game data).
     // Standard rotation: Mortal Will starts full (it builds out of combat) and goes on W: stun plus 3 extra strikes. Those
     // strikes and W count toward the next Mortal Will, so after one attack Q goes out empowered (+70% on the thrust); then
